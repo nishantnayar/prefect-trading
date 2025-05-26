@@ -16,7 +16,7 @@ class DatabaseConnectivity:
         try:
             # Get database credentials from Prefect secrets
             db_host = Secret.load("db-host").get()
-            db_port = Secret.load("db-port").get()
+            db_port = "5432"  # Default PostgreSQL port
             db_name = Secret.load("db-name").get()
             db_user = Secret.load("db-user").get()
             db_password = Secret.load("db-password").get()
