@@ -3,6 +3,7 @@ from prefect import flow, task, get_run_logger
 
 from src.database.database_connectivity import DatabaseConnectivity
 from src.data.sources.yahoo_finance_loader import YahooFinanceDataLoader
+from src.data.sources.alpaca_daily_loader import AlpacaDailyLoader
 
 
 def generate_flow_run_name(flow_prefix: str) -> str:
@@ -35,12 +36,26 @@ def yahoo_data_loader_flow():
         raise
 
 
+@flow(name="Alpaca hourly Loader Flow", flow_run_name=lambda: generate_flow_run_name("alpaca-hourly-loader"))
+def alpaca_data_loader_flow():
+    logger = get_run_logger()
+    try:
+        logger.info("Running alpaca hourly loader...")
+        loader = AlpacaDailyLoader()
+        loader.run()
+        logger.info("Alpaca hourly data collection completed.")
+    except Exception as e:
+        logger.error(f"Alpaca data collection error: {e}")
+        raise
+
+
 @flow(name="Hourly Process Flow", flow_run_name=lambda: generate_flow_run_name("hourly-process"))
 def hourly_proces_flow():
     logger = get_run_logger()
     logger.info("Starting Hourly Process Flow")
     try:
         db = postgres_connect()
+        alpaca_data_loader_flow
         logger.info("Hourly flow completed.")
     except Exception as e:
         logger.error(f"Hourly Process error: {e}")
