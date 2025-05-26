@@ -1,13 +1,13 @@
-from prefect import get_run_logger
 from prefect.blocks.system import Secret
 import psycopg2
 from psycopg2 import pool
 from typing import Optional
 import os
+from contextlib import contextmanager
+
 
 class DatabaseConnectivity:
     def __init__(self):
-        self.logger = get_run_logger()
         self.connection_pool = None
         self._initialize_connection_pool()
 
@@ -31,9 +31,7 @@ class DatabaseConnectivity:
                 user=db_user,
                 password=db_password
             )
-            self.logger.info("Database connection pool initialized successfully")
         except Exception as e:
-            self.logger.error(f"Failed to initialize database connection pool: {str(e)}")
             raise
 
     def get_connection(self):
@@ -41,7 +39,6 @@ class DatabaseConnectivity:
         try:
             return self.connection_pool.getconn()
         except Exception as e:
-            self.logger.error(f"Failed to get connection from pool: {str(e)}")
             raise
 
     def release_connection(self, connection):
@@ -49,8 +46,21 @@ class DatabaseConnectivity:
         try:
             self.connection_pool.putconn(connection)
         except Exception as e:
-            self.logger.error(f"Failed to release connection to pool: {str(e)}")
             raise
+
+    @contextmanager
+    def get_session(self):
+        """Context manager that yields a cursor and handles commit/rollback/release."""
+        conn = self.get_connection()
+        try:
+            with conn.cursor() as cursor:
+                yield cursor
+                conn.commit()
+        except Exception as e:
+            conn.rollback()
+            raise
+        finally:
+            self.release_connection(conn)
 
     def execute_query(self, query: str, params: Optional[tuple] = None):
         """Execute a query and return the results."""
@@ -66,7 +76,6 @@ class DatabaseConnectivity:
         except Exception as e:
             if connection:
                 connection.rollback()
-            self.logger.error(f"Failed to execute query: {str(e)}")
             raise
         finally:
             if connection:
@@ -76,4 +85,3 @@ class DatabaseConnectivity:
         """Close all connections in the pool."""
         if self.connection_pool:
             self.connection_pool.closeall()
-            self.logger.info("Database connection pool closed")

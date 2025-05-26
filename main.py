@@ -11,6 +11,7 @@ from prefect_dask import DaskTaskRunner
 from prefect_email import EmailServerCredentials, email_send_message
 
 from src.database.database_connectivity import DatabaseConnectivity
+from src.data.sources.yahoo_finance_loader import YahooFinanceDataLoader
 
 
 def generate_flow_run_name(flow_prefix: str) -> str:
@@ -27,6 +28,16 @@ def postgres_connect():
         return DatabaseConnectivity()
     except Exception as e:
         logger.error("Database connection error: %s", e)
+        raise
+
+@task
+def end_of_day_yahoo():
+    logger = get_run_logger()
+    try:
+        logger.info("Attempting to run yahoo data collection at the end of day...")
+        return YahooFinanceDataLoader()
+    except Exception as e:
+        logger.error("end of day yahoo data collection error: %s", e)
         raise
 
 
@@ -47,6 +58,7 @@ def eod_proces_flow():
         print('Testing end of day Process')
         # Run batch processing flows
         postgres_db = postgres_connect()
+        end_of_day_yahoo_loader = YahooFinanceDataLoader()
     except Exception as e:
         print("Hourly Process error: %s", e)
         raise
