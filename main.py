@@ -58,7 +58,8 @@ def eod_proces_flow():
         print('Testing end of day Process')
         # Run batch processing flows
         postgres_db = postgres_connect()
-        end_of_day_yahoo_loader = YahooFinanceDataLoader()
+        loader = YahooFinanceDataLoader()
+        loader.run()
     except Exception as e:
         print("Hourly Process error: %s", e)
         raise
