@@ -42,7 +42,7 @@ def alpaca_data_loader_flow():
     try:
         logger.info("Running alpaca hourly loader...")
         loader = AlpacaDailyLoader()
-        loader.run()
+        loader.run_daily_load()
         logger.info("Alpaca hourly data collection completed.")
     except Exception as e:
         logger.error(f"Alpaca data collection error: {e}")
