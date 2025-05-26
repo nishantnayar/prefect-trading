@@ -55,7 +55,7 @@ def hourly_proces_flow():
     logger.info("Starting Hourly Process Flow")
     try:
         db = postgres_connect()
-        alpaca_data_loader_flow
+        alpaca_data_loader_flow()
         logger.info("Hourly flow completed.")
     except Exception as e:
         logger.error(f"Hourly Process error: {e}")
