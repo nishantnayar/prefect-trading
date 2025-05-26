@@ -1,67 +1,62 @@
-import dask
-import argparse
-from datetime import datetime, timedelta
-import platform
-import sys
-import traceback
-from typing import List
+from datetime import datetime
 from prefect import flow, task, get_run_logger
-from prefect.blocks.system import Secret
-from prefect_dask import DaskTaskRunner
-from prefect_email import EmailServerCredentials, email_send_message
 
 from src.database.database_connectivity import DatabaseConnectivity
 from src.data.sources.yahoo_finance_loader import YahooFinanceDataLoader
 
 
 def generate_flow_run_name(flow_prefix: str) -> str:
-    # Generate a custom flow run name with timestamp.
     return f"{flow_prefix}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
 
 
-@task
+@task(name="PostgreSQL Connect Task")
 def postgres_connect():
-    # Connect to PostgreSQL.
     logger = get_run_logger()
     try:
         logger.info("Attempting to connect to PostgreSQL...")
-        return DatabaseConnectivity()
+        db = DatabaseConnectivity()
+        logger.info("PostgreSQL connection successful.")
+        return db
     except Exception as e:
-        logger.error("Database connection error: %s", e)
+        logger.error(f"Database connection error: {e}")
         raise
 
-@task
-def end_of_day_yahoo():
+
+@flow(name="Yahoo Data Loader Flow", flow_run_name=lambda: generate_flow_run_name("yahoo-loader"))
+def yahoo_data_loader_flow():
     logger = get_run_logger()
     try:
-        logger.info("Attempting to run yahoo data collection at the end of day...")
-        return YahooFinanceDataLoader()
-    except Exception as e:
-        logger.error("end of day yahoo data collection error: %s", e)
-        raise
-
-
-@flow(flow_run_name=lambda: generate_flow_run_name("hourly-process"))
-def hourly_proces_flow():
-    try:
-        print('Testing Hourly Process')
-        # Run batch processing flows
-        postgres_db = postgres_connect()
-    except Exception as e:
-        print("Hourly Process error: %s", e)
-        raise
-
-
-@flow(flow_run_name=lambda: generate_flow_run_name("eod-process"))
-def eod_proces_flow():
-    try:
-        print('Testing end of day Process')
-        # Run batch processing flows
-        postgres_db = postgres_connect()
+        logger.info("Running Yahoo Finance data loader...")
         loader = YahooFinanceDataLoader()
         loader.run()
+        logger.info("Yahoo Finance data collection completed.")
     except Exception as e:
-        print("Hourly Process error: %s", e)
+        logger.error(f"Yahoo data collection error: {e}")
+        raise
+
+
+@flow(name="Hourly Process Flow", flow_run_name=lambda: generate_flow_run_name("hourly-process"))
+def hourly_proces_flow():
+    logger = get_run_logger()
+    logger.info("Starting Hourly Process Flow")
+    try:
+        db = postgres_connect()
+        logger.info("Hourly flow completed.")
+    except Exception as e:
+        logger.error(f"Hourly Process error: {e}")
+        raise
+
+
+@flow(name="End-of-Day Process Flow", flow_run_name=lambda: generate_flow_run_name("eod-process"))
+def eod_proces_flow():
+    logger = get_run_logger()
+    logger.info("Starting End-of-Day Process Flow")
+    try:
+        db = postgres_connect()
+        yahoo_data_loader_flow()
+        logger.info("End-of-Day flow completed.")
+    except Exception as e:
+        logger.error(f"EOD Process error: {e}")
         raise
 
 
