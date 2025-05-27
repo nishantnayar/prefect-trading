@@ -26,7 +26,7 @@ deployments:
   tags: ["hourly", "data"]
   description: "Ingests hourly market data"
   schedule:
-    - cron: 0 * * * *
+    - cron: 1 9-15 * * 1-5
       timezone: EST
       day_or: true
       active: true
@@ -42,7 +42,7 @@ deployments:
   tags: ["eod", "data"]
   description: "Ingests End of Day"
   schedule:
-    - cron: 0 * * * *
+    - cron: 0 18 * * 1-5
       timezone: EST
       day_or: true
       active: true

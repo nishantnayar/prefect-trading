@@ -135,10 +135,34 @@ class YahooFinanceDataLoader:
 
         try:
             with self.db.get_session() as cursor:
+                # First, get the list of columns in the yahoo_company_info table
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'yahoo_company_info'
+                """)
+                valid_columns = {row[0] for row in cursor.fetchall()}
+                self.logger.info(f"Found {len(valid_columns)} valid columns in yahoo_company_info table")
+                
                 for info in company_info_list:
                     try:
+                        # Filter out fields that don't exist in the database
+                        filtered_info = {
+                            k: v for k, v in info.items() 
+                            if k in valid_columns
+                        }
+                        
+                        # Log any fields that were filtered out
+                        invalid_fields = set(info.keys()) - valid_columns
+                        if invalid_fields:
+                            self.logger.debug(f"Filtered out invalid fields for {info['symbol']}: {invalid_fields}")
+                        
+                        if not filtered_info:
+                            self.logger.warning(f"No valid fields found for {info['symbol']}")
+                            continue
+                            
                         # Create dynamic SQL statement based on available fields
-                        fields = list(info.keys())
+                        fields = list(filtered_info.keys())
                         # Quote fields that start with numbers or contain uppercase letters
                         quoted_fields = []
                         for field in fields:
@@ -166,8 +190,8 @@ class YahooFinanceDataLoader:
                         insert_stmt += ", updated_at = CURRENT_TIMESTAMP"
                         
                         # Execute the statement
-                        cursor.execute(insert_stmt, [info[field] for field in fields])
-                        self.logger.info(f"Stored company info for {info['symbol']}")
+                        cursor.execute(insert_stmt, [filtered_info[field] for field in fields])
+                        self.logger.info(f"Stored {len(fields)} fields for {info['symbol']}")
                         
                     except Exception as e:
                         self.logger.error(f"Error storing company info for {info['symbol']}: {e}")

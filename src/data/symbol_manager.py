@@ -30,12 +30,13 @@ class SymbolManager:
             raise
 
     def deactivate_symbol(self, symbol: str):
-        """Deactivate a symbol in the database."""
+        """Deactivate a symbol in the database and set its end date."""
         try:
             with self.db.get_session() as cursor:
                 query = """
                     UPDATE symbols 
-                    SET is_active = false 
+                    SET is_active = false,
+                        end_date = CURRENT_TIMESTAMP
                     WHERE symbol = %s
                 """
                 cursor.execute(query, (symbol,))

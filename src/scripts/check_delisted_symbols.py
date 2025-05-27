@@ -17,11 +17,11 @@ from src.data.symbol_manager import SymbolManager
 class DelistedSymbolChecker:
     def __init__(self):
         self.symbol_manager = SymbolManager()
-        
+
         # Load Alpaca credentials from Prefect secrets
         api_key = Secret.load("alpaca-api-key").get()
         secret_key = Secret.load("alpaca-secret-key").get()
-        
+
         # Initialize Alpaca trading client
         self.client = TradingClient(api_key, secret_key)
 
@@ -38,14 +38,14 @@ class DelistedSymbolChecker:
         try:
             asset = self.client.get_asset(symbol)
             is_active = asset.status == AssetStatus.ACTIVE and asset.tradable
-            
+
             if is_active:
                 logger.info(f"{symbol} is active and tradable")
             else:
                 logger.info(f"{symbol} is not tradable or inactive. Status: {asset.status}, Tradable: {asset.tradable}")
-            
+
             return is_active
-            
+
         except Exception as e:
             logger.warning(f"Error checking symbol {symbol}: {str(e)}")
             return False
@@ -56,16 +56,16 @@ class DelistedSymbolChecker:
             # Get all active symbols
             active_symbols = self.symbol_manager.get_active_symbols()
             logger.info(f"Checking {len(active_symbols)} active symbols...")
-            
+
             delisted_count = 0
             for symbol in active_symbols:
                 if not self.check_symbol_status(symbol):
                     logger.info(f"Symbol {symbol} appears to be delisted. Deactivating...")
                     self.symbol_manager.deactivate_symbol(symbol)
                     delisted_count += 1
-                    
+
             logger.info(f"Maintenance complete. Deactivated {delisted_count} delisted symbols.")
-            
+
         except Exception as e:
             logger.error(f"Error during maintenance check: {str(e)}")
             raise
@@ -96,6 +96,5 @@ if __name__ == "__main__":
     # Test with both a delisted and an active symbol
     # test_single_symbol("ZZZZ")  # Should be delisted
     # test_single_symbol("AAPL")  # Should be active
-    
 
     main()

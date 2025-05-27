@@ -14,7 +14,8 @@ def add_sample_symbols(symbol_manager):
         ("MSFT", "Microsoft Corporation"),
         ("GOOGL", "Alphabet Inc."),
         ("AMZN", "Amazon.com Inc."),
-        ("META", "Meta Platforms Inc.")
+        ("META", "Meta Platforms Inc."),
+        ("PTPI", "Petros Pharmaceuticals Inc."),
     ]
 
     for symbol, name in symbols:
