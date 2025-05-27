@@ -4,6 +4,7 @@ from prefect import flow, task, get_run_logger
 from src.database.database_connectivity import DatabaseConnectivity
 from src.data.sources.yahoo_finance_loader import YahooFinanceDataLoader
 from src.data.sources.alpaca_daily_loader import AlpacaDailyLoader
+from src.scripts.check_delisted_symbols import DelistedSymbolChecker
 
 
 def generate_flow_run_name(flow_prefix: str) -> str:
@@ -49,6 +50,18 @@ def alpaca_data_loader_flow():
         raise
 
 
+@flow(name="Symbol Maintenance Flow", flow_run_name=lambda: generate_flow_run_name("symbol-maintenance"))
+def symbol_maintenance_flow():
+    logger = get_run_logger()
+    try:
+        logger.info("Running symbol maintenance loader...")
+        DelistedSymbolChecker()
+        logger.info("Symbol maintenance data collection completed.")
+    except Exception as e:
+        logger.error(f"Symbol maintenance data collection error: {e}")
+        raise
+
+
 @flow(name="Hourly Process Flow", flow_run_name=lambda: generate_flow_run_name("hourly-process"))
 def hourly_proces_flow():
     logger = get_run_logger()
@@ -68,6 +81,7 @@ def eod_proces_flow():
     logger.info("Starting End-of-Day Process Flow")
     try:
         db = postgres_connect()
+        symbol_maintenance_flow()
         yahoo_data_loader_flow()
         logger.info("End-of-Day flow completed.")
     except Exception as e:
