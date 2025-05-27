@@ -2,6 +2,7 @@ import streamlit as st
 import streamlit_option_menu as option_menu
 from pathlib import Path
 import sys
+from streamlit_autorefresh import st_autorefresh
 
 # 1. Set up project root path
 project_root = Path(__file__).parent.parent.parent
@@ -27,6 +28,9 @@ def load_css():
 
 
 load_css()
+
+# 4. Refresh page
+st_autorefresh(interval=2000)
 
 
 def main():
