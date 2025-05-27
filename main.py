@@ -1,3 +1,6 @@
+"""
+Main entry point for the trading system.
+"""
 from datetime import datetime
 from prefect import flow, task, get_run_logger
 
@@ -54,11 +57,12 @@ def alpaca_data_loader_flow():
 def symbol_maintenance_flow():
     logger = get_run_logger()
     try:
-        logger.info("Running symbol maintenance loader...")
-        DelistedSymbolChecker()
-        logger.info("Symbol maintenance data collection completed.")
+        logger.info("Running symbol maintenance check...")
+        checker = DelistedSymbolChecker()
+        checker.check_all_symbols()  # Actually run the check
+        logger.info("Symbol maintenance check completed.")
     except Exception as e:
-        logger.error(f"Symbol maintenance data collection error: {e}")
+        logger.error(f"Symbol maintenance check error: {e}")
         raise
 
 

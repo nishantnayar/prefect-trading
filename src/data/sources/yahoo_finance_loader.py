@@ -331,19 +331,19 @@ if __name__ == "__main__":
     loader = YahooFinanceDataLoader()
     loader.run()
 
-    # Save the raw data to CSV for inspection
-    if loader.raw_data:
-        raw_df = pd.DataFrame(loader.raw_data)
-        raw_df.to_csv("yahoo_raw_data.csv", index=False)
-        print("\nRaw ticker info saved to yahoo_raw_data.csv")
-
-    # Example 1: Get historical data for multiple stocks
-    tickers = ["AAPL", "MSFT", "GOOGL"]
-    historical_data = loader.get_historical_data(tickers)
-    print("\nHistorical Data:")
-    print(historical_data.head())
-    
-    # Example 2: Get stock information
-    stock_info = loader.get_stock_info("AAPL")
-    print("\nStock Information:")
-    print(stock_info)
+    # # Save the raw data to CSV for inspection
+    # if loader.raw_data:
+    #     raw_df = pd.DataFrame(loader.raw_data)
+    #     raw_df.to_csv("yahoo_raw_data.csv", index=False)
+    #     print("\nRaw ticker info saved to yahoo_raw_data.csv")
+    #
+    # # Example 1: Get historical data for multiple stocks
+    # tickers = ["AAPL", "MSFT", "GOOGL"]
+    # historical_data = loader.get_historical_data(tickers)
+    # print("\nHistorical Data:")
+    # print(historical_data.head())
+    #
+    # # Example 2: Get stock information
+    # stock_info = loader.get_stock_info("AAPL")
+    # print("\nStock Information:")
+    # print(stock_info)
