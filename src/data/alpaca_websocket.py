@@ -4,6 +4,10 @@ import json
 import time
 import redis
 import logging
+from datetime import datetime, time as dt_time
+import pytz
+from prefect import flow, task, get_run_logger
+from prefect.blocks.system import Secret
 from dotenv import load_dotenv
 import os
 
@@ -11,114 +15,141 @@ import os
 dotenv_path = r"D:\PythonProjects\StockTrading\src\config\.env"
 load_dotenv(dotenv_path)
 
-# Fetch API credentials from environment variables
-API_KEY = os.getenv("APCA_API_KEY_ID")
-API_SECRET = os.getenv("APCA_API_SECRET_KEY")
-
-# Validate API credentials
-if not API_KEY or not API_SECRET:
-    raise ValueError("API_KEY or API_SECRET not found in environment variables.")
-
-# Setup Alpaca WebSocket
-ws_url = "wss://stream.data.alpaca.markets/v2/iex"  # IEX WebSocket URL
-
 # Setup Redis connection
 redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Check Redis connection
-try:
-    redis_client.ping()
-    logging.info("Connected to Redis successfully.")
-except redis.ConnectionError:
-    logging.error("Failed to connect to Redis. Make sure Redis is running.")
-    exit(1)
+def is_market_hours() -> bool:
+    """
+    Check if current time is during market hours (9:30 AM - 4:00 PM ET, Monday-Friday)
+    """
+    et = pytz.timezone('US/Eastern')
+    current_time = datetime.now(et)
+    
+    # Check if it's a weekday
+    if current_time.weekday() >= 5:  # 5 is Saturday, 6 is Sunday
+        return False
+    
+    # Check if it's during market hours
+    market_open = dt_time(9, 30)  # 9:30 AM
+    market_close = dt_time(16, 0)  # 4:00 PM
+    current_time_et = current_time.time()
+    
+    return market_open <= current_time_et <= market_close
 
+@task(name="WebSocket Connection Task")
+async def websocket_connection():
+    """
+    Task to handle WebSocket connection and data processing
+    """
+    logger = get_run_logger()
+    
+    # Load API credentials from Prefect secrets
+    try:
+        API_KEY = Secret.load("alpaca-api-key").get()
+        API_SECRET = Secret.load("alpaca-secret-key").get()
+    except Exception as e:
+        logger.error(f"Failed to load API credentials: {e}")
+        raise
 
-# Function to handle WebSocket connection and process messages
-async def ohlc_data_handler():
-    while True:
-        try:
-            async with websockets.connect(ws_url, ping_interval=20, ping_timeout=20) as websocket:
-                # Authenticate with Alpaca
-                auth_message = {
-                    "action": "auth",
-                    "key": API_KEY,
-                    "secret": API_SECRET
-                }
-                await websocket.send(json.dumps(auth_message))
-                logging.info("Authenticated with Alpaca WebSocket")
+    # Setup Alpaca WebSocket
+    ws_url = "wss://stream.data.alpaca.markets/v2/iex"
 
-                # Wait for authentication response
-                auth_response = await websocket.recv()
-                logging.info(f"Authentication response: {auth_response}")
+    try:
+        async with websockets.connect(ws_url, ping_interval=20, ping_timeout=20) as websocket:
+            # Authenticate with Alpaca
+            auth_message = {
+                "action": "auth",
+                "key": API_KEY,
+                "secret": API_SECRET
+            }
+            await websocket.send(json.dumps(auth_message))
+            logger.info("Authenticated with Alpaca WebSocket")
 
-                # Check if authentication was successful
-                if '"T":"success"' not in auth_response:
-                    logging.error("Authentication failed. Check your API key and secret.")
-                    time.sleep(5)  # Wait before retrying
-                    continue
+            # Wait for authentication response
+            auth_response = await websocket.recv()
+            logger.info(f"Authentication response: {auth_response}")
 
-                # Subscribe to real-time data for the stock symbols
-                symbols = ['CDNS', 'AMAT', 'KLAC', 'GRMN', 'LRCX', 'RMBS', 'TTMI', 'AAPL', 'MSFT']  # Example symbols
-                subscribe_message = {
-                    "action": "subscribe",
-                    "bars": symbols
-                }
-                await websocket.send(json.dumps(subscribe_message))
-                logging.info(f"Subscribed to symbols: {symbols}")
+            # Check if authentication was successful
+            if '"T":"success"' not in auth_response:
+                logger.error("Authentication failed. Check your API key and secret.")
+                return
 
-                # Wait for subscription response
-                subscribe_response = await websocket.recv()
-                logging.info(f"Subscription response: {subscribe_response}")
+            # Subscribe to real-time data for the stock symbols
+            symbols = ['CDNS', 'AMAT', 'KLAC', 'GRMN', 'LRCX', 'RMBS', 'TTMI', 'AAPL', 'MSFT']
+            subscribe_message = {
+                "action": "subscribe",
+                "bars": symbols
+            }
+            await websocket.send(json.dumps(subscribe_message))
+            logger.info(f"Subscribed to symbols: {symbols}")
 
-                while True:
-                    # Receive incoming data
-                    message = await websocket.recv()
-                    logging.info(f"Raw WebSocket message: {message}")  # Log raw message for debugging
+            # Wait for subscription response
+            subscribe_response = await websocket.recv()
+            logger.info(f"Subscription response: {subscribe_response}")
 
-                    data = json.loads(message)
+            while True:
+                if not is_market_hours():
+                    logger.info("Market is closed. Stopping WebSocket connection.")
+                    break
 
-                    # Check if data is a list (each item is an individual bar)
-                    if isinstance(data, list):
-                        for ohlc in data:
-                            symbol = ohlc.get('S')  # Adjusted key for symbol
-                            if symbol:
-                                ohlc_data = {
-                                    "open": str(ohlc['o']),
-                                    "high": str(ohlc['h']),
-                                    "low": str(ohlc['l']),
-                                    "close": str(ohlc['c']),
-                                    "volume": str(ohlc['v']),
-                                    "timestamp": str(ohlc['t'])  # Ensure timestamp is a string
-                                }
-                                # Use the timestamp as the key in Redis
-                                redis_key = f"{symbol}:{ohlc_data['timestamp']}"
-                                logging.debug(f"Storing OHLC data with key: {redis_key}, data: {ohlc_data}")
+                # Receive incoming data
+                message = await websocket.recv()
+                data = json.loads(message)
 
-                                # Save the OHLC data into Redis using hset
-                                result = redis_client.hset(name=redis_key, mapping=ohlc_data)
-                                # if result:
-                                #     logging.info(f"Successfully inserted OHLC data for {symbol} into Redis.")
-                                # else:
-                                #     logging.warning(f"No new data inserted for {symbol}. Result: {result}")
-                    else:
-                        logging.warning("Received unexpected message format: %s", data)
+                # Process the data
+                if isinstance(data, list):
+                    for ohlc in data:
+                        symbol = ohlc.get('S')
+                        if symbol:
+                            ohlc_data = {
+                                "open": str(ohlc['o']),
+                                "high": str(ohlc['h']),
+                                "low": str(ohlc['l']),
+                                "close": str(ohlc['c']),
+                                "volume": str(ohlc['v']),
+                                "timestamp": str(ohlc['t'])
+                            }
+                            redis_key = f"{symbol}:{ohlc_data['timestamp']}"
+                            redis_client.hset(name=redis_key, mapping=ohlc_data)
 
-        except websockets.exceptions.ConnectionClosedError as e:
-            logging.error(f"Connection closed with error: {e}. Reconnecting...")
-            time.sleep(5)  # Wait for 5 seconds before reconnecting
-        except json.JSONDecodeError as e:
-            logging.error(f"JSON decode error: {e}. Reconnecting...")
-            time.sleep(5)
-        except Exception as e:
-            logging.error(f"An unexpected error occurred: {e}. Reconnecting...")
-            time.sleep(5)
+    except websockets.exceptions.ConnectionClosedError as e:
+        logger.error(f"Connection closed with error: {e}")
+        raise
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"An unexpected error occurred: {e}")
+        raise
 
+@flow(name="Market Data WebSocket Flow")
+def market_data_websocket_flow():
+    """
+    Prefect flow to manage WebSocket connection during market hours
+    """
+    logger = get_run_logger()
+    
+    if not is_market_hours():
+        logger.info("Market is currently closed. Skipping WebSocket connection.")
+        return
 
-# Run the WebSocket client
+    try:
+        # Check Redis connection
+        redis_client.ping()
+        logger.info("Connected to Redis successfully.")
+        
+        # Run the WebSocket connection task
+        asyncio.run(websocket_connection())
+        
+    except redis.ConnectionError:
+        logger.error("Failed to connect to Redis. Make sure Redis is running.")
+        raise
+    except Exception as e:
+        logger.error(f"Error in market data WebSocket flow: {e}")
+        raise
+
 if __name__ == "__main__":
-    logging.info("Starting Alpaca WebSocket client...")
-    asyncio.run(ohlc_data_handler())
+    market_data_websocket_flow()

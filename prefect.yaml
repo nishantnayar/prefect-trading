@@ -53,3 +53,19 @@ deployments:
     name: endofday
     work_queue_name: endofday_work_queue
     job_variables: {}
+- name: websocket-market-data
+  version: 1.0.0
+  tags: ["realtime", "data"]
+  description: "Collects real-time market data via WebSocket"
+  schedule:
+    - cron: "*/5 9-15 * * 1-5"  # Run every 5 minutes during market hours
+      timezone: EST
+      day_or: true
+      active: true
+  flow_name: market_data_websocket_flow
+  entrypoint: src/data/alpaca_websocket.py:market_data_websocket_flow
+  parameters: {}
+  work_pool:
+    name: realtime
+    work_queue_name: realtime_work_queue
+    job_variables: {}
