@@ -30,7 +30,7 @@ def load_css():
 load_css()
 
 # 4. Refresh page
-st_autorefresh(interval=2000)
+st_autorefresh(interval=10000)
 
 
 def main():

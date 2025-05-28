@@ -21,7 +21,7 @@ def display_symbol_selector() -> str:
             
         # Create symbol selector
         selected_symbol = st.selectbox(
-            "Select a Symbol",
+            label="Select a Symbol",
             options=symbols,
             index=0 if symbols else None
         )
