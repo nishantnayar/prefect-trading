@@ -3,11 +3,13 @@ Main entry point for the trading system.
 """
 from datetime import datetime
 from prefect import flow, task, get_run_logger
+import asyncio
 
 from src.database.database_connectivity import DatabaseConnectivity
 from src.data.sources.yahoo_finance_loader import YahooFinanceDataLoader
 from src.data.sources.alpaca_daily_loader import AlpacaDailyLoader
 from src.scripts.check_delisted_symbols import DelistedSymbolChecker
+from src.data.alpaca_websocket import websocket_connection
 
 
 def generate_flow_run_name(flow_prefix: str) -> str:
@@ -93,6 +95,22 @@ def eod_proces_flow():
         raise
 
 
+@flow(name="Market Data WebSocket Flow", flow_run_name=lambda: generate_flow_run_name("websocket-data"))
+def market_data_websocket_flow():
+    """
+    Prefect flow to manage WebSocket connection during market hours
+    """
+    logger = get_run_logger()
+    try:
+        logger.info("Starting Market Data WebSocket Flow")
+        asyncio.run(websocket_connection())
+        logger.info("Market Data WebSocket Flow completed")
+    except Exception as e:
+        logger.error(f"Market Data WebSocket Flow error: {e}")
+        raise
+
+
 if __name__ == '__main__':
     hourly_proces_flow()
     eod_proces_flow()
+    market_data_websocket_flow()
