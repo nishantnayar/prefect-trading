@@ -113,12 +113,14 @@ async def websocket_connection():
                 try:
                     message = await websocket.recv()
                     data = json.loads(message)
-                    logger.debug(f"Received WebSocket data: {data}")  # Debug log to see incoming data
+                    logger.info(f"Raw WebSocket message: {message}")  # Log the raw message
+                    logger.info(f"Parsed WebSocket data: {data}")  # Log the parsed data
 
                     # Process the data
                     if isinstance(data, list):
                         for ohlc in data:
                             symbol = ohlc.get('S')
+                            logger.info(f"Processing data for symbol: {symbol}")  # Log each symbol
                             # Only process AAPL data
                             if symbol == 'AAPL':
                                 ohlc_data = {
@@ -131,7 +133,9 @@ async def websocket_connection():
                                 }
                                 redis_key = f"{symbol}:{ohlc_data['timestamp']}"
                                 redis_client.hset(name=redis_key, mapping=ohlc_data)
-                                logger.debug(f"Processed AAPL data: {ohlc_data}")
+                                logger.info(f"Stored in Redis - Key: {redis_key}, Data: {ohlc_data}")
+                            else:
+                                logger.info(f"Skipping non-AAPL symbol: {symbol}")
                 except websockets.exceptions.ConnectionClosedError:
                     logger.warning("WebSocket connection closed.")
                     return
