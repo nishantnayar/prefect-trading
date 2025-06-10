@@ -8,12 +8,12 @@ from datetime import datetime, time as dt_time
 import pytz
 from prefect import flow, task, get_run_logger
 from prefect.blocks.system import Secret
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import os
 
 # Load environment variables
-dotenv_path = r"D:\PythonProjects\StockTrading\src\config\.env"
-load_dotenv(dotenv_path)
+# dotenv_path = r"D:\PythonProjects\StockTrading\src\config\.env"
+# load_dotenv(dotenv_path)
 
 # Setup Redis connection
 redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
