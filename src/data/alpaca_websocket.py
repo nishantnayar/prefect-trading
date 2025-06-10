@@ -133,6 +133,7 @@ async def websocket_connection():
                                 }
                                 redis_key = f"{symbol}:{ohlc_data['timestamp']}"
                                 logger.info(f"Storing AAPL data: {ohlc_data}")
+                                assert symbol == 'AAPL', f"Attempting to store non-AAPL symbol: {symbol}"
                                 redis_client.hset(name=redis_key, mapping=ohlc_data)
                             else:
                                 logger.info(f"Skipping non-AAPL symbol: {symbol}")
