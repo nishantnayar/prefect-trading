@@ -89,10 +89,14 @@ async def websocket_connection():
             symbols = ['AAPL']
             subscribe_message = {
                 "action": "subscribe",
-                "bars": symbols
+                "bars": symbols,
+                "trades": [],  # Don't subscribe to trades
+                "quotes": [],  # Don't subscribe to quotes
+                "updatedBars": [],  # Don't subscribe to updated bars
+                "dailyBars": []  # Don't subscribe to daily bars
             }
             await websocket.send(json.dumps(subscribe_message))
-            logger.info(f"Subscribed to symbols: {symbols}")
+            logger.info(f"Subscribed to AAPL bars data")
 
             # Wait for subscription response
             subscribe_response = await websocket.recv()
@@ -109,12 +113,14 @@ async def websocket_connection():
                 try:
                     message = await websocket.recv()
                     data = json.loads(message)
+                    logger.debug(f"Received WebSocket data: {data}")  # Debug log to see incoming data
 
                     # Process the data
                     if isinstance(data, list):
                         for ohlc in data:
                             symbol = ohlc.get('S')
-                            if symbol:
+                            # Only process AAPL data
+                            if symbol == 'AAPL':
                                 ohlc_data = {
                                     "open": str(ohlc['o']),
                                     "high": str(ohlc['h']),
@@ -125,6 +131,7 @@ async def websocket_connection():
                                 }
                                 redis_key = f"{symbol}:{ohlc_data['timestamp']}"
                                 redis_client.hset(name=redis_key, mapping=ohlc_data)
+                                logger.debug(f"Processed AAPL data: {ohlc_data}")
                 except websockets.exceptions.ConnectionClosedError:
                     logger.warning("WebSocket connection closed.")
                     return
