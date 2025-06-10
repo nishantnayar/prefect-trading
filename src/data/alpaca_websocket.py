@@ -96,37 +96,42 @@ async def websocket_connection():
             subscribe_response = await websocket.recv()
             logger.info(f"Subscription response: {subscribe_response}")
 
-            while True:
+            # Set a timeout for the data collection (4.5 minutes to allow for cleanup)
+            end_time = time.time() + 270  # 4.5 minutes
+
+            while time.time() < end_time:
                 if not is_market_hours():
                     logger.info("Market is closed. Stopping WebSocket connection.")
-                    break
+                    return
 
-                # Receive incoming data
-                message = await websocket.recv()
-                data = json.loads(message)
+                try:
+                    message = await websocket.recv()
+                    data = json.loads(message)
 
-                # Process the data
-                if isinstance(data, list):
-                    for ohlc in data:
-                        symbol = ohlc.get('S')
-                        if symbol:
-                            ohlc_data = {
-                                "open": str(ohlc['o']),
-                                "high": str(ohlc['h']),
-                                "low": str(ohlc['l']),
-                                "close": str(ohlc['c']),
-                                "volume": str(ohlc['v']),
-                                "timestamp": str(ohlc['t'])
-                            }
-                            redis_key = f"{symbol}:{ohlc_data['timestamp']}"
-                            redis_client.hset(name=redis_key, mapping=ohlc_data)
+                    # Process the data
+                    if isinstance(data, list):
+                        for ohlc in data:
+                            symbol = ohlc.get('S')
+                            if symbol:
+                                ohlc_data = {
+                                    "open": str(ohlc['o']),
+                                    "high": str(ohlc['h']),
+                                    "low": str(ohlc['l']),
+                                    "close": str(ohlc['c']),
+                                    "volume": str(ohlc['v']),
+                                    "timestamp": str(ohlc['t'])
+                                }
+                                redis_key = f"{symbol}:{ohlc_data['timestamp']}"
+                                redis_client.hset(name=redis_key, mapping=ohlc_data)
+                except websockets.exceptions.ConnectionClosedError:
+                    logger.warning("WebSocket connection closed.")
+                    return
+                except Exception as e:
+                    logger.error(f"Error processing message: {e}")
+                    continue
 
-    except websockets.exceptions.ConnectionClosedError as e:
-        logger.error(f"Connection closed with error: {e}")
-        raise
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON decode error: {e}")
-        raise
+            logger.info("Completed 5-minute data collection window.")
+
     except Exception as e:
         logger.error(f"An unexpected error occurred: {e}")
         raise
