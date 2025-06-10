@@ -48,12 +48,12 @@ async def websocket_connection():
     
     # Load API credentials from Prefect secrets
     try:
-        # Load secrets synchronously before the async context
-        api_key_block = Secret.load("alpaca-api-key")
-        secret_key_block = Secret.load("alpaca-secret-key")
+        # Load secrets asynchronously
+        api_key_block = await Secret.load("alpaca-api-key")
+        secret_key_block = await Secret.load("alpaca-secret-key")
         
-        API_KEY = api_key_block.get()
-        API_SECRET = secret_key_block.get()
+        API_KEY = await api_key_block.get()
+        API_SECRET = await secret_key_block.get()
         
         logger.info("Successfully loaded API credentials")
     except Exception as e:
