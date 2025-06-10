@@ -84,7 +84,7 @@ async def websocket_connection():
                 return
 
             # Subscribe to real-time data for the stock symbols
-            symbols = ['CDNS', 'AMAT', 'KLAC', 'GRMN', 'LRCX', 'RMBS', 'TTMI', 'AAPL', 'MSFT']
+            symbols = ['AAPL']
             subscribe_message = {
                 "action": "subscribe",
                 "bars": symbols
