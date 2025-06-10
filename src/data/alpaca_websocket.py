@@ -120,7 +120,7 @@ async def websocket_connection():
                     if isinstance(data, list):
                         for ohlc in data:
                             symbol = ohlc.get('S')
-                            logger.info(f"Processing data for symbol: {symbol}")  # Log each symbol
+                            logger.info(f"Processing symbol: {symbol}")
                             # Only process AAPL data
                             if symbol == 'AAPL':
                                 ohlc_data = {
@@ -132,8 +132,8 @@ async def websocket_connection():
                                     "timestamp": str(ohlc['t'])
                                 }
                                 redis_key = f"{symbol}:{ohlc_data['timestamp']}"
+                                logger.info(f"Storing AAPL data: {ohlc_data}")
                                 redis_client.hset(name=redis_key, mapping=ohlc_data)
-                                logger.info(f"Stored in Redis - Key: {redis_key}, Data: {ohlc_data}")
                             else:
                                 logger.info(f"Skipping non-AAPL symbol: {symbol}")
                 except websockets.exceptions.ConnectionClosedError:
