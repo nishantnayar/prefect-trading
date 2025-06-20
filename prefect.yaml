@@ -15,11 +15,11 @@ deployments:
     cron: "1 9-15 * * 1-5"  # Every hour from 9AM-3PM EST Mon-Fri
     timezone: America/New_York
   flow_name: hourly_process_flow
-  entrypoint: "main.py:hourly_process_flow"  # Fixed typo
+  entrypoint: "main.py:hourly_process_flow"  # Fixed typo from 'proces' to 'process'
   parameters: {}
   work_pool:
-    name: default-agent-pool  # Use existing pool
-    work_queue_name: default
+    name: hourly  # Using your existing hourly pool
+    work_queue_name: default  # Changed from hourly_work_queue to default
 
 - name: eod-data-ingestion
   version: 1.0.0
@@ -32,8 +32,8 @@ deployments:
   entrypoint: "main.py:eod_process_flow"
   parameters: {}
   work_pool:
-    name: default-agent-pool
-    work_queue_name: default
+    name: endofday  # Using your existing endofday pool
+    work_queue_name: default  # Changed from endofday_work_queue to default
 
 - name: market-data-websocket
   version: 1.0.0
@@ -46,5 +46,5 @@ deployments:
   entrypoint: "main.py:market_data_websocket_flow"
   parameters: {}
   work_pool:
-    name: default-agent-pool
-    work_queue_name: default
+    name: realtime  # Using your existing realtime pool
+    work_queue_name: default  # Changed from realtime_work_queue to default
