@@ -1,75 +1,50 @@
-# Welcome to your prefect.yaml file! You can use this file for storing and managing
-# configuration for deploying your flows. We recommend committing this file to source
-# control along with your flow code.
-
-# Generic metadata about this project
 name: tradingsystem
 prefect-version: 3.4.0
 
-# build section allows you to manage and build docker images
-build: null
-
-# push section allows you to manage if and how this project is uploaded to remote locations
-push: null
-
-# pull section allows you to provide instructions for cloning this project in remote locations
 pull:
 - prefect.deployments.steps.git_clone:
     repository: https://github.com/nishantnayar/prefect-trading.git
     branch: main
-    access_token: null
 
-# the deployments section allows you to provide configuration for deploying flows
 deployments:
 - name: hourly-process-flow
   version: 1.0.0
   tags: ["hourly", "data"]
   description: "Ingests hourly market data"
   schedule:
-    - cron: 1 9-15 * * 1-5
-      timezone: EST
-      day_or: true
-      active: true
+    cron: "1 9-15 * * 1-5"  # Every hour from 9AM-3PM EST Mon-Fri
+    timezone: America/New_York
   flow_name: hourly_process_flow
-  entrypoint: main.py:hourly_proces_flow
+  entrypoint: "main.py:hourly_process_flow"  # Fixed typo
   parameters: {}
   work_pool:
-    name: hourly
-    work_queue_name: hourly_work_queue
-    job_variables: {}
+    name: default-agent-pool  # Use existing pool
+    work_queue_name: default
+
 - name: eod-data-ingestion
   version: 1.0.0
   tags: ["eod", "data"]
   description: "Ingests End of Day"
   schedule:
-    - cron: 0 18 * * 1-5
-      timezone: EST
-      day_or: true
-      active: true
-  flow_name: data_ingestion_subflow
-  entrypoint: main.py:eod_proces_flow
+    cron: "0 18 * * 1-5"  # 6PM EST Mon-Fri
+    timezone: America/New_York
+  flow_name: eod_process_flow
+  entrypoint: "main.py:eod_process_flow"
   parameters: {}
   work_pool:
-    name: endofday
-    work_queue_name: endofday_work_queue
-    job_variables: {}
-- name: websocket-market-data
+    name: default-agent-pool
+    work_queue_name: default
+
+- name: market-data-websocket
   version: 1.0.0
   tags: ["realtime", "data"]
   description: "Collects real-time market data via WebSocket"
   schedule:
-    - cron: "30 9 * * 1-5"  # Market open at 9:30 AM EST
-      timezone: EST
-      day_or: true
-      active: true
-    - cron: "0 16 * * 1-5"  # Market close at 4:00 PM EST
-      timezone: EST
-      day_or: true
-      active: true
+    cron: "30 9 * * 1-5"  # 9:30AM EST Mon-Fri
+    timezone: America/New_York
   flow_name: market_data_websocket_flow
-  entrypoint: main.py:market_data_websocket_flow
+  entrypoint: "main.py:market_data_websocket_flow"
   parameters: {}
   work_pool:
-    name: realtime
-    work_queue_name: realtime_work_queue
-    job_variables: {}
+    name: default-agent-pool
+    work_queue_name: default
