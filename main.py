@@ -69,7 +69,7 @@ def symbol_maintenance_flow():
 
 
 @flow(name="Hourly Process Flow", flow_run_name=lambda: generate_flow_run_name("hourly-process"))
-def hourly_proces_flow():
+def hourly_process_flow():
     logger = get_run_logger()
     logger.info("Starting Hourly Process Flow")
     try:
@@ -111,6 +111,6 @@ def market_data_websocket_flow():
 
 
 if __name__ == '__main__':
-    hourly_proces_flow()
+    hourly_process_flow()
     eod_proces_flow()
     market_data_websocket_flow()
