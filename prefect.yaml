@@ -58,7 +58,11 @@ deployments:
   tags: ["realtime", "data"]
   description: "Collects real-time market data via WebSocket"
   schedule:
-    - cron: "*/5 9-15 * * 1-5"  # Run every 5 minutes during market hours
+    - cron: "30 9 * * 1-5"  # Market open at 9:30 AM EST
+      timezone: EST
+      day_or: true
+      active: true
+    - cron: "0 16 * * 1-5"  # Market close at 4:00 PM EST
       timezone: EST
       day_or: true
       active: true

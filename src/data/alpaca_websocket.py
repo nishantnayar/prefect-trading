@@ -102,12 +102,16 @@ async def websocket_connection():
             subscribe_response = await websocket.recv()
             logger.info(f"Subscription response: {subscribe_response}")
 
-            # Set a timeout for the data collection (4.5 minutes to allow for cleanup)
-            end_time = time.time() + 270  # 4.5 minutes
-
-            while time.time() < end_time:
+            while True:
                 if not is_market_hours():
-                    logger.info("Market is closed. Stopping WebSocket connection.")
+                    logger.info("Market is closed. Closing WebSocket connection.")
+                    # Send unsubscribe message before closing
+                    unsubscribe_message = {
+                        "action": "unsubscribe",
+                        "bars": symbols
+                    }
+                    await websocket.send(json.dumps(unsubscribe_message))
+                    logger.info("Unsubscribed from data feed")
                     return
 
                 try:
@@ -143,8 +147,6 @@ async def websocket_connection():
                 except Exception as e:
                     logger.error(f"Error processing message: {e}")
                     continue
-
-            logger.info("Completed 5-minute data collection window.")
 
     except Exception as e:
         logger.error(f"An unexpected error occurred: {e}")

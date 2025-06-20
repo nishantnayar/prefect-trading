@@ -160,5 +160,6 @@ cython_debug/
 #.idea/
 /.idea
 src/data/sources/yahoo_raw_data.csv
-src/data/sources/GNews.py
-Redis.py
+src/archive/GNews.py
+src/archive/Redis.py
+/src/archive
