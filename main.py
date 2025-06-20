@@ -82,7 +82,7 @@ def hourly_process_flow():
 
 
 @flow(name="End-of-Day Process Flow", flow_run_name=lambda: generate_flow_run_name("eod-process"))
-def eod_proces_flow():
+def eod_process_flow():
     logger = get_run_logger()
     logger.info("Starting End-of-Day Process Flow")
     try:
@@ -112,5 +112,5 @@ def market_data_websocket_flow():
 
 if __name__ == '__main__':
     hourly_process_flow()
-    eod_proces_flow()
+    eod_process_flow()
     market_data_websocket_flow()
