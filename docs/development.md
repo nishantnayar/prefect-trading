@@ -19,6 +19,7 @@
    - Install Python extension
    - Configure linting and formatting
    - Install Streamlit extension for UI development
+   - Set up debugging configurations
 
 3. **Pre-commit Hooks**
    ```bash
@@ -42,6 +43,7 @@
    - Streamlit for dashboard development
    - HTML/CSS for custom styling
    - Responsive design testing tools
+   - Auto-refresh functionality
 
 ## Development Workflow
 
@@ -56,6 +58,7 @@
    - `bugfix/bug-description`
    - `hotfix/issue-description`
    - `ui/ui-component-name`
+   - `api/api-integration-name`
 
 ### 2. Development Process
 
@@ -67,11 +70,12 @@
    ```
 
 2. **Making Changes**
-   - Write code
-   - Add tests
+   - Write code with proper documentation
+   - Add comprehensive tests
    - Update documentation
    - Run tests locally
    - Test UI components in different screen sizes
+   - Verify API integrations
 
 3. **Submitting Changes**
    ```bash
@@ -83,32 +87,41 @@
 ### 3. Code Review Process
 
 1. **Pull Request Guidelines**
-   - Clear description
+   - Clear description with context
    - Related issue reference
-   - Test coverage
+   - Test coverage requirements
    - Documentation updates
    - UI/UX considerations
-   - Performance impact
+   - Performance impact assessment
+   - Security implications
 
 2. **Review Checklist**
-   - Code quality
-   - Test coverage
-   - Documentation
+   - Code quality and style
+   - Test coverage and quality
+   - Documentation completeness
    - Performance impact
-   - UI responsiveness
-   - Accessibility
+   - UI responsiveness and accessibility
+   - API integration correctness
+   - Error handling adequacy
 
 ## Testing
 
 ### 1. Unit Testing
 
 ```python
-# Example test structure
-def test_market_data_loader():
-    loader = MarketDataLoader()
-    data = loader.get_data("AAPL")
+# Example test structure for data loaders
+def test_alpaca_daily_loader():
+    loader = AlpacaDailyLoader()
+    data = loader.get_previous_day_data(['AAPL'])
     assert data is not None
-    assert "price" in data
+    assert 'AAPL' in data
+    assert len(data['AAPL']) > 0
+
+def test_yahoo_finance_loader():
+    loader = YahooFinanceDataLoader()
+    company_info = loader.load_ticker_info_chunk(['AAPL'])
+    assert company_info is not None
+    assert len(company_info) > 0
 ```
 
 ### 2. Integration Testing
@@ -117,8 +130,16 @@ def test_market_data_loader():
 # Example integration test
 def test_database_integration():
     db = DatabaseConnectivity()
-    data = db.get_market_data("AAPL")
-    assert data is not None
+    with db.get_session() as cursor:
+        cursor.execute("SELECT COUNT(*) FROM market_data")
+        count = cursor.fetchone()[0]
+        assert count >= 0
+
+def test_news_api_integration():
+    loader = NewsLoader()
+    articles = loader.fetch_and_store_news(query='AAPL', limit=5)
+    assert articles is not None
+    assert len(articles) <= 5
 ```
 
 ### 3. UI Testing
@@ -130,6 +151,12 @@ def test_market_status_display():
     display = status.get_display()
     assert "Market Status" in display
     assert "Open" in display or "Closed" in display
+
+def test_symbol_selector():
+    selector = SymbolSelector()
+    symbols = selector.get_available_symbols()
+    assert symbols is not None
+    assert len(symbols) > 0
 ```
 
 ### 4. Running Tests
@@ -146,6 +173,15 @@ pytest --cov=src tests/
 
 # Run UI tests
 pytest tests/test_ui/
+
+# Run API integration tests
+pytest tests/test_api/
+
+# Run with verbose output
+pytest -v
+
+# Run with parallel execution
+pytest -n auto
 ```
 
 ## Code Style
@@ -153,19 +189,32 @@ pytest tests/test_ui/
 ### 1. Python Style Guide
 
 - Follow PEP 8
-- Use type hints
-- Document functions and classes
+- Use type hints consistently
+- Document functions and classes with docstrings
 - Keep functions small and focused
+- Use meaningful variable names
+- Implement proper error handling
 
 ### 2. UI Style Guide
 
 - Use consistent component layouts
-- Implement responsive design
-- Follow accessibility guidelines
+- Implement responsive design principles
+- Follow accessibility guidelines (WCAG 2.1)
 - Use expandable sections for additional information
 - Maintain consistent spacing and alignment
+- Implement proper loading states
+- Use color coding for status indicators
 
-### 3. Documentation
+### 3. API Integration Style Guide
+
+- Implement proper rate limiting
+- Use exponential backoff for retries
+- Handle API errors gracefully
+- Log all API interactions
+- Cache responses when appropriate
+- Validate API responses
+
+### 4. Documentation
 
 1. **Code Documentation**
    ```python
@@ -174,10 +223,14 @@ pytest tests/test_ui/
        Process market data into a DataFrame.
        
        Args:
-           data: Raw market data dictionary
+           data: Raw market data dictionary containing OHLCV data
            
        Returns:
-           Processed DataFrame
+           Processed DataFrame with standardized column names
+           
+       Raises:
+           ValueError: If data format is invalid
+           KeyError: If required fields are missing
        """
    ```
 
@@ -194,8 +247,28 @@ pytest tests/test_ui/
        
        Layout:
        - Uses color-coded status indicators
-       - Implements expandable sections
-       - Maintains responsive design
+       - Implements expandable sections for details
+       - Maintains responsive design across devices
+       - Auto-refreshes every 10 seconds
+       """
+   ```
+
+3. **API Documentation**
+   ```python
+   def fetch_news_articles(query: str, limit: int = 10) -> List[Dict]:
+       """
+       Fetch news articles from NewsAPI.
+       
+       Args:
+           query: Search query for articles
+           limit: Maximum number of articles to fetch
+           
+       Returns:
+           List of article dictionaries
+           
+       Raises:
+           NewsAPIException: If API request fails
+           RateLimitException: If rate limit exceeded
        """
    ```
 
@@ -211,7 +284,13 @@ python setup.py build
 pip install -e .
 
 # Run Streamlit app
-streamlit run src/ui/app.py
+streamlit run src/ui/streamlit_app.py
+
+# Run Prefect server
+prefect server start
+
+# Deploy workflows
+prefect deploy
 ```
 
 ### 2. Production Deployment
@@ -229,6 +308,25 @@ streamlit run src/ui/app.py
    
    # Deploy to PyPI
    twine upload dist/*
+   
+   # Deploy to production server
+   # (Add your deployment steps here)
+   ```
+
+### 3. Environment Configuration
+
+1. **Development Environment**
+   ```env
+   ENVIRONMENT=development
+   DEBUG=true
+   LOG_LEVEL=DEBUG
+   ```
+
+2. **Production Environment**
+   ```env
+   ENVIRONMENT=production
+   DEBUG=false
+   LOG_LEVEL=INFO
    ```
 
 ## Monitoring and Debugging
@@ -237,21 +335,35 @@ streamlit run src/ui/app.py
 
 ```python
 import logging
+from loguru import logger
 
-logger = logging.getLogger(__name__)
+# Configure loguru logger
+logger.add("logs/trading_system.log", rotation="500 MB", retention="10 days")
+
 logger.info("Processing market data")
 logger.error("Failed to connect to database")
+logger.debug("API response received", extra={"api": "alpaca", "endpoint": "/bars"})
 ```
 
 ### 2. UI Monitoring
 
 ```python
 # Example UI monitoring
-def log_ui_event(event_type: str, component: str):
-    logger.info(f"UI Event: {event_type} on {component}")
+def log_ui_event(event_type: str, component: str, user_action: str = None):
+    logger.info(f"UI Event: {event_type} on {component}", 
+                extra={"user_action": user_action, "timestamp": datetime.now()})
 ```
 
-### 3. Debugging
+### 3. API Monitoring
+
+```python
+# Example API monitoring
+def log_api_call(api_name: str, endpoint: str, response_time: float, status: str):
+    logger.info(f"API Call: {api_name} {endpoint}", 
+                extra={"response_time": response_time, "status": status})
+```
+
+### 4. Debugging
 
 1. **Local Debugging**
    ```python
@@ -266,9 +378,19 @@ def log_ui_event(event_type: str, component: str):
    ```
 
 3. **UI Debugging**
-   ```python
+   ```bash
    # Enable Streamlit debug mode
-   streamlit run src/ui/app.py --debug
+   streamlit run src/ui/streamlit_app.py --debug
+   
+   # Enable verbose logging
+   streamlit run src/ui/streamlit_app.py --logger.level=debug
+   ```
+
+4. **Database Debugging**
+   ```python
+   # Enable SQL logging
+   import logging
+   logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
    ```
 
 ## Performance Optimization
@@ -291,21 +413,31 @@ stats.print_stats()
 ### 2. Optimization Techniques
 
 1. **Database Optimization**
-   - Use indexes
-   - Optimize queries
+   - Use indexes on frequently queried columns
+   - Optimize queries with EXPLAIN ANALYZE
    - Implement connection pooling
    - Cache frequently accessed data
+   - Use batch operations for bulk inserts
 
 2. **UI Optimization**
-   - Implement lazy loading
-   - Use expandable sections
-   - Optimize component rendering
-   - Cache UI state
+   - Implement lazy loading for large datasets
+   - Use expandable sections to reduce initial load
+   - Optimize component rendering with memoization
+   - Cache UI state and data
+   - Implement virtual scrolling for large lists
 
 3. **API Optimization**
-   - Implement caching
-   - Use batch operations
-   - Optimize rate limiting
+   - Implement request caching
+   - Use batch operations when possible
+   - Optimize rate limiting strategies
+   - Implement connection pooling
+   - Use async/await for I/O operations
+
+4. **Data Processing Optimization**
+   - Use pandas vectorized operations
+   - Implement parallel processing for large datasets
+   - Optimize memory usage with generators
+   - Use efficient data structures
 
 ## Security
 
@@ -327,10 +459,20 @@ stats.print_stats()
        handle_error(e)
    ```
 
+3. **Secret Management**
+   ```python
+   from prefect.blocks.system import Secret
+   
+   # Never hardcode secrets
+   api_key = Secret.load("alpaca-api-key").get()
+   ```
+
 ### 2. UI Security
 
 1. **Input Sanitization**
    ```python
+   import html
+   
    def sanitize_user_input(input_text: str) -> str:
        return html.escape(input_text)
    ```
@@ -339,4 +481,55 @@ stats.print_stats()
    ```python
    def check_user_permission(user: User, action: str) -> bool:
        return user.has_permission(action)
-   ``` 
+   ```
+
+### 3. API Security
+
+1. **Rate Limiting**
+   ```python
+   from ratelimit import limits, sleep_and_retry
+   
+   @sleep_and_retry
+   @limits(calls=100, period=60)
+   def api_call():
+       pass
+   ```
+
+2. **Request Validation**
+   ```python
+   def validate_api_request(request_data: Dict) -> bool:
+       required_fields = ['symbol', 'start_date', 'end_date']
+       return all(field in request_data for field in required_fields)
+   ```
+
+## Best Practices
+
+### 1. Code Organization
+- Keep related functionality together
+- Use meaningful module and function names
+- Implement proper separation of concerns
+- Follow the single responsibility principle
+
+### 2. Error Handling
+- Implement comprehensive error handling
+- Use specific exception types
+- Provide meaningful error messages
+- Log errors with context
+
+### 3. Testing
+- Write tests for all new functionality
+- Maintain high test coverage
+- Use mocking for external dependencies
+- Test edge cases and error conditions
+
+### 4. Documentation
+- Keep documentation up to date
+- Use clear and concise language
+- Include examples and use cases
+- Document API changes and breaking changes
+
+### 5. Performance
+- Monitor performance metrics
+- Optimize bottlenecks
+- Use profiling tools
+- Implement caching strategies 

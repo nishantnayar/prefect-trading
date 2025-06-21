@@ -63,6 +63,46 @@ ticker = yf.Ticker("AAPL")
    ```python
    # Get company info
    ticker.info
+   
+   # Get company officers
+   ticker.officers
+   ```
+
+### 3. News API
+
+#### Configuration
+```python
+from newsapi import NewsApiClient
+from prefect.blocks.system import Secret
+
+# Load API key from Prefect secrets
+api_key = Secret.load("newsapi").get()
+newsapi = NewsApiClient(api_key=api_key)
+```
+
+#### Available Methods
+
+1. **Top Headlines**
+   ```python
+   # Get top headlines
+   headlines = newsapi.get_top_headlines(
+       q='stock market',
+       category='business',
+       language='en',
+       country='us'
+   )
+   ```
+
+2. **Everything Search**
+   ```python
+   # Search for articles
+   articles = newsapi.get_everything(
+       q='AAPL',
+       from_param='2024-01-01',
+       to='2024-12-31',
+       language='en',
+       sort_by='relevancy'
+   )
    ```
 
 ## Internal APIs
@@ -85,6 +125,9 @@ db = DatabaseConnectivity()
    
    # Get symbol list
    db.get_symbols()
+   
+   # Get news articles
+   db.get_news_articles(limit=10)
    ```
 
 2. **Data Storage**
@@ -92,8 +135,11 @@ db = DatabaseConnectivity()
    # Store market data
    db.store_market_data(data)
    
-   # Update symbol status
-   db.update_symbol_status(symbol, status)
+   # Store company information
+   db.store_company_info(company_data)
+   
+   # Store news articles
+   db.store_news_articles(articles)
    ```
 
 ### 2. WebSocket API
@@ -112,15 +158,48 @@ asyncio.run(websocket_connection())
    ```python
    async def on_trade(trade):
        # Handle trade data
-       pass
+       print(f"Trade: {trade.symbol} @ {trade.price}")
    ```
 
 2. **Quote Events**
    ```python
    async def on_quote(quote):
        # Handle quote data
-       pass
+       print(f"Quote: {quote.symbol} bid={quote.bid} ask={quote.ask}")
    ```
+
+### 3. Data Loader APIs
+
+#### Alpaca Daily Loader
+```python
+from src.data.sources.alpaca_daily_loader import AlpacaDailyLoader
+
+loader = AlpacaDailyLoader()
+data = loader.get_previous_day_data(symbols=['AAPL', 'MSFT'])
+loader.store_market_data(data)
+```
+
+#### Yahoo Finance Loader
+```python
+from src.data.sources.yahoo_finance_loader import YahooFinanceDataLoader
+
+loader = YahooFinanceDataLoader()
+company_info = loader.load_ticker_info_chunk(['AAPL', 'MSFT'])
+loader.store_company_info(company_info)
+```
+
+#### News Loader
+```python
+from src.data.sources.news import NewsLoader
+
+loader = NewsLoader()
+articles = loader.fetch_and_store_news(
+    query='stock market',
+    category='business',
+    language='en',
+    country='us'
+)
+```
 
 ## Error Handling
 
@@ -133,6 +212,10 @@ asyncio.run(websocket_connection())
 2. **Yahoo Finance API**
    - 2,000 requests per hour per IP
    - 100 requests per minute per IP
+
+3. **News API**
+   - 1,000 requests per day (free tier)
+   - 100 requests per minute
 
 ### Error Codes
 
@@ -160,7 +243,7 @@ asyncio.run(websocket_connection())
 
 3. **Security**
    - Never expose API keys in code
-   - Use environment variables
+   - Use Prefect secrets for sensitive data
    - Implement request validation
 
 ## Examples
@@ -169,18 +252,21 @@ asyncio.run(websocket_connection())
 ```python
 from src.data.sources.alpaca_daily_loader import AlpacaDailyLoader
 from src.data.sources.yahoo_finance_loader import YahooFinanceDataLoader
+from src.data.sources.news import NewsLoader
 
 # Initialize loaders
 alpaca_loader = AlpacaDailyLoader()
 yahoo_loader = YahooFinanceDataLoader()
+news_loader = NewsLoader()
 
 # Collect data
-alpaca_data = alpaca_loader.run_daily_load()
-yahoo_data = yahoo_loader.run()
+alpaca_data = alpaca_loader.get_previous_day_data(['AAPL', 'MSFT'])
+yahoo_data = yahoo_loader.load_ticker_info_chunk(['AAPL', 'MSFT'])
+news_articles = news_loader.fetch_and_store_news()
 
-# Process and store data
-db.store_market_data(alpaca_data)
-db.store_market_data(yahoo_data)
+# Store data
+alpaca_loader.store_market_data(alpaca_data)
+yahoo_loader.store_company_info(yahoo_data)
 ```
 
 ### Real-time Data Processing
@@ -192,4 +278,31 @@ async def process_market_data():
                 await process_trade(message.data)
             elif message.type == "quote":
                 await process_quote(message.data)
+```
+
+### Database Operations
+```python
+from src.database.database_connectivity import DatabaseConnectivity
+
+db = DatabaseConnectivity()
+
+# Get recent market data
+with db.get_session() as cursor:
+    cursor.execute("""
+        SELECT * FROM market_data 
+        WHERE symbol = %s 
+        ORDER BY timestamp DESC 
+        LIMIT 100
+    """, ('AAPL',))
+    data = cursor.fetchall()
+
+# Get recent news
+with db.get_session() as cursor:
+    cursor.execute("""
+        SELECT title, source_name, published_at 
+        FROM news_articles 
+        ORDER BY published_at DESC 
+        LIMIT 10
+    """)
+    news = cursor.fetchall()
 ``` 

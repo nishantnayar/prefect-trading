@@ -4,6 +4,7 @@ from loguru import logger
 from prefect.blocks.system import Secret
 from src.database.database_connectivity import DatabaseConnectivity
 
+
 class NewsLoader:
     def __init__(self):
         self.db = DatabaseConnectivity()
@@ -62,7 +63,7 @@ class NewsLoader:
                         language = EXCLUDED.language,
                         country = EXCLUDED.country
                     """
-                    
+
                     cursor.execute(insert_query, (
                         article.get('title'),
                         article.get('source', {}).get('name'),
@@ -83,6 +84,7 @@ class NewsLoader:
             logger.error(f"Error fetching and storing news: {str(e)}")
             raise
 
+
 def main():
     """Main function to run the news loader."""
     try:
@@ -91,6 +93,7 @@ def main():
     except Exception as e:
         logger.error(f"Failed to run news loader: {str(e)}")
         raise
+
 
 if __name__ == "__main__":
     main()
