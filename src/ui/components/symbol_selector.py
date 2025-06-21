@@ -1,7 +1,7 @@
 import streamlit as st
 from loguru import logger
 
-from src.data.symbol_manager import SymbolManager
+from src.data.sources.symbol_manager import SymbolManager
 
 
 def display_symbol_selector() -> str:

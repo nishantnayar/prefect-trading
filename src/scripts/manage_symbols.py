@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from src.data.symbol_manager import SymbolManager
+from src.data.sources.symbol_manager import SymbolManager
 
 
 def add_sample_symbols(symbol_manager):

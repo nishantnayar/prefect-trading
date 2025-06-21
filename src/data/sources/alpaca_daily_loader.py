@@ -2,7 +2,7 @@
 Alpaca daily data loader for collecting previous day's market data.
 """
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict
+from typing import List, Dict
 import pandas as pd
 from loguru import logger
 from alpaca.data.historical import StockHistoricalDataClient
@@ -12,7 +12,7 @@ from prefect.blocks.system import Secret
 import pytz
 
 from src.database.database_connectivity import DatabaseConnectivity
-from src.data.symbol_manager import SymbolManager
+from src.data.sources.symbol_manager import SymbolManager
 
 
 class AlpacaDailyLoader:

@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from src.data.alpaca_websocket import save_redis_data_to_postgres
+from src.data.sources.alpaca_websocket import save_redis_data_to_postgres
 import redis
 import logging
 

@@ -3,14 +3,13 @@ Main entry point for the trading system.
 """
 from datetime import datetime
 from prefect import flow, task, get_run_logger
-import asyncio
 
 from src.database.database_connectivity import DatabaseConnectivity
 from src.data.sources.yahoo_finance_loader import YahooFinanceDataLoader
 from src.data.sources.alpaca_daily_loader import AlpacaDailyLoader
 from src.data.sources.news import NewsLoader
 from src.scripts.check_delisted_symbols import DelistedSymbolChecker
-from src.data.alpaca_websocket import market_data_websocket_flow as websocket_flow
+from src.data.sources.alpaca_websocket import market_data_websocket_flow as websocket_flow
 
 
 def generate_flow_run_name(flow_prefix: str) -> str:

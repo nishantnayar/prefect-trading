@@ -7,7 +7,7 @@ import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from src.data.hourly_persistence import save_redis_data_to_postgres, hourly_data_persistence, run_hourly_persistence
+from src.data.sources.hourly_persistence import save_redis_data_to_postgres, hourly_data_persistence, run_hourly_persistence
 import redis
 import logging
 

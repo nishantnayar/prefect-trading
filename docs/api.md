@@ -145,8 +145,9 @@ db = DatabaseConnectivity()
 ### 2. WebSocket API
 
 #### Connection
+
 ```python
-from src.data.alpaca_websocket import websocket_connection
+from src.data.sources.alpaca_websocket import websocket_connection
 
 # Start WebSocket connection
 asyncio.run(websocket_connection())

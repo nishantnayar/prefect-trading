@@ -5,13 +5,12 @@ import yfinance as yf
 import pandas as pd
 import time
 from loguru import logger
-from sqlalchemy import text
 import random
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 
 from src.database.database_connectivity import DatabaseConnectivity
-from src.data.symbol_manager import SymbolManager
+from src.data.sources.symbol_manager import SymbolManager
 
 
 class YahooFinanceDataLoader:

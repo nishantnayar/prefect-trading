@@ -13,7 +13,6 @@ import redis
 import logging
 from datetime import datetime, time as dt_time
 import pytz
-from prefect import get_run_logger
 from prefect.blocks.system import Secret
 from src.database.database_connectivity import DatabaseConnectivity
 
@@ -112,7 +111,7 @@ async def test_websocket_with_fast_persistence():
                 if (current_time - last_persistence_time).total_seconds() >= persistence_interval:
                     logger.info("💾 Running persistence...")
                     try:
-                        from src.data.alpaca_websocket import save_redis_data_to_postgres
+                        from src.data.sources.alpaca_websocket import save_redis_data_to_postgres
                         save_redis_data_to_postgres()
                         last_persistence_time = current_time
                         logger.info("✅ Persistence completed")
@@ -152,7 +151,7 @@ async def test_websocket_with_fast_persistence():
             # Final persistence run
             logger.info("🏁 Running final persistence...")
             try:
-                from src.data.alpaca_websocket import save_redis_data_to_postgres
+                from src.data.sources.alpaca_websocket import save_redis_data_to_postgres
                 save_redis_data_to_postgres()
                 logger.info("✅ Final persistence completed")
             except Exception as e:

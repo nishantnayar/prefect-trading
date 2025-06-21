@@ -1,15 +1,16 @@
 # Prefect Trading System
 
-A comprehensive trading system built with Prefect for automated market data collection, processing, and analysis, featuring a modern Streamlit-based user interface for real-time monitoring and portfolio management.
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Prefect 3.4.0](https://img.shields.io/badge/prefect-3.4.0-green.svg)](https://www.prefect.io/)
+[![PostgreSQL](https://img.shields.io/badge/postgresql-12+-blue.svg)](https://www.postgresql.org/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Overview
+A comprehensive trading system built with **Prefect** for automated market data collection, processing, and analysis, featuring a modern **Streamlit**-based user interface for real-time monitoring and portfolio management.
 
-This system provides automated data collection from multiple sources (Yahoo Finance, Alpaca, and NewsAPI), real-time market data streaming, comprehensive portfolio management, and a modern web-based dashboard. It's built using Prefect for workflow orchestration and includes extensive error handling, logging, and monitoring capabilities.
+## 🚀 Features
 
-## Features
-
-### Data Collection & Processing
-- **Multiple Data Sources**
+### 📊 Data Collection & Processing
+- **Multi-Source Integration**
   - Yahoo Finance data collection with company information
   - Alpaca market data integration (paper and live trading)
   - Real-time market data via WebSocket
@@ -21,7 +22,7 @@ This system provides automated data collection from multiple sources (Yahoo Fina
   - Symbol maintenance and delisting checks
   - Real-time market data streaming (9:30AM EST weekdays)
 
-### User Interface
+### 🎨 User Interface
 - **Modern Streamlit Dashboard**
   - Real-time market data visualization with auto-refresh
   - Portfolio overview with performance metrics
@@ -31,7 +32,7 @@ This system provides automated data collection from multiple sources (Yahoo Fina
   - Interactive symbol selector
   - Responsive design for all devices
 
-### Database & Storage
+### 🗄️ Database & Storage
 - **PostgreSQL Integration**
   - Comprehensive market data storage
   - Company information and officer data
@@ -39,7 +40,7 @@ This system provides automated data collection from multiple sources (Yahoo Fina
   - Optimized queries with proper indexing
   - Connection pooling and error handling
 
-### System Management
+### ⚙️ System Management
 - **Prefect Orchestration**
   - Scheduled workflow execution
   - Task dependency management
@@ -47,55 +48,69 @@ This system provides automated data collection from multiple sources (Yahoo Fina
   - Secret management for API credentials
   - Error handling and retry logic
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 prefect-trading/
-├── config/                    # Configuration files
-│   ├── config.yaml           # Application configuration
-│   └── streamlit_style.css   # UI styling
-├── docs/                     # Documentation
-│   ├── api.md               # API documentation
-│   ├── architecture.md      # System architecture
-│   ├── development.md       # Development guide
-│   ├── setup.md            # Setup instructions
-│   └── ui.md               # UI documentation
-├── src/
-│   ├── data/               # Data collection and processing
-│   │   ├── sources/        # Data source integrations
-│   │   ├── alpaca_websocket.py
-│   │   └── symbol_manager.py
-│   ├── database/           # Database connectivity and operations
-│   │   ├── migrations/     # Database schema migrations
-│   │   └── database_connectivity.py
-│   ├── scripts/            # Utility scripts
-│   ├── ui/                 # User interface components
-│   │   ├── components/     # Reusable UI components
-│   │   ├── home.py         # Main dashboard page
-│   │   └── streamlit_app.py
-│   └── utils/              # Utility functions
-├── main.py                 # Main entry point with Prefect flows
-├── prefect.yaml           # Prefect workflow configuration
-├── requirements.txt       # Production dependencies
-├── requirements-dev.txt   # Development dependencies
-└── README.md             # This file
+├── 📁 config/                    # Configuration files
+│   ├── config.yaml              # Application configuration
+│   └── streamlit_style.css      # UI styling
+├── 📁 docs/                     # Documentation
+│   ├── api.md                   # API documentation
+│   ├── architecture.md          # System architecture
+│   ├── development.md           # Development guide
+│   ├── setup.md                 # Setup instructions
+│   ├── testing.md               # Testing documentation
+│   └── ui.md                    # UI documentation
+├── 📁 src/                      # Source code
+│   ├── 📁 data/                 # Data collection and processing
+│   │   ├── 📁 sources/          # Data source integrations
+│   │   │   ├── alpaca_daily_loader.py
+│   │   │   ├── alpaca_historical_loader.py
+│   │   │   ├── alpaca_websocket.py
+│   │   │   ├── hourly_persistence.py
+│   │   │   ├── news.py
+│   │   │   ├── symbol_manager.py
+│   │   │   └── yahoo_finance_loader.py
+│   │   └── yahoo_raw_data.csv
+│   ├── 📁 database/             # Database connectivity and operations
+│   │   ├── 📁 migrations/       # Database schema migrations
+│   │   ├── database_connectivity.py
+│   │   └── 📁 sql/
+│   ├── 📁 scripts/              # Utility scripts
+│   ├── 📁 ui/                   # User interface components
+│   │   ├── 📁 components/       # Reusable UI components
+│   │   ├── home.py              # Main dashboard page
+│   │   └── streamlit_app.py     # Streamlit application
+│   └── 📁 utils/                # Utility functions
+├── 📁 test/                     # Test suite
+│   ├── 📁 unit/                 # Unit tests
+│   ├── 📁 integration/          # Integration tests
+│   ├── 📁 e2e/                  # End-to-end tests
+│   └── conftest.py              # Test configuration
+├── main.py                      # Main entry point with Prefect flows
+├── prefect.yaml                 # Prefect workflow configuration
+├── requirements.txt             # Production dependencies
+├── requirements-dev.txt         # Development dependencies
+├── pytest.ini                  # Pytest configuration
+└── README.md                   # This file
 ```
 
-## Prerequisites
+## 🛠️ Prerequisites
 
-- Python 3.9 or higher
-- PostgreSQL 12 or higher
-- Prefect 3.4.0 or higher
-- Alpaca API credentials
-- Yahoo Finance API access
-- NewsAPI credentials (optional but recommended)
+- **Python 3.9** or higher
+- **PostgreSQL 12** or higher
+- **Prefect 3.4.0** or higher
+- **Alpaca API** credentials
+- **Yahoo Finance API** access
+- **NewsAPI** credentials (optional but recommended)
 
-## Quick Start
+## ⚡ Quick Start
 
 ### 1. Installation
 ```bash
 # Clone the repository
-git clone [repository-url]
+git clone https://github.com/your-username/prefect-trading.git
 cd prefect-trading
 
 # Create virtual environment
@@ -144,7 +159,7 @@ prefect deploy
 streamlit run src/ui/streamlit_app.py
 ```
 
-## Usage
+## 🎯 Usage
 
 ### Running Workflows
 ```python
@@ -172,7 +187,7 @@ market_data_websocket_flow()
 - **Streamlit Dashboard**: `http://localhost:8501` - View real-time data
 - **Logs**: Check `logs/trading_system.log` for detailed logs
 
-## Configuration
+## ⚙️ Configuration
 
 ### Environment Variables
 ```env
@@ -200,7 +215,7 @@ The system uses Prefect for workflow orchestration with three main deployments:
 - **eod-data-ingestion**: Runs daily at market close
 - **market-data-websocket**: Runs at market open for real-time data
 
-## Development
+## 🧪 Development
 
 ### Running Tests
 ```bash
@@ -211,8 +226,9 @@ pytest
 pytest --cov=src tests/
 
 # Run specific test categories
-pytest tests/test_ui/
-pytest tests/test_api/
+pytest tests/unit/
+pytest tests/integration/
+pytest tests/e2e/
 ```
 
 ### Code Quality
@@ -225,6 +241,9 @@ flake8 src/
 
 # Type checking
 mypy src/
+
+# Run pre-commit hooks
+pre-commit run --all-files
 ```
 
 ### Development Workflow
@@ -233,15 +252,16 @@ mypy src/
 3. Run quality checks: `pre-commit run --all-files`
 4. Submit pull request
 
-## Documentation
+## 📚 Documentation
 
 - **[API Documentation](docs/api.md)**: External and internal API usage
 - **[Architecture](docs/architecture.md)**: System design and components
 - **[Development Guide](docs/development.md)**: Development practices and workflows
 - **[Setup Guide](docs/setup.md)**: Installation and configuration
+- **[Testing Guide](docs/testing.md)**: Testing strategies and implementation
 - **[UI Documentation](docs/ui.md)**: User interface components and features
 
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -256,7 +276,7 @@ mypy src/
 - Ensure UI components are responsive and accessible
 - Implement proper error handling
 
-## Troubleshooting
+## 🐛 Troubleshooting
 
 ### Common Issues
 - **Database Connection**: Verify PostgreSQL is running and credentials are correct
@@ -269,14 +289,22 @@ mypy src/
 - Review [GitHub Issues](https://github.com/your-repo/issues) for known problems
 - Contact the development team for support
 
-## License
+## 📄 License
 
-This project is licensed under the terms of the license included in the repository.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
 - [Prefect](https://www.prefect.io/) for workflow orchestration
 - [Streamlit](https://streamlit.io/) for the user interface
 - [Alpaca](https://alpaca.markets/) for market data
 - [Yahoo Finance](https://finance.yahoo.com/) for financial data
-- [NewsAPI](https://newsapi.org/) for market news 
+- [NewsAPI](https://newsapi.org/) for market news
+
+## 📊 Project Status
+
+- **Version**: 1.0.0
+- **Status**: Active Development
+- **Last Updated**: December 2024
+- **Python Support**: 3.9+
+- **Database**: PostgreSQL 12+ 

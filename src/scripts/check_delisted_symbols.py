@@ -11,7 +11,7 @@ from prefect.blocks.system import Secret
 # Add project root to Python path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from src.data.symbol_manager import SymbolManager
+from src.data.sources.symbol_manager import SymbolManager
 
 
 class DelistedSymbolChecker:

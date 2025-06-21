@@ -1,7 +1,6 @@
 """
 Alpaca data loader for historical and real-time market data.
 """
-import os
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict
 import pandas as pd
@@ -12,7 +11,7 @@ from alpaca.data.timeframe import TimeFrame
 from prefect.blocks.system import Secret
 
 from src.database.database_connectivity import DatabaseConnectivity
-from src.data.symbol_manager import SymbolManager
+from src.data.sources.symbol_manager import SymbolManager
 
 class AlpacaDataLoader:
     def __init__(self):
