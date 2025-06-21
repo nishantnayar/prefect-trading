@@ -96,18 +96,21 @@ def eod_process_flow():
 
 
 @flow(name="Market Data WebSocket Flow", flow_run_name=lambda: generate_flow_run_name("websocket-data"))
-def market_data_websocket_flow():
+def market_data_websocket_flow(end_time: str = "16:00"):
     """
     Prefect flow to manage WebSocket connection during market hours
     """
-    logger = get_run_logger()
-    try:
-        logger.info("Starting Market Data WebSocket Flow")
-        asyncio.run(websocket_connection())
-        logger.info("Market Data WebSocket Flow completed")
-    except Exception as e:
-        logger.error(f"Market Data WebSocket Flow error: {e}")
-        raise
+    end = datetime.strptime(end_time, "%H:%M").time()
+    while datetime.now().time() < end:
+        logger = get_run_logger()
+        try:
+            logger.info("Starting Market Data WebSocket Flow")
+            asyncio.run(websocket_connection())
+            logger.info("Market Data WebSocket Flow completed")
+        except Exception as e:
+            logger.error(f"Market Data WebSocket Flow error: {e}")
+            raise
+    pass
 
 
 if __name__ == '__main__':

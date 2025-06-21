@@ -44,7 +44,8 @@ deployments:
     timezone: America/New_York
   flow_name: market_data_websocket_flow
   entrypoint: "main.py:market_data_websocket_flow"
-  parameters: {}
+  parameters:
+    end_time: "16:00"  # 4:00 PM
   work_pool:
     name: realtime  # Using your existing realtime pool
     work_queue_name: default  # Changed from realtime_work_queue to default
