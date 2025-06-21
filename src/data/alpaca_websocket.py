@@ -8,6 +8,7 @@ from datetime import datetime, time as dt_time
 import pytz
 from prefect import flow, task, get_run_logger
 from prefect.blocks.system import Secret
+from src.database.database_connectivity import DatabaseConnectivity
 # from dotenv import load_dotenv
 import os
 
@@ -41,10 +42,94 @@ def is_market_hours() -> bool:
     return market_open <= current_time_et <= market_close
 
 
+@task(name="Save Redis Data to PostgreSQL")
+def save_redis_data_to_postgres():
+    """
+    Task to save WebSocket data from Redis to PostgreSQL
+    """
+    logger = get_run_logger()
+    
+    try:
+        # Initialize database connection
+        db = DatabaseConnectivity()
+        logger.info("Connected to PostgreSQL database")
+        
+        # Get all keys from Redis that match the pattern "AAPL:*"
+        keys = redis_client.keys("AAPL:*")
+        logger.info(f"Found {len(keys)} AAPL records in Redis")
+        
+        if not keys:
+            logger.info("No AAPL data found in Redis to save")
+            return
+        
+        # Prepare data for batch insertion
+        data_to_insert = []
+        for key in keys:
+            try:
+                # Get data from Redis
+                ohlc_data = redis_client.hgetall(key)
+                
+                if ohlc_data and len(ohlc_data) == 6:  # Ensure we have all required fields
+                    # Parse timestamp
+                    timestamp_str = ohlc_data.get('timestamp', '')
+                    if timestamp_str:
+                        # Convert timestamp to datetime (assuming it's in ISO format)
+                        try:
+                            timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                        except ValueError:
+                            # If ISO format fails, try parsing as Unix timestamp
+                            timestamp = datetime.fromtimestamp(float(timestamp_str) / 1000)
+                        
+                        # Prepare data for insertion
+                        data_to_insert.append((
+                            'AAPL',  # symbol
+                            timestamp,  # timestamp
+                            float(ohlc_data['open']),  # open
+                            float(ohlc_data['high']),  # high
+                            float(ohlc_data['low']),   # low
+                            float(ohlc_data['close']), # close
+                            int(ohlc_data['volume'])   # volume
+                        ))
+                        
+                        # Remove the data from Redis after successful processing
+                        redis_client.delete(key)
+                        
+            except Exception as e:
+                logger.error(f"Error processing Redis key {key}: {e}")
+                continue
+        
+        if data_to_insert:
+            # Batch insert into PostgreSQL
+            insert_query = """
+                INSERT INTO market_data (symbol, timestamp, open, high, low, close, volume)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (symbol, timestamp) DO UPDATE SET
+                    open = EXCLUDED.open,
+                    high = EXCLUDED.high,
+                    low = EXCLUDED.low,
+                    close = EXCLUDED.close,
+                    volume = EXCLUDED.volume
+            """
+            
+            with db.get_session() as cursor:
+                cursor.executemany(insert_query, data_to_insert)
+            
+            logger.info(f"Successfully saved {len(data_to_insert)} AAPL records to PostgreSQL")
+        else:
+            logger.info("No valid data found to save to PostgreSQL")
+            
+    except Exception as e:
+        logger.error(f"Error saving Redis data to PostgreSQL: {e}")
+        raise
+    finally:
+        if 'db' in locals():
+            db.close()
+
+
 @task(name="WebSocket Connection Task")
 async def websocket_connection():
     """
-    Task to handle WebSocket connection and data processing
+    Task to handle WebSocket connection and data processing with hourly persistence
     """
     logger = get_run_logger()
 
@@ -102,6 +187,9 @@ async def websocket_connection():
             subscribe_response = await websocket.recv()
             logger.info(f"Subscription response: {subscribe_response}")
 
+            # Initialize persistence tracking
+            last_persistence_time = datetime.now()
+
             while True:
                 if not is_market_hours():
                     logger.info("Market is closed. Closing WebSocket connection.")
@@ -114,12 +202,22 @@ async def websocket_connection():
                     logger.info("Unsubscribed from data feed")
                     return
 
-                try:
-                    message = await websocket.recv()
-                    data = json.loads(message)
-                    logger.info(f"Raw WebSocket message: {message}")  # Log the raw message
-                    logger.info(f"Parsed WebSocket data: {data}")  # Log the parsed data
+                # Check if it's time for hourly persistence
+                current_time = datetime.now()
+                if (current_time - last_persistence_time).total_seconds() >= 3600:  # 1 hour
+                    logger.info("Running hourly data persistence...")
+                    try:
+                        save_redis_data_to_postgres()
+                        last_persistence_time = current_time
+                        logger.info("Hourly data persistence completed")
+                    except Exception as e:
+                        logger.error(f"Hourly data persistence failed: {e}")
 
+                try:
+                    # Set a timeout for receiving messages
+                    message = await asyncio.wait_for(websocket.recv(), timeout=1.0)
+                    data = json.loads(message)
+                    
                     # Process the data
                     if isinstance(data, list):
                         for ohlc in data:
@@ -141,6 +239,10 @@ async def websocket_connection():
                                 redis_client.hset(name=redis_key, mapping=ohlc_data)
                             else:
                                 logger.info(f"Skipping non-AAPL symbol: {symbol}")
+                                
+                except asyncio.TimeoutError:
+                    # Timeout is expected, continue the loop
+                    continue
                 except websockets.exceptions.ConnectionClosedError:
                     logger.warning("WebSocket connection closed.")
                     return
@@ -156,7 +258,7 @@ async def websocket_connection():
 @flow(name="Market Data WebSocket Flow")
 def market_data_websocket_flow():
     """
-    Prefect flow to manage WebSocket connection during market hours
+    Prefect flow to manage WebSocket connection during market hours with hourly data persistence
     """
     logger = get_run_logger()
 
@@ -169,7 +271,11 @@ def market_data_websocket_flow():
         redis_client.ping()
         logger.info("Connected to Redis successfully.")
 
-        # Run the WebSocket connection task
+        # Initialize database connection
+        db = DatabaseConnectivity()
+        logger.info("Connected to PostgreSQL database")
+
+        # Run the WebSocket connection task with persistence
         asyncio.run(websocket_connection())
 
     except redis.ConnectionError:
@@ -178,6 +284,9 @@ def market_data_websocket_flow():
     except Exception as e:
         logger.error(f"Error in market data WebSocket flow: {e}")
         raise
+    finally:
+        if 'db' in locals():
+            db.close()
 
 
 if __name__ == "__main__":

@@ -8,8 +8,9 @@ import asyncio
 from src.database.database_connectivity import DatabaseConnectivity
 from src.data.sources.yahoo_finance_loader import YahooFinanceDataLoader
 from src.data.sources.alpaca_daily_loader import AlpacaDailyLoader
+from src.data.sources.news import NewsLoader
 from src.scripts.check_delisted_symbols import DelistedSymbolChecker
-from src.data.alpaca_websocket import websocket_connection
+from src.data.alpaca_websocket import market_data_websocket_flow as websocket_flow
 
 
 def generate_flow_run_name(flow_prefix: str) -> str:
@@ -68,12 +69,26 @@ def symbol_maintenance_flow():
         raise
 
 
+@flow(name="News Data Loader Flow", flow_run_name=lambda: generate_flow_run_name("news-loader"))
+def news_data_loader_flow():
+    logger = get_run_logger()
+    try:
+        logger.info("Running news data loader...")
+        loader = NewsLoader()
+        loader.fetch_and_store_news()
+        logger.info("News data collection completed.")
+    except Exception as e:
+        logger.error(f"News data collection error: {e}")
+        raise
+
+
 @flow(name="Hourly Process Flow", flow_run_name=lambda: generate_flow_run_name("hourly-process"))
 def hourly_process_flow():
     logger = get_run_logger()
     logger.info("Starting Hourly Process Flow")
     try:
         db = postgres_connect()
+        news_data_loader_flow()
         # alpaca_data_loader_flow()
         logger.info("Hourly flow completed.")
     except Exception as e:
@@ -98,14 +113,14 @@ def eod_process_flow():
 @flow(name="Market Data WebSocket Flow", flow_run_name=lambda: generate_flow_run_name("websocket-data"))
 def market_data_websocket_flow(end_time: str = "16:00"):
     """
-    Prefect flow to manage WebSocket connection during market hours
+    Prefect flow to manage WebSocket connection during market hours with hourly persistence
     """
     end = datetime.strptime(end_time, "%H:%M").time()
     while datetime.now().time() < end:
         logger = get_run_logger()
         try:
-            logger.info("Starting Market Data WebSocket Flow")
-            asyncio.run(websocket_connection())
+            logger.info("Starting Market Data WebSocket Flow with Hourly Persistence")
+            websocket_flow()  # This now includes hourly persistence
             logger.info("Market Data WebSocket Flow completed")
         except Exception as e:
             logger.error(f"Market Data WebSocket Flow error: {e}")
