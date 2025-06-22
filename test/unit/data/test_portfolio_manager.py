@@ -13,10 +13,25 @@ load_dotenv('config/.env', override=True)
 from src.data.sources.portfolio_manager import PortfolioManager
 
 @pytest.fixture
-def mock_trading_client():
-    """Fixture for a mocked Alpaca TradingClient."""
-    with patch('alpaca.trading.client.TradingClient') as mock_client:
-        instance = mock_client.return_value
+def mock_portfolio_manager():
+    """Fixture for a mocked PortfolioManager with all dependencies mocked."""
+    with patch('src.data.sources.portfolio_manager.TradingClient') as mock_trading_client, \
+         patch('src.data.sources.portfolio_manager.StockHistoricalDataClient') as mock_data_client, \
+         patch('src.data.sources.portfolio_manager.Secret') as mock_secret:
+        
+        # Mock the Secret class
+        mock_secret_instance = MagicMock()
+        mock_secret_instance.get.return_value = "fake_key"
+        mock_secret.load.return_value = mock_secret_instance
+        
+        # Mock trading client instance
+        mock_trading_instance = MagicMock()
+        mock_trading_client.return_value = mock_trading_instance
+        
+        # Mock data client instance
+        mock_data_instance = MagicMock()
+        mock_data_client.return_value = mock_data_instance
+        
         # Mock account response
         mock_account = MagicMock()
         mock_account.id = 'test_account_id'
@@ -29,14 +44,23 @@ def mock_trading_client():
                      'accrued_fees', 'equity', 'last_equity', 'long_market_value', 'short_market_value',
                      'initial_margin', 'maintenance_margin', 'last_maintenance_margin', 'sma']:
             setattr(mock_account, attr, '0')
-        instance.get_account.return_value = mock_account
+        mock_trading_instance.get_account.return_value = mock_account
 
         # Mock positions response
         mock_position = MagicMock()
         mock_position.symbol = 'AAPL'
         mock_position.qty = '10'
-        # ... add other position attributes if needed
-        instance.get_all_positions.return_value = [mock_position]
+        mock_position.side = 'long'
+        mock_position.market_value = '1500'
+        mock_position.cost_basis = '1400'
+        mock_position.unrealized_pl = '100'
+        mock_position.unrealized_plpc = '0.07'
+        mock_position.unrealized_intraday_pl = '50'
+        mock_position.unrealized_intraday_plpc = '0.035'
+        mock_position.current_price = '150'
+        mock_position.lastday_price = '145'
+        mock_position.change_today = '5'
+        mock_trading_instance.get_all_positions.return_value = [mock_position]
 
         # Mock orders response
         mock_order = MagicMock()
@@ -48,69 +72,56 @@ def mock_trading_client():
         mock_order.filled_qty = '10'
         mock_order.filled_avg_price = '150.00'
         mock_order.filled_at = datetime.now()
-        instance.get_orders.return_value = [mock_order]
+        mock_order.type = 'market'
+        mock_order.time_in_force = 'day'
+        mock_trading_instance.get_orders.return_value = [mock_order]
 
-        yield mock_client
+        # Create the PortfolioManager instance
+        manager = PortfolioManager()
+        
+        # Store the mocks for assertions
+        manager._mock_trading_client = mock_trading_client
+        manager._mock_data_client = mock_data_client
+        manager._mock_trading_instance = mock_trading_instance
+        manager._mock_data_instance = mock_data_instance
+        
+        yield manager
 
-@pytest.fixture
-def mock_data_client():
-    """Fixture for a mocked Alpaca StockHistoricalDataClient."""
-    with patch('alpaca.data.historical.StockHistoricalDataClient') as mock_client:
-        yield mock_client
-
-@patch('prefect.blocks.system.Secret')
-def test_portfolio_manager_initialization(MockSecret, mock_trading_client, mock_data_client):
+def test_portfolio_manager_initialization(mock_portfolio_manager):
     """Test that the PortfolioManager initializes correctly."""
-    MockSecret.load.return_value.get.return_value = "fake_key"
-    manager = PortfolioManager()
-    assert manager.trading_client is not None
-    assert manager.data_client is not None
-    mock_trading_client.assert_called_once()
-    mock_data_client.assert_called_once()
+    assert mock_portfolio_manager.trading_client is not None
+    assert mock_portfolio_manager.data_client is not None
+    mock_portfolio_manager._mock_trading_client.assert_called_once()
+    mock_portfolio_manager._mock_data_client.assert_called_once()
 
-
-@patch('prefect.blocks.system.Secret')
-def test_get_account_info(MockSecret, mock_trading_client, mock_data_client):
+def test_get_account_info(mock_portfolio_manager):
     """Test fetching account information."""
-    MockSecret.load.return_value.get.return_value = "fake_key"
-    manager = PortfolioManager()
-    account_info = manager.get_account_info()
+    account_info = mock_portfolio_manager.get_account_info()
 
     assert account_info is not None
     assert account_info['id'] == 'test_account_id'
     assert account_info['status'] == 'ACTIVE'
     assert account_info['portfolio_value'] == 100000.0
 
-
-@patch('prefect.blocks.system.Secret')
-def test_get_positions(MockSecret, mock_trading_client, mock_data_client):
+def test_get_positions(mock_portfolio_manager):
     """Test fetching positions."""
-    MockSecret.load.return_value.get.return_value = "fake_key"
-    manager = PortfolioManager()
-    positions = manager.get_positions()
+    positions = mock_portfolio_manager.get_positions()
 
     assert positions is not None
     assert len(positions) == 1
     assert positions[0]['symbol'] == 'AAPL'
 
-
-@patch('prefect.blocks.system.Secret')
-def test_get_orders(MockSecret, mock_trading_client, mock_data_client):
+def test_get_orders(mock_portfolio_manager):
     """Test fetching orders."""
-    MockSecret.load.return_value.get.return_value = "fake_key"
-    manager = PortfolioManager()
-    orders = manager.get_orders(status="closed")
+    orders = mock_portfolio_manager.get_orders(status="closed")
 
     assert orders is not None
     assert len(orders) == 1
     assert orders[0]['status'] == 'filled'
 
-@patch('prefect.blocks.system.Secret')
-def test_get_portfolio_summary(MockSecret, mock_trading_client, mock_data_client):
+def test_get_portfolio_summary(mock_portfolio_manager):
     """Test getting a full portfolio summary."""
-    MockSecret.load.return_value.get.return_value = "fake_key"
-    manager = PortfolioManager()
-    summary = manager.get_portfolio_summary()
+    summary = mock_portfolio_manager.get_portfolio_summary()
 
     assert summary is not None
     assert 'metrics' in summary
