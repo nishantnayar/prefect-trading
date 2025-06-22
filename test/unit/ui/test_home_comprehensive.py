@@ -125,11 +125,18 @@ class TestHomePageComprehensive:
         from src.ui.home import display_portfolio_summary
         
         # Mock streamlit columns with context manager support
-        mock_col1 = create_mock_column()
-        mock_col2 = create_mock_column()
-        mock_col3 = create_mock_column()
-        mock_col4 = create_mock_column()
-        mock_st.columns.return_value = [mock_col1, mock_col2, mock_col3, mock_col4]
+        def columns_side_effect(*args, **kwargs):
+            if len(args) > 0 and isinstance(args[0], list):
+                # For st.columns([4, 1]) - return 2 columns
+                return [create_mock_column(), create_mock_column()]
+            elif len(args) > 0 and args[0] == 4:
+                # For st.columns(4) - return 4 columns
+                return [create_mock_column(), create_mock_column(), create_mock_column(), create_mock_column()]
+            else:
+                # Default fallback
+                return [create_mock_column() for _ in range(args[0] if args else 1)]
+        
+        mock_st.columns.side_effect = columns_side_effect
         
         # Mock expander
         mock_expander = Mock()
@@ -556,8 +563,18 @@ class TestHomePageComprehensive:
         from src.ui.home import display_portfolio_summary
         
         # Mock streamlit columns with context manager support
-        mock_cols = [create_mock_column() for _ in range(4)]
-        mock_st.columns.return_value = mock_cols
+        def columns_side_effect(*args, **kwargs):
+            if len(args) > 0 and isinstance(args[0], list):
+                # For st.columns([4, 1]) - return 2 columns
+                return [create_mock_column(), create_mock_column()]
+            elif len(args) > 0 and args[0] == 4:
+                # For st.columns(4) - return 4 columns
+                return [create_mock_column(), create_mock_column(), create_mock_column(), create_mock_column()]
+            else:
+                # Default fallback
+                return [create_mock_column() for _ in range(args[0] if args else 1)]
+        
+        mock_st.columns.side_effect = columns_side_effect
         
         # Mock expander
         mock_expander = Mock()
