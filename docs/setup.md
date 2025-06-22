@@ -26,8 +26,8 @@
 
 3. **Install Dependencies**
    ```bash
-   pip install -r requirements.txt
-   pip install -r requirements-dev.txt  # For development
+   pip install -r config/requirements.txt
+   pip install -r config/requirements-dev.txt  # For development
    ```
 
 4. **Set Up Environment Variables**

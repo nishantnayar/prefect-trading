@@ -84,7 +84,7 @@ def install_dependencies():
     
     # Install production dependencies
     print_status("Installing production dependencies...")
-    requirements_file = project_root / "requirements.txt"
+    requirements_file = project_root / "config" / "requirements.txt"
     if requirements_file.exists():
         try:
             subprocess.run([sys.executable, '-m', 'pip', 'install', '-r', str(requirements_file)], check=True)
@@ -96,7 +96,7 @@ def install_dependencies():
     
     # Install development dependencies
     print_status("Installing development dependencies...")
-    requirements_dev_file = project_root / "requirements-dev.txt"
+    requirements_dev_file = project_root / "config" / "requirements-dev.txt"
     if requirements_dev_file.exists():
         try:
             subprocess.run([sys.executable, '-m', 'pip', 'install', '-r', str(requirements_dev_file)], check=True)

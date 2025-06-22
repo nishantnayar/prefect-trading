@@ -24,11 +24,11 @@ help:
 
 # Installation
 install:
-	pip install -r requirements.txt
+	pip install -r config/requirements.txt
 
 install-dev:
-	pip install -r requirements.txt
-	pip install -r requirements-dev.txt
+	pip install -r config/requirements.txt
+	pip install -r config/requirements-dev.txt
 
 setup: install-dev
 	@echo "Setting up Prefect blocks..."
@@ -65,7 +65,7 @@ test-streamlit-check:
 	python scripts/test_streamlit.py --check
 
 test-coverage:
-	pytest tests/ -v --cov=src --cov-report=html --cov-report=term-missing
+	pytest tests/ -v --cov=src --cov-report=html:build/htmlcov --cov-report=term-missing
 
 # Code Quality
 lint:

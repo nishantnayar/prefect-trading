@@ -50,11 +50,23 @@ A comprehensive trading system built with **Prefect** for automated market data 
 
 ## 📁 Project Structure
 
+The project follows a clean, organized structure with configuration files centralized and build artifacts contained:
+
 ```
 prefect-trading/
 ├── 📁 config/                    # Configuration files
 │   ├── config.yaml              # Application configuration
-│   └── streamlit_style.css      # UI styling
+│   ├── streamlit_style.css      # UI styling
+│   ├── pytest.ini              # Pytest configuration
+│   ├── prefect.yaml            # Prefect workflow configuration
+│   ├── .pre-commit-config.yaml # Pre-commit hooks
+│   ├── requirements.txt         # Production dependencies
+│   └── requirements-dev.txt     # Development dependencies
+├── 📁 build/                    # Build artifacts and reports
+│   ├── coverage.json           # Coverage reports
+│   ├── test_results.json       # Test results
+│   ├── .coverage              # Coverage data
+│   └── htmlcov/               # HTML coverage reports
 ├── 📁 docs/                     # Documentation
 │   ├── api.md                   # API documentation
 │   ├── architecture.md          # System architecture
@@ -85,16 +97,32 @@ prefect-trading/
 │   └── 📁 utils/                # Utility functions
 ├── 📁 test/                     # Test suite
 │   ├── 📁 unit/                 # Unit tests
+│   │   ├── test_basic_functionality.py
+│   │   ├── 📁 database/
+│   │   │   └── test_database_connectivity.py
+│   │   └── 📁 ui/
+│   │       └── test_simple_streamlit.py
 │   ├── 📁 integration/          # Integration tests
 │   ├── 📁 e2e/                  # End-to-end tests
 │   └── conftest.py              # Test configuration
+├── 📁 scripts/                  # Development and testing utilities
+│   ├── run_tests.py             # Test runner
+│   ├── setup_test_env.py        # Test environment setup
+│   └── README.md                # Scripts documentation
 ├── main.py                      # Main entry point with Prefect flows
-├── prefect.yaml                 # Prefect workflow configuration
-├── requirements.txt             # Production dependencies
-├── requirements-dev.txt         # Development dependencies
-├── pytest.ini                  # Pytest configuration
-└── README.md                   # This file
+├── Makefile                     # Build automation
+├── README.md                    # This file
+└── LICENSE                      # License file
 ```
+
+### 🎯 Key Benefits of This Structure
+
+- **Clean Root Directory**: Only essential files remain in the project root
+- **Centralized Configuration**: All config files are organized in the `config/` directory
+- **Contained Build Artifacts**: Test results and coverage reports are stored in `build/`
+- **Better Organization**: Related files are grouped together logically
+- **Standard Practice**: Follows common Python project conventions
+- **Easier Maintenance**: Configuration and build artifacts are clearly separated
 
 ## 🛠️ Prerequisites
 
@@ -118,14 +146,14 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
-pip install -r requirements.txt
-pip install -r requirements-dev.txt  # For development
+pip install -r config/requirements.txt
+pip install -r config/requirements-dev.txt  # For development
 ```
 
 ### 2. Configuration
 ```bash
 # Set up environment variables
-cp .env.example .env
+cp config/env.example .env
 # Edit .env with your credentials
 
 # Set up Prefect blocks
@@ -215,20 +243,123 @@ The system uses Prefect for workflow orchestration with three main deployments:
 - **eod-data-ingestion**: Runs daily at market close
 - **market-data-websocket**: Runs at market open for real-time data
 
-## 🧪 Development
+## 🧪 Development & Testing
+
+### Test Environment Setup
+
+#### Option 1: Automated Setup (Recommended)
+```bash
+python scripts/setup_test_env.py
+```
+
+#### Option 2: Manual Setup
+```bash
+pip install -r config/requirements-dev.txt
+pytest --version  # Verify pytest installation
+```
 
 ### Running Tests
+
+#### Quick Test Suite
 ```bash
-# Run all tests
-pytest
+# Run all tests with coverage (default)
+python scripts/run_tests.py
 
-# Run with coverage
-pytest --cov=src tests/
+# Run quick test suite (basic + database)
+python scripts/run_tests.py quick
 
-# Run specific test categories
-pytest tests/unit/
-pytest tests/integration/
-pytest tests/e2e/
+# Run only basic tests
+python scripts/run_tests.py basic
+
+# Run only database tests
+python scripts/run_tests.py database
+
+# Run Streamlit UI tests
+python scripts/run_tests.py simple
+
+# Get help with all options
+python scripts/run_tests.py --help
+```
+
+#### Individual Test Files
+```bash
+# Basic functionality tests
+pytest test/unit/test_basic_functionality.py -v
+
+# Database connectivity tests
+pytest test/unit/database/test_database_connectivity.py -v
+
+# Streamlit UI tests
+pytest test/unit/ui/test_simple_streamlit.py -v
+```
+
+#### Coverage Reports
+```bash
+# Terminal coverage report
+pytest test/ -v --cov=src --cov-report=term-missing
+
+# HTML coverage report
+pytest test/ -v --cov=src --cov-report=html
+```
+
+### Test Structure
+
+```
+test/
+├── conftest.py                          # Pytest configuration and fixtures
+├── unit/                                # Unit tests
+│   ├── test_basic_functionality.py     # Basic functionality tests
+│   ├── database/                       # Database tests
+│   │   └── test_database_connectivity.py
+│   └── ui/                             # UI tests
+│       └── test_simple_streamlit.py
+├── integration/                         # Integration tests (future)
+├── e2e/                                # End-to-end tests (future)
+└── fixtures/                           # Test fixtures (future)
+```
+
+### What's Tested
+
+#### Basic Functionality Tests
+- ✅ Import verification
+- ✅ Environment variable setup
+- ✅ Mock fixture functionality
+- ✅ Data structure validation
+- ✅ Error handling patterns
+- ✅ Utility function validation (symbol, price, date)
+
+#### Database Connectivity Tests
+- ✅ Class and method existence
+- ✅ Simple mock connection and query
+- ✅ Error handling pattern
+- ✅ Connection pool and transaction concepts
+- ✅ Credential validation logic
+
+#### Streamlit UI Tests
+- ✅ Component rendering
+- ✅ User interaction patterns
+- ✅ Data display functionality
+- ✅ Responsive design elements
+
+### Testing Philosophy
+
+- **No real database required**: All database tests use simple mocks
+- **No external API calls**: No Yahoo, Alpaca, or News API tests
+- **No complex patching**: Only simple Python mocks are used
+- **Cross-platform compatibility**: Works on Windows, macOS, and Linux
+- **Minimal dependencies**: Focus on core logic and structure
+
+### Example Test Output
+
+```
+======================================== test session starts ========================================
+platform win32 -- Python 3.10.6, pytest-8.4.1, pluggy-1.6.0
+collected 15 items
+
+test/unit/test_basic_functionality.py ............... [ 60%]
+test/unit/database/test_database_connectivity.py ............. [100%]
+
+======================================== 28 passed in 6.3s =========================================
 ```
 
 ### Code Quality
@@ -249,8 +380,9 @@ pre-commit run --all-files
 ### Development Workflow
 1. Create feature branch: `git checkout -b feature/your-feature`
 2. Make changes and add tests
-3. Run quality checks: `pre-commit run --all-files`
-4. Submit pull request
+3. Run tests: `python scripts/run_tests.py`
+4. Run quality checks: `pre-commit run --all-files`
+5. Submit pull request
 
 ## 📚 Documentation
 
@@ -279,10 +411,33 @@ pre-commit run --all-files
 ## 🐛 Troubleshooting
 
 ### Common Issues
-- **Database Connection**: Verify PostgreSQL is running and credentials are correct
-- **API Errors**: Check API keys and rate limits
-- **Prefect Issues**: Ensure Prefect server is running and workflows are deployed
-- **UI Problems**: Check Streamlit dependencies and CSS file paths
+
+#### Database Connection
+- Verify PostgreSQL is running and credentials are correct
+- Check database migration status
+
+#### API Errors
+- Check API keys and rate limits
+- Verify API service availability
+
+#### Prefect Issues
+- Ensure Prefect server is running and workflows are deployed
+- Check workflow deployment status
+
+#### UI Problems
+- Check Streamlit dependencies and CSS file paths
+- Verify port availability (default: 8501)
+
+#### Testing Issues
+If you see an error like:
+```
+error: unrecognized arguments: --cov=src/ui --cov-report=term-missing ...
+```
+
+Install the `pytest-cov` plugin:
+```bash
+pip install pytest-cov
+```
 
 ### Getting Help
 - Check the [documentation](docs/) for detailed guides
@@ -308,45 +463,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Last Updated**: December 2024
 - **Python Support**: 3.9+
 - **Database**: PostgreSQL 12+
-
-## Streamlit UI Testing (Simplified)
-
-All Streamlit UI tests are now located in a single file:
-
-- `test/unit/ui/test_simple_streamlit.py`
-
-### How to Run All Tests
-
-From the project root, run:
-
-```bash
-python scripts/run_tests.py simple
-```
-
-This will:
-- Set up the test environment
-- Run all basic Streamlit UI tests
-- Check code coverage (minimum 20%)
-
-### Troubleshooting
-
-If you see an error like:
-
-```
-error: unrecognized arguments: --cov=src/ui --cov-report=term-missing ...
-```
-
-You need to install the `pytest-cov` plugin:
-
-```bash
-pip install pytest-cov
-```
-
-### Notes
-- All other UI test files have been removed for simplicity.
-- Add new Streamlit UI tests to `test_simple_streamlit.py`.
-- The test runner script (`scripts/run_tests.py`) is now the only way to run UI tests.
-
----
-
-For more details, see the rest of this README and the `docs/` directory. 
+- **Test Coverage**: Minimum 20% (basic functionality) 
