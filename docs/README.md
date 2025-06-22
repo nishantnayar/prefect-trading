@@ -1,5 +1,11 @@
 # Prefect Trading System Documentation
 
+![Project Logo](logo.png)
+
+## What is Prefect Trading System?
+
+Prefect Trading System is a modern, modular platform for financial data collection, analysis, and trading automation. It integrates real-time and historical data, robust workflow orchestration, and a professional UI for both developers and traders.
+
 ## Overview
 
 The Prefect Trading System is a comprehensive financial data collection and analysis platform built with modern technologies and best practices. This documentation provides complete guidance for setup, development, testing, and deployment.
@@ -18,6 +24,12 @@ The Prefect Trading System is a comprehensive financial data collection and anal
 ### 🧪 Testing
 - **[Testing Guide](testing.md)** - Comprehensive testing strategy and implementation
 - **[Testing UI](testing-ui.md)** - Testing results interface documentation
+
+## Community & Support
+- **GitHub Issues**: [Open an issue](https://github.com/your-repo/issues)
+- **Discussions**: [Join the conversation](https://github.com/your-repo/discussions)
+- **Contributing Guide**: [CONTRIBUTING.md](CONTRIBUTING.md)
+- **Contact**: dev-team@example.com
 
 ## Documentation Structure
 
