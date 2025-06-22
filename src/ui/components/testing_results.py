@@ -15,6 +15,7 @@ from datetime import datetime
 import pandas as pd
 from typing import Dict, List, Optional, Tuple
 import sys
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode
 
 
 def run_tests_and_get_results() -> Dict:
@@ -291,6 +292,50 @@ def display_coverage_details(coverage_data: Dict):
             coverage_ratio = summary.get('lines_covered', 0) / summary.get('lines_total', 0)
             st.progress(coverage_ratio)
     
+    # Show summary table like pytest output (now after metrics)
+    if 'files' in coverage_data:
+        summary_rows = []
+        for file_path, file_data in coverage_data['files'].items():
+            summary = file_data.get('summary', {})
+            coverage_pct = summary.get('percent_covered_display', summary.get('percent_covered', 0))
+            summary_rows.append({
+                "File": file_path.replace("\\", "/"),
+                "Stmts": summary.get("num_statements", 0),
+                "Miss": summary.get("missing_lines", 0),
+                "Cover": coverage_pct,  # Keep as numeric for sorting
+                "Missing": ", ".join(str(x) for x in file_data.get("missing_lines", []))
+            })
+        if summary_rows:
+            import pandas as pd
+            df = pd.DataFrame(summary_rows)
+            st.subheader("📋 Coverage Summary Table")
+            
+            # Configure AgGrid options
+            gb = GridOptionsBuilder.from_dataframe(df)
+            gb.configure_default_column(
+                sortable=True,
+                filterable=True,
+                resizable=True,
+                editable=False
+            )
+            gb.configure_column("File", width=300, pinned="left")
+            gb.configure_column("Stmts", width=80, type=["numericColumn", "numberColumnFilter"])
+            gb.configure_column("Miss", width=80, type=["numericColumn", "numberColumnFilter"])
+            gb.configure_column("Cover", header_name="Cover %", width=100, type=["numericColumn", "numberColumnFilter"])
+            gb.configure_column("Missing", width=200)
+            
+            grid_options = gb.build()
+            
+            # Display the AgGrid
+            grid_response = AgGrid(
+                df,
+                gridOptions=grid_options,
+                data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
+                update_mode=GridUpdateMode.SELECTION_CHANGED,
+                fit_columns_on_grid_load=True,
+                theme="streamlit"
+            )
+
     # File-level coverage
     if parsed_coverage.get('files'):
         st.subheader("📁 File-Level Coverage")
@@ -298,24 +343,29 @@ def display_coverage_details(coverage_data: Dict):
         files_df = pd.DataFrame(parsed_coverage['files'])
         files_df = files_df.sort_values('coverage_percentage', ascending=False)
         
-        # Color code the coverage
-        def color_coverage(val):
-            if val >= 80:
-                return 'background-color: #d4edda'  # Green
-            elif val >= 60:
-                return 'background-color: #fff3cd'  # Yellow
-            else:
-                return 'background-color: #f8d7da'  # Red
-        
-        styled_df = files_df.style.applymap(
-            color_coverage, 
-            subset=['coverage_percentage']
+        # Configure AgGrid options for file-level coverage
+        gb_files = GridOptionsBuilder.from_dataframe(files_df)
+        gb_files.configure_default_column(
+            sortable=True,
+            filterable=True,
+            resizable=True,
+            editable=False
         )
+        gb_files.configure_column("file", header_name="File", width=300, pinned="left")
+        gb_files.configure_column("lines_covered", header_name="Lines Covered", width=120, type=["numericColumn", "numberColumnFilter"])
+        gb_files.configure_column("lines_total", header_name="Total Lines", width=120, type=["numericColumn", "numberColumnFilter"])
+        gb_files.configure_column("coverage_percentage", header_name="Coverage %", width=120, type=["numericColumn", "numberColumnFilter"])
         
-        st.dataframe(
-            styled_df,
-            use_container_width=True,
-            hide_index=True
+        grid_options_files = gb_files.build()
+        
+        # Display the AgGrid for file-level coverage
+        grid_response_files = AgGrid(
+            files_df,
+            gridOptions=grid_options_files,
+            data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
+            update_mode=GridUpdateMode.SELECTION_CHANGED,
+            fit_columns_on_grid_load=True,
+            theme="streamlit"
         )
 
 
