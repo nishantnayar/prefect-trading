@@ -307,4 +307,46 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Status**: Active Development
 - **Last Updated**: December 2024
 - **Python Support**: 3.9+
-- **Database**: PostgreSQL 12+ 
+- **Database**: PostgreSQL 12+
+
+## Streamlit UI Testing (Simplified)
+
+All Streamlit UI tests are now located in a single file:
+
+- `test/unit/ui/test_simple_streamlit.py`
+
+### How to Run All Tests
+
+From the project root, run:
+
+```bash
+python scripts/run_tests.py simple
+```
+
+This will:
+- Set up the test environment
+- Run all basic Streamlit UI tests
+- Check code coverage (minimum 20%)
+
+### Troubleshooting
+
+If you see an error like:
+
+```
+error: unrecognized arguments: --cov=src/ui --cov-report=term-missing ...
+```
+
+You need to install the `pytest-cov` plugin:
+
+```bash
+pip install pytest-cov
+```
+
+### Notes
+- All other UI test files have been removed for simplicity.
+- Add new Streamlit UI tests to `test_simple_streamlit.py`.
+- The test runner script (`scripts/run_tests.py`) is now the only way to run UI tests.
+
+---
+
+For more details, see the rest of this README and the `docs/` directory. 

@@ -1,4 +1,4 @@
-.PHONY: help install install-dev setup test test-unit test-integration test-e2e lint format clean docs run-ui run-prefect deploy
+.PHONY: help install install-dev setup test test-unit test-integration test-e2e test-streamlit test-streamlit-unit test-streamlit-integration test-streamlit-e2e lint format clean docs run-ui run-prefect deploy
 
 # Default target
 help:
@@ -10,6 +10,10 @@ help:
 	@echo "  test-unit      - Run unit tests only"
 	@echo "  test-integration - Run integration tests only"
 	@echo "  test-e2e       - Run end-to-end tests only"
+	@echo "  test-streamlit - Run all Streamlit tests"
+	@echo "  test-streamlit-unit - Run Streamlit unit tests only"
+	@echo "  test-streamlit-integration - Run Streamlit integration tests only"
+	@echo "  test-streamlit-e2e - Run Streamlit end-to-end tests only"
 	@echo "  lint           - Run linting checks"
 	@echo "  format         - Format code with black and isort"
 	@echo "  clean          - Clean up temporary files"
@@ -43,6 +47,22 @@ test-integration:
 
 test-e2e:
 	pytest tests/e2e/ -v
+
+# Streamlit-specific tests
+test-streamlit:
+	python scripts/test_streamlit.py --all --verbose
+
+test-streamlit-unit:
+	python scripts/test_streamlit.py --unit --verbose
+
+test-streamlit-integration:
+	python scripts/test_streamlit.py --integration --verbose
+
+test-streamlit-e2e:
+	python scripts/test_streamlit.py --e2e --verbose
+
+test-streamlit-check:
+	python scripts/test_streamlit.py --check
 
 test-coverage:
 	pytest tests/ -v --cov=src --cov-report=html --cov-report=term-missing
