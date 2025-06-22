@@ -1,8 +1,134 @@
 # Setup and Configuration Guide
 
-## Environment Setup
+## Overview
 
-### Prerequisites
+This guide provides comprehensive setup instructions for the Prefect Trading System, from quick start for new developers to detailed configuration for production environments.
+
+## Quick Start (30 minutes)
+
+### Prerequisites Check
+
+Before you begin, ensure you have the following installed:
+
+- **Python 3.9 or higher**
+- **PostgreSQL 12 or higher**
+- **Git**
+- **Docker** (optional, for containerized development)
+
+```bash
+# Check Python version
+python --version
+
+# Check if PostgreSQL is running
+psql --version
+
+# Check if Git is installed
+git --version
+```
+
+### Step 1: Clone and Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/your-username/prefect-trading.git
+cd prefect-trading
+
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+```
+
+### Step 2: Install Dependencies
+
+```bash
+# Install all dependencies
+make install-dev
+
+# Or manually:
+pip install -r config/requirements.txt
+pip install -r config/requirements-dev.txt
+```
+
+### Step 3: Configure Environment
+
+```bash
+# Copy environment template
+cp config/env.example .env
+
+# Edit the .env file with your credentials
+# You'll need:
+# - Database credentials
+# - Alpaca API keys
+# - News API key (optional)
+```
+
+### Required API Keys
+
+1. **Alpaca Markets** (Required)
+   - Sign up at [alpaca.markets](https://alpaca.markets)
+   - Get your API key and secret
+   - Use paper trading for development
+
+2. **NewsAPI** (Optional)
+   - Sign up at [newsapi.org](https://newsapi.org)
+   - Get your API key
+
+### Step 4: Database Setup
+
+```bash
+# Create database
+createdb trading_db
+
+# Run migrations
+make db-migrate
+
+# Or manually run each migration file:
+psql -d trading_db -f src/database/migrations/001_initial_schema/001_create_tables.sql
+psql -d trading_db -f src/database/migrations/001_initial_schema/002_create_market_data.sql
+# ... (continue with all migration files)
+```
+
+### Step 5: Configure Prefect
+
+```bash
+# Start Prefect server
+make run-prefect
+
+# In a new terminal, configure Prefect blocks
+python -c "
+from prefect.blocks.system import String
+String(value='your_alpaca_key').save(name='alpaca-api-key')
+String(value='your_alpaca_secret').save(name='alpaca-secret-key')
+String(value='your_news_api_key').save(name='newsapi')
+"
+```
+
+### Step 6: Start the Application
+
+```bash
+# Start the Streamlit UI
+make run-ui
+
+# Or manually:
+streamlit run src/ui/streamlit_app.py
+```
+
+### Step 7: Verify Installation
+
+1. **Check Prefect UI**: Open [http://localhost:4200](http://localhost:4200)
+2. **Check Streamlit UI**: Open [http://localhost:8501](http://localhost:8501)
+3. **Run Tests**: `make test`
+
+## Detailed Setup
+
+### Environment Setup
+
+#### Prerequisites
 1. Python 3.9 or higher
 2. PostgreSQL 12 or higher
 3. Git
@@ -10,7 +136,7 @@
 5. Access to Yahoo Finance API
 6. Access to NewsAPI (optional but recommended)
 
-### Installation Steps
+#### Installation Steps
 
 1. **Clone the Repository**
    ```bash
@@ -248,28 +374,6 @@ streamlit run src/ui/streamlit_app.py
 
 The UI will be available at `http://localhost:8501`
 
-## Monitoring
-
-### 1. Access Prefect UI
-- Open `http://localhost:4200` in your browser
-- Monitor workflow runs and task execution
-- View logs and error messages
-
-### 2. Access Streamlit Dashboard
-- Open `http://localhost:8501` in your browser
-- View real-time market data
-- Monitor portfolio status
-- Read market news
-
-### 3. View Logs
-```bash
-# Prefect logs
-prefect logs
-
-# Application logs
-tail -f logs/trading_system.log
-```
-
 ## Development Setup
 
 ### 1. Install Development Dependencies
@@ -306,40 +410,178 @@ flake8 src/
 mypy src/
 ```
 
-## Troubleshooting
+## Monitoring
 
-### Common Issues
+### 1. Access Prefect UI
+- Open `http://localhost:4200` in your browser
+- Monitor workflow runs and task execution
+- View logs and error messages
 
-1. **Database Connection Issues**
-   - Verify PostgreSQL is running
-   - Check database credentials
-   - Ensure database exists
-   - Verify connection pooling settings
+### 2. Access Streamlit Dashboard
+- Open `http://localhost:8501` in your browser
+- View real-time market data
+- Monitor portfolio status
+- Read market news
 
-2. **API Connection Issues**
-   - Verify API keys are correct
-   - Check network connectivity
-   - Validate API endpoints
-   - Check rate limits
+### 3. View Logs
+```bash
+# Prefect logs
+prefect logs
 
-3. **Prefect Server Issues**
-   - Ensure Prefect server is running
-   - Check Prefect configuration
-   - Verify workflow deployments
-   - Check work pool configuration
+# Application logs
+tail -f logs/trading_system.log
+```
 
-4. **Streamlit UI Issues**
-   - Verify all dependencies are installed
-   - Check CSS file path
-   - Ensure database connectivity
-   - Check auto-refresh settings
+## Common Issues and Solutions
 
-5. **News API Issues**
-   - Verify NewsAPI key is valid
-   - Check rate limits (1,000 requests/day free tier)
-   - Ensure proper error handling
+### Database Connection Issues
 
-### Support
+```bash
+# Check if PostgreSQL is running
+sudo systemctl status postgresql
+
+# Start PostgreSQL if needed
+sudo systemctl start postgresql
+
+# Check connection
+psql -h localhost -U your_username -d trading_db
+```
+
+### Port Already in Use
+
+```bash
+# Check what's using the port
+lsof -i :8501
+lsof -i :4200
+
+# Kill the process
+kill -9 <PID>
+```
+
+### Missing Dependencies
+
+```bash
+# Reinstall dependencies
+pip install --upgrade -r config/requirements.txt
+pip install --upgrade -r config/requirements-dev.txt
+```
+
+### API Connection Issues
+- Verify API keys are correct
+- Check network connectivity
+- Validate API endpoints
+- Check rate limits
+
+### Prefect Server Issues
+- Ensure Prefect server is running
+- Check Prefect configuration
+- Verify workflow deployments
+- Check work pool configuration
+
+### Streamlit UI Issues
+- Verify all dependencies are installed
+- Check CSS file path
+- Ensure database connectivity
+- Check auto-refresh settings
+
+### News API Issues
+- Verify NewsAPI key is valid
+- Check rate limits (1,000 requests/day free tier)
+- Ensure proper error handling
+
+## Development Workflow
+
+### 1. Make Changes
+
+```bash
+# Create a feature branch
+git checkout -b feature/your-feature
+
+# Make your changes
+# ...
+
+# Format code
+make format
+
+# Run tests
+make test
+```
+
+### 2. Commit Changes
+
+```bash
+# Add changes
+git add .
+
+# Commit with conventional commit message
+git commit -m "feat: add new feature"
+
+# Push to remote
+git push origin feature/your-feature
+```
+
+### 3. Create Pull Request
+
+- Go to GitHub and create a pull request
+- Ensure all tests pass
+- Request code review
+
+## Useful Commands
+
+### Development Commands
+
+```bash
+# Run all tests
+make test
+
+# Run specific test categories
+make test-unit
+make test-integration
+make test-e2e
+
+# Format code
+make format
+
+# Lint code
+make lint
+
+# Check security
+make security-check
+
+# Clean up
+make clean
+```
+
+### Database Commands
+
+```bash
+# Reset database
+make db-reset
+
+# Run migrations
+make db-migrate
+
+# Backup database
+make backup
+
+# Restore database
+make restore BACKUP_FILE=backup_20241201_143022.sql
+```
+
+### Monitoring Commands
+
+```bash
+# View logs
+make logs
+
+# Check system status
+prefect server status
+
+# Monitor workflows
+prefect deployment ls
+```
+
+## Support
 
 For additional support:
 1. Check the [GitHub Issues](https://github.com/your-repo/issues)

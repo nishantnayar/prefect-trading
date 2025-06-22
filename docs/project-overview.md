@@ -59,64 +59,57 @@ The Prefect Trading System is a comprehensive financial data collection and anal
   - Article metadata storage
 - **Schedule**: Hourly processing during market hours
 
-### 2. Workflow Orchestration (Prefect)
+### 2. Database Layer
 
-#### Hourly Process Flow
-- **Schedule**: Every hour from 9AM-3PM EST weekdays
-- **Components**:
-  - News data collection
-  - Market data validation
-  - Real-time monitoring
-  - Alert generation
-
-#### End-of-Day Process Flow
-- **Schedule**: 6PM EST weekdays
-- **Components**:
-  - Symbol maintenance checks
-  - Yahoo Finance data collection
-  - Daily data aggregation
-  - System cleanup
-
-#### Market Data WebSocket Flow
-- **Schedule**: 9:30AM EST weekdays
-- **Components**:
-  - Real-time data streaming
-  - Hourly data persistence
-  - Connection management
-  - Error recovery
-
-### 3. Database Layer
-
-#### PostgreSQL Database
-- **Schema**: Comprehensive financial data storage
-- **Tables**:
-  - `market_data`: OHLCV price data
-  - `symbols`: Stock symbol information
-  - `news_articles`: News article storage
-  - `company_info`: Company profile data
-  - `company_officers`: Officer information
+#### PostgreSQL Integration
+- **Purpose**: Primary data storage and management
 - **Features**:
-  - Optimized indexing
-  - Connection pooling
-  - Data partitioning
-  - Backup and recovery
+  - Manages database connections and connection pooling
+  - Implements data persistence strategies with upsert operations
+  - Handles schema management and migrations
+  - Stores market data, news articles, company information, and portfolio data
+  - Includes comprehensive indexing for optimal query performance
 
-### 4. User Interface (Streamlit)
+### 3. Processing Layer
 
-#### Dashboard Components
-- **Market Overview**: Real-time market status and indices
-- **Portfolio Management**: Position tracking and performance
-- **Data Visualization**: Interactive charts and graphs
-- **News Feed**: Real-time market news
-- **Symbol Selector**: Interactive stock selection
-- **Settings Panel**: System configuration
+#### Hourly Processing
+- **Purpose**: Real-time data processing and analysis
+- **Features**:
+  - Real-time data processing and analysis
+  - Market condition monitoring
+  - Alert generation and notification
 
-#### UI Features
-- **Responsive Design**: Mobile and desktop optimized
-- **Auto-refresh**: Real-time data updates
-- **Custom Styling**: Professional appearance
-- **Error Handling**: Graceful degradation
-- **Performance**: Optimized rendering
+#### End-of-Day Processing
+- **Purpose**: Daily data aggregation and maintenance
+- **Features**:
+  - Daily data aggregation and cleanup
+  - Symbol maintenance and delisting checks
+  - Historical data updates and validation
+  - Company information refresh
+
+### 4. UI Layer
+
+#### Streamlit Dashboard
+- **Purpose**: Modern, responsive web interface for data visualization and interaction
+- **Features**:
+  - Real-time market data visualization with auto-refresh
+  - Portfolio management interface with expandable sections
+  - News feed integration with article previews
+  - Market status monitoring with timezone support
+  - Symbol selector with search functionality
+  - Responsive design optimized for different screen sizes
+  - Custom CSS styling for professional appearance
+
+### 5. Workflow Management
+
+#### Prefect Orchestration
+- **Purpose**: Workflow orchestration and task management
+- **Features**:
+  - Flow scheduling and execution with cron-based triggers
+  - Task dependency management and error handling
+  - Retry logic and circuit breakers
+  - Comprehensive logging and monitoring
+  - Secret management for API credentials
 
 ## Data Flow
 
@@ -139,6 +132,23 @@ News API → Article Collection → Database Storage → UI Display → User Int
 ```
 Database → Data Processing → UI Components → User Interface → User Actions → Database Updates
 ```
+
+## System Workflows
+
+### 1. Hourly Process Flow
+- **Schedule**: Every hour from 9AM-3PM EST on weekdays
+- **Purpose**: Real-time market data collection and processing
+- **Components**: Database connectivity, data validation, storage
+
+### 2. End-of-Day Process Flow
+- **Schedule**: 6PM EST on weekdays
+- **Purpose**: Daily data aggregation and maintenance
+- **Components**: Symbol maintenance, Yahoo Finance data collection, cleanup
+
+### 3. Market Data WebSocket Flow
+- **Schedule**: 9:30AM EST on weekdays
+- **Purpose**: Real-time market data streaming
+- **Components**: WebSocket connection, real-time processing, database storage
 
 ## Technology Stack
 
@@ -222,6 +232,16 @@ Database → Data Processing → UI Components → User Interface → User Actio
 - **Error Recovery**: Automatic recovery from failures
 - **Data Integrity**: Comprehensive data validation
 - **Backup Strategy**: Daily automated backups
+
+## Error Handling
+
+The system implements a comprehensive error handling strategy:
+- **Retry Mechanisms**: Exponential backoff for transient failures
+- **Circuit Breakers**: Protection against external service failures
+- **Logging and Monitoring**: Comprehensive logging with loguru
+- **Alert Generation**: Critical failure notifications
+- **Graceful Degradation**: UI components handle data unavailability
+- **Data Validation**: Input sanitization and validation
 
 ## Security Features
 
