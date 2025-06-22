@@ -151,7 +151,7 @@ def run_pytest_directly(project_root: Path, results: Dict) -> Dict:
         }
         
         return results
-        
+         
     except Exception as e:
         results['status'] = 'error'
         results['error'] = f"Direct pytest failed: {str(e)}"
@@ -191,16 +191,16 @@ def parse_coverage_data(coverage_data: Dict) -> Dict:
         # Extract file-level coverage
         if 'files' in coverage_data:
             for file_path, file_data in coverage_data['files'].items():
-                if file_path.startswith('src/'):
+                normalized_path = file_path.replace('\\', '/').replace('\\', '/')
+                if normalized_path.startswith('src/'):
                     parsed['files'].append({
-                        'file': file_path,
+                        'file': normalized_path,
                         'lines_covered': file_data.get('summary', {}).get('covered_lines', 0),
                         'lines_total': file_data.get('summary', {}).get('num_statements', 0),
                         'coverage_percentage': file_data.get('summary', {}).get('percent_covered', 0)
                     })
-    except Exception as e:
-        parsed['error'] = str(e)
-    
+    except Exception:
+        pass
     return parsed
 
 
@@ -332,7 +332,6 @@ def display_coverage_details(coverage_data: Dict):
                 gridOptions=grid_options,
                 data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
                 update_mode=GridUpdateMode.SELECTION_CHANGED,
-                fit_columns_on_grid_load=True,
                 theme="streamlit"
             )
 
@@ -364,7 +363,6 @@ def display_coverage_details(coverage_data: Dict):
             gridOptions=grid_options_files,
             data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
             update_mode=GridUpdateMode.SELECTION_CHANGED,
-            fit_columns_on_grid_load=True,
             theme="streamlit"
         )
 

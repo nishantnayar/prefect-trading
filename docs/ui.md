@@ -62,6 +62,21 @@ def get_current_cst_formatted():
     """
 ```
 
+#### Testing Results Component (`testing_results.py`)
+```python
+def display_testing_results():
+    """
+    Display comprehensive testing results and coverage metrics.
+    
+    Features:
+    - Coverage summary with color-coded metrics
+    - File-level coverage breakdown
+    - Interactive AgGrid tables with sorting/filtering
+    - Real-time coverage data from JSON reports
+    - Professional styling with progress indicators
+    """
+```
+
 ## UI Features
 
 ### 1. Real-time Updates
@@ -81,12 +96,67 @@ def get_current_cst_formatted():
 - **Interactive Charts**: Clickable data visualizations
 - **Search Functionality**: Symbol and news search
 - **Filtering Options**: Data filtering capabilities
+- **AgGrid Tables**: Advanced table functionality with sorting, filtering, and pagination
 
 ### 4. Professional Styling
 - **Custom CSS**: Professional appearance
 - **Color Coding**: Status-based color indicators
 - **Consistent Spacing**: Uniform layout spacing
 - **Typography**: Readable font choices
+
+## Testing Results Interface
+
+### 1. Coverage Summary
+The Testing Results component provides a comprehensive view of test coverage metrics:
+
+```python
+def display_coverage_summary():
+    """
+    Display overall coverage metrics with visual indicators.
+    
+    Features:
+    - Overall coverage percentage with progress bar
+    - Color-coded coverage levels (red/yellow/green)
+    - Total files, statements, and coverage statistics
+    - Interactive metrics display
+    """
+```
+
+### 2. File-Level Coverage
+Detailed breakdown of coverage by individual files:
+
+```python
+def display_file_coverage():
+    """
+    Display file-level coverage in an interactive AgGrid table.
+    
+    Features:
+    - Sortable columns (file name, statements, missing, coverage)
+    - Color-coded coverage percentages
+    - Filtering capabilities
+    - Responsive table design
+    """
+```
+
+### 3. Coverage Data Integration
+The component reads coverage data from JSON reports:
+
+```python
+def load_coverage_data():
+    """
+    Load coverage data from JSON report file.
+    
+    Returns:
+        Dictionary containing coverage metrics and file breakdown
+    """
+```
+
+### 4. Recent Improvements
+- **AgGrid Integration**: Replaced basic tables with advanced AgGrid functionality
+- **Path Normalization**: Fixed Windows/Unix path differences for accurate coverage display
+- **Deprecation Fixes**: Removed deprecated `fit_columns_on_grid_load` parameter
+- **Enhanced Sorting**: Improved table sorting with numeric value preservation
+- **Better Error Handling**: Graceful handling of missing coverage data
 
 ## Page Structure
 

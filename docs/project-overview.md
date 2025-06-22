@@ -178,6 +178,40 @@ Database → Data Processing → UI Components → User Interface → User Actio
 - **MyPy**: Type checking
 - **Pre-commit**: Git hooks
 
+## Testing and Quality Assurance
+
+### Current Testing Status
+The project maintains a comprehensive testing strategy with the following coverage metrics:
+
+#### High Coverage Modules (100%)
+- **Database Connectivity**: Complete coverage of all database operations
+- **UI Components**: 
+  - `date_display.py` - 30 comprehensive tests covering timezone conversions and formatting
+  - `market_status.py` - 29 tests covering market status display and UI components
+  - `home.py` - Complete coverage of dashboard functionality
+- **Testing Results Component**: Advanced coverage display with AgGrid integration
+
+#### Modules Needing Coverage Improvement
+- **Data Sources**: `symbol_manager.py` (24%), `yahoo_finance_loader.py` (13%)
+- **UI Components**: `symbol_selector.py` (25%)
+- **Utilities**: `market_hours.py` (30%)
+
+#### Overall Project Coverage: 77%
+
+### Testing Infrastructure
+- **Comprehensive Test Suites**: Detailed test files for complex modules
+- **Mock Strategies**: Advanced mocking for external APIs and UI components
+- **Coverage Reporting**: Automated coverage reports with JSON output
+- **UI Testing**: Interactive testing results display with sorting and filtering
+- **Integration Testing**: End-to-end testing for complete workflows
+
+### Recent Testing Improvements
+- **AgGrid Integration**: Enhanced testing results display with advanced table functionality
+- **Path Normalization**: Fixed coverage display issues across different operating systems
+- **Deprecation Fixes**: Removed deprecated parameters and updated dependencies
+- **Comprehensive Test Suites**: Added extensive test coverage for UI components
+- **Mock Improvements**: Enhanced mocking strategies for Streamlit components
+
 ## System Workflows
 
 ### Daily Operations
