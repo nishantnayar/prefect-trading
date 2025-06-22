@@ -9,6 +9,7 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.append(str(project_root))
 
 from src.ui.home import render_home
+from src.ui.portfolio import render_portfolio
 from src.ui.components.testing_results import render_testing_results
 
 # 2. Page config must be top-level
@@ -41,8 +42,8 @@ def main():
     with st.sidebar:
         selected = option_menu.option_menu(
             menu_title="Trading System",
-            options=["Home", "Analysis", "Testing", "Settings"],
-            icons=["house", "graph-up", "clipboard-check", "gear"],
+            options=["Home", "Portfolio", "Analysis", "Testing", "Settings"],
+            icons=["house", "briefcase", "graph-up", "clipboard-check", "gear"],
             menu_icon="chart-line",
             default_index=0,
         )
@@ -50,6 +51,8 @@ def main():
     # Routing
     if selected == "Home":
         render_home()
+    elif selected == "Portfolio":
+        render_portfolio()
     elif selected == "Analysis":
         st.title("📊 Analysis")
         st.write("Explore data analysis and trading signals.")

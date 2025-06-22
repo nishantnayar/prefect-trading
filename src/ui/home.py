@@ -17,6 +17,7 @@ from src.ui.components.symbol_selector import display_symbol_selector
 from src.ui.components.date_display import get_current_cst_formatted, format_datetime_est_to_cst
 from src.ui.components.market_status import display_market_status
 from src.database.database_connectivity import DatabaseConnectivity
+from src.data.sources.portfolio_manager import PortfolioManager
 
 # Load environment variables
 load_dotenv('config/.env', override=True)
@@ -66,7 +67,7 @@ def display_header(user_name: str):
 
 
 def display_portfolio_summary():
-    """Display an optimized portfolio summary section.
+    """Display an optimized portfolio summary section with real Alpaca data.
     
     Shows key metrics in a single row with additional metrics in an expander:
     - Primary metrics: Total Value, Daily P&L, Open Positions, Win Rate
@@ -74,30 +75,105 @@ def display_portfolio_summary():
     """
     st.subheader("📊 Portfolio Overview")
     
-    # Create a single row of key metrics
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric("Total Value", "$125,432.89", "+2.3%", delta_color="normal")
-    with col2:
-        st.metric("Daily P&L", "$1,234.56", "+1.2%", delta_color="normal")
-    with col3:
-        st.metric("Open Positions", "12", "-2", delta_color="inverse")
-    with col4:
-        st.metric("Win Rate", "68%", "+2%", delta_color="normal")
-    
-    # Add a small expander for additional metrics
-    with st.expander("Additional Metrics"):
+    try:
+        # Get real portfolio data
+        portfolio_manager = PortfolioManager()
+        portfolio_summary = portfolio_manager.get_portfolio_summary()
+        
+        if not portfolio_summary:
+            st.error("Unable to fetch portfolio data")
+            return
+        
+        metrics = portfolio_summary.get('metrics', {})
+        positions = portfolio_summary.get('positions', [])
+        
+        # Format metrics for display
+        total_value = metrics.get('total_value', 0)
+        daily_pnl = metrics.get('daily_pnl', 0)
+        total_positions = metrics.get('total_positions', 0)
+        win_rate = metrics.get('win_rate', 0)
+        
+        # Calculate daily P&L percentage
+        daily_pnl_pct = (daily_pnl / total_value * 100) if total_value > 0 else 0
+        
+        # Create a single row of key metrics
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            st.metric("Avg. Trade", "$342.50", "+$12.30", delta_color="normal")
+            st.metric(
+                "Total Value", 
+                f"${total_value:,.2f}", 
+                f"{daily_pnl_pct:+.2f}%", 
+                delta_color="normal" if daily_pnl_pct >= 0 else "inverse"
+            )
         with col2:
-            st.metric("Risk/Reward", "1:2.5", "0", delta_color="off")
+            st.metric(
+                "Daily P&L", 
+                f"${daily_pnl:,.2f}", 
+                f"{daily_pnl_pct:+.2f}%", 
+                delta_color="normal" if daily_pnl >= 0 else "inverse"
+            )
         with col3:
-            st.metric("Max Drawdown", "8.5%", "-1.2%", delta_color="normal")
+            st.metric(
+                "Open Positions", 
+                str(total_positions), 
+                help="Number of current positions"
+            )
         with col4:
-            st.metric("Pending Orders", "3", "0", delta_color="off")
+            st.metric(
+                "Win Rate", 
+                f"{win_rate:.1f}%", 
+                help="Percentage of profitable trades"
+            )
+        
+        # Add a small expander for additional metrics
+        with st.expander("Additional Metrics"):
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                avg_trade_size = metrics.get('avg_trade_size', 0)
+                st.metric(
+                    "Avg. Trade", 
+                    f"${avg_trade_size:,.2f}", 
+                    help="Average trade size"
+                )
+            with col2:
+                margin_ratio = metrics.get('margin_ratio', 0)
+                st.metric(
+                    "Margin Used", 
+                    f"{margin_ratio:.1f}%", 
+                    help="Percentage of portfolio using margin"
+                )
+            with col3:
+                buying_power = metrics.get('buying_power', 0)
+                st.metric(
+                    "Buying Power", 
+                    f"${buying_power:,.2f}", 
+                    help="Available buying power"
+                )
+            with col4:
+                # Get pending orders
+                orders = portfolio_manager.get_orders("open")
+                pending_orders = len(orders)
+                st.metric(
+                    "Pending Orders", 
+                    str(pending_orders), 
+                    help="Number of open orders"
+                )
+    
+    except Exception as e:
+        st.error(f"Error loading portfolio data: {str(e)}")
+        # Fallback to dummy data if there's an error
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Total Value", "$125,432.89", "+2.3%", delta_color="normal")
+        with col2:
+            st.metric("Daily P&L", "$1,234.56", "+1.2%", delta_color="normal")
+        with col3:
+            st.metric("Open Positions", "12", "-2", delta_color="inverse")
+        with col4:
+            st.metric("Win Rate", "68%", "+2%", delta_color="normal")
 
 
 def display_market_overview():
@@ -133,7 +209,7 @@ def display_market_overview():
 
 
 def display_recent_activity():
-    """Display recent trading activity in a structured format.
+    """Display recent trading activity in a structured format with real data.
     
     Shows recent trades with:
     - Action type (Buy/Sell/Limit)
@@ -143,23 +219,48 @@ def display_recent_activity():
     """
     st.subheader("📝 Recent Activity")
     
-    # Create a more structured activity list
-    activities = [
-        {"action": "Buy", "symbol": "AAPL", "shares": 100, "price": 185.50, "time": "10:15 AM"},
-        {"action": "Sell", "symbol": "MSFT", "shares": 50, "price": 374.20, "time": "10:30 AM"},
-        {"action": "Limit", "symbol": "GOOGL", "shares": 75, "price": 140.00, "time": "10:45 AM"}
-    ]
+    try:
+        # Get real trading activity
+        portfolio_manager = PortfolioManager()
+        recent_orders = portfolio_manager.get_orders("closed")[:5]  # Last 5 orders
+        
+        if not recent_orders:
+            st.info("No recent trading activity found.")
+            return
+        
+        # Format recent activity
+        for order in recent_orders:
+            if order.get('filled_at'):
+                col1, col2, col3, col4 = st.columns([1, 2, 2, 1])
+                with col1:
+                    st.write(f"**{order['side'].upper()}**")
+                with col2:
+                    st.write(f"{order['symbol']} ({order['filled_qty']} shares)")
+                with col3:
+                    st.write(f"@ ${order['filled_avg_price']:.2f}")
+                with col4:
+                    time_str = order['filled_at'].strftime('%I:%M %p') if order['filled_at'] else 'N/A'
+                    st.write(time_str)
     
-    for activity in activities:
-        col1, col2, col3, col4 = st.columns([1, 2, 2, 1])
-        with col1:
-            st.write(f"**{activity['action']}**")
-        with col2:
-            st.write(f"{activity['symbol']} ({activity['shares']} shares)")
-        with col3:
-            st.write(f"@ ${activity['price']:.2f}")
-        with col4:
-            st.write(f"{activity['time']}")
+    except Exception as e:
+        st.error(f"Error loading recent activity: {str(e)}")
+        # Fallback to dummy data
+        activities = [
+            {"action": "Buy", "symbol": "AAPL", "shares": 100, "price": 185.50, "time": "10:15 AM"},
+            {"action": "Sell", "symbol": "MSFT", "shares": 50, "price": 374.20, "time": "10:30 AM"},
+            {"action": "Limit", "symbol": "GOOGL", "shares": 75, "price": 140.00, "time": "10:45 AM"}
+        ]
+        
+        for activity in activities:
+            col1, col2, col3, col4 = st.columns([1, 2, 2, 1])
+            with col1:
+                st.write(f"**{activity['action']}**")
+            with col2:
+                st.write(f"{activity['symbol']} ({activity['shares']} shares)")
+            with col3:
+                st.write(f"@ ${activity['price']:.2f}")
+            with col4:
+                st.write(f"{activity['time']}")
 
 
 def display_quick_actions():
@@ -177,17 +278,21 @@ def display_quick_actions():
     col1, col2 = st.columns(2)
     
     with col1:
-        st.button("📈 New Trade", use_container_width=True)
+        if st.button("📈 New Trade", use_container_width=True):
+            st.info("New trade functionality coming soon!")
         st.caption("Open a new trading position")
         
-        st.button("🔍 Market Scan", use_container_width=True)
+        if st.button("🔍 Market Scan", use_container_width=True):
+            st.info("Market scan functionality coming soon!")
         st.caption("Scan for trading opportunities")
     
     with col2:
-        st.button("📊 Risk Analysis", use_container_width=True)
+        if st.button("📊 Risk Analysis", use_container_width=True):
+            st.info("Risk analysis functionality coming soon!")
         st.caption("Analyze portfolio risk")
         
-        st.button("📑 Reports", use_container_width=True)
+        if st.button("📑 Reports", use_container_width=True):
+            st.info("Reports functionality coming soon!")
         st.caption("View detailed reports")
 
 
@@ -238,6 +343,32 @@ def display_market_news():
         st.error(str(e))
 
 
+def display_open_orders():
+    """Display open (accepted) orders in a structured format."""
+    st.subheader("🟢 Open Orders")
+    try:
+        portfolio_manager = PortfolioManager()
+        open_orders = portfolio_manager.get_orders("open")
+        if not open_orders:
+            st.info("No open orders found.")
+            return
+        for order in open_orders:
+            col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 2, 2])
+            with col1:
+                st.write(f"**{order['symbol']}**")
+            with col2:
+                st.write(f"{order['side'].upper()}")
+            with col3:
+                st.write(f"{order['qty']} shares")
+            with col4:
+                price = order.get('limit_price') or order.get('filled_avg_price') or 0
+                st.write(f"@ ${price:.2f}")
+            with col5:
+                st.write(f"Status: {order['status'].capitalize()}")
+    except Exception as e:
+        st.error(f"Error loading open orders: {str(e)}")
+
+
 def render_home():
     """Main function to render the optimized home page.
     
@@ -268,6 +399,9 @@ def render_home():
         st.divider()
         # Recent Activity
         display_recent_activity()
+        st.divider()
+        # Open Orders
+        display_open_orders()
     
     with col2:
         # Quick Actions

@@ -122,6 +122,9 @@ def run_all_tests():
     ]
     
     try:
+        # Start timing
+        start_time = datetime.now()
+        
         # Use UTF-8 encoding and handle encoding errors gracefully
         result = subprocess.run(
             cmd, 
@@ -132,6 +135,10 @@ def run_all_tests():
             errors='replace'  # Replace problematic characters with replacement character
         )
         
+        # End timing
+        end_time = datetime.now()
+        execution_time = (end_time - start_time).total_seconds()
+        
         # Print output for user
         print(result.stdout)
         if result.stderr:
@@ -141,12 +148,14 @@ def run_all_tests():
         test_results = parse_pytest_output(result.stdout, result.stderr)
         test_results['status'] = 'success' if result.returncode == 0 else 'failed'
         test_results['return_code'] = result.returncode
+        test_results['execution_time'] = execution_time
         
         # Write JSON results
         with open(results_file, 'w', encoding='utf-8') as f:
             json.dump(test_results, f, indent=2)
         
         print(f"\nTest Summary: {test_results['summary']}")
+        print(f"Execution Time: {execution_time:.2f} seconds")
         print(f"Results written to: {results_file}")
         
         return result.returncode == 0

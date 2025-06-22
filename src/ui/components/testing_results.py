@@ -485,7 +485,8 @@ def load_existing_test_results() -> Dict:
         'source': 'file',
         'stdout': '',
         'stderr': '',
-        'error': ''
+        'error': '',
+        'execution_time': 0  # Default to 0 if not available
     }
     
     if test_results_file.exists():
@@ -495,6 +496,8 @@ def load_existing_test_results() -> Dict:
                 results['test_results'] = test_data
                 results['status'] = 'success'
                 results['file_timestamp'] = test_data.get('timestamp', 'unknown')
+                # Load execution time from the JSON file
+                results['execution_time'] = test_data.get('execution_time', 0)
                 # Load execution logs from the JSON file
                 results['stdout'] = test_data.get('stdout', '')
                 results['stderr'] = test_data.get('stderr', '')
@@ -515,6 +518,12 @@ def load_existing_test_results() -> Dict:
         except Exception as e:
             results['coverage_error'] = str(e)
     return results
+
+
+def load_coverage_data():
+    """Always load the latest coverage data from disk."""
+    with open("build/coverage.json", "r") as f:
+        return json.load(f)
 
 
 def render_testing_results():
