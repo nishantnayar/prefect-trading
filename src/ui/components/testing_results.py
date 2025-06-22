@@ -174,7 +174,9 @@ def parse_coverage_data(coverage_data: Dict) -> Dict:
     
     parsed = {
         'summary': {},
-        'files': []
+        'files': [],
+        'modules': {},
+        'coverage_levels': {'excellent': 0, 'good': 0, 'fair': 0, 'poor': 0}
     }
     
     try:
@@ -185,23 +187,360 @@ def parse_coverage_data(coverage_data: Dict) -> Dict:
                 'lines_covered': totals.get('covered_lines', 0),
                 'lines_total': totals.get('num_statements', 0),
                 'coverage_percentage': totals.get('percent_covered', 0),
-                'missing_lines': totals.get('missing_lines', 0)
+                'missing_lines': totals.get('missing_lines', 0),
+                'coverage_display': totals.get('percent_covered_display', '0')
             }
         
-        # Extract file-level coverage
+        # Extract file-level coverage and categorize by coverage level
         if 'files' in coverage_data:
             for file_path, file_data in coverage_data['files'].items():
-                normalized_path = file_path.replace('\\', '/').replace('\\', '/')
+                normalized_path = file_path.replace('\\', '/')
                 if normalized_path.startswith('src/'):
-                    parsed['files'].append({
+                    summary = file_data.get('summary', {})
+                    coverage_pct = summary.get('percent_covered', 0)
+                    
+                    file_info = {
                         'file': normalized_path,
-                        'lines_covered': file_data.get('summary', {}).get('covered_lines', 0),
-                        'lines_total': file_data.get('summary', {}).get('num_statements', 0),
-                        'coverage_percentage': file_data.get('summary', {}).get('percent_covered', 0)
-                    })
-    except Exception:
-        pass
+                        'lines_covered': summary.get('covered_lines', 0),
+                        'lines_total': summary.get('num_statements', 0),
+                        'coverage_percentage': coverage_pct,
+                        'missing_lines': summary.get('missing_lines', 0),
+                        'missing_line_numbers': file_data.get('missing_lines', [])
+                    }
+                    parsed['files'].append(file_info)
+                    
+                    # Categorize by coverage level
+                    if coverage_pct >= 90:
+                        parsed['coverage_levels']['excellent'] += 1
+                    elif coverage_pct >= 80:
+                        parsed['coverage_levels']['good'] += 1
+                    elif coverage_pct >= 60:
+                        parsed['coverage_levels']['fair'] += 1
+                    else:
+                        parsed['coverage_levels']['poor'] += 1
+                    
+                    # Group by module
+                    module = normalized_path.split('/')[1] if len(normalized_path.split('/')) > 1 else 'other'
+                    if module not in parsed['modules']:
+                        parsed['modules'][module] = {
+                            'files': 0,
+                            'total_lines': 0,
+                            'covered_lines': 0,
+                            'coverage_percentage': 0
+                        }
+                    
+                    parsed['modules'][module]['files'] += 1
+                    parsed['modules'][module]['total_lines'] += summary.get('num_statements', 0)
+                    parsed['modules'][module]['covered_lines'] += summary.get('covered_lines', 0)
+                    
+            # Calculate module-level coverage percentages
+            for module in parsed['modules']:
+                module_data = parsed['modules'][module]
+                if module_data['total_lines'] > 0:
+                    module_data['coverage_percentage'] = (
+                        module_data['covered_lines'] / module_data['total_lines'] * 100
+                    )
+                    
+    except Exception as e:
+        st.error(f"Error parsing coverage data: {e}")
+        return {}
+    
     return parsed
+
+
+def display_coverage_overview(coverage_data: Dict):
+    """
+    Display a comprehensive coverage overview with multiple visualizations.
+    
+    Args:
+        coverage_data: Coverage data dictionary
+    """
+    if not coverage_data:
+        st.warning("No coverage data available")
+        return
+    
+    parsed_coverage = parse_coverage_data(coverage_data)
+    
+    if not parsed_coverage:
+        st.error("Failed to parse coverage data")
+        return
+    
+    st.subheader("📈 Code Coverage Overview")
+    
+    # Overall coverage metrics
+    if 'summary' in parsed_coverage:
+        summary = parsed_coverage['summary']
+        
+        # Main metrics row
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            coverage_pct = summary.get('coverage_percentage', 0)
+            st.metric(
+                "Overall Coverage", 
+                f"{coverage_pct:.1f}%",
+                delta=f"{summary.get('lines_covered', 0)}/{summary.get('lines_total', 0)} lines"
+            )
+        
+        with col2:
+            st.metric("Lines Covered", summary.get('lines_covered', 0))
+        
+        with col3:
+            st.metric("Total Lines", summary.get('lines_total', 0))
+        
+        with col4:
+            st.metric("Missing Lines", summary.get('missing_lines', 0))
+        
+        # Coverage progress bar with color coding
+        if summary.get('lines_total', 0) > 0:
+            coverage_ratio = summary.get('lines_covered', 0) / summary.get('lines_total', 0)
+            
+            # Color code based on coverage level
+            if coverage_ratio >= 0.9:
+                color = "green"
+            elif coverage_ratio >= 0.8:
+                color = "blue"
+            elif coverage_ratio >= 0.6:
+                color = "orange"
+            else:
+                color = "red"
+            
+            st.progress(coverage_ratio)
+            st.caption(f"Coverage Level: {get_coverage_level(coverage_ratio)}")
+    
+    # Coverage distribution by level
+    if 'coverage_levels' in parsed_coverage:
+        st.subheader("📊 Coverage Distribution")
+        
+        levels = parsed_coverage['coverage_levels']
+        total_files = sum(levels.values())
+        
+        if total_files > 0:
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                excellent_pct = (levels['excellent'] / total_files) * 100
+                st.metric("Excellent (≥90%)", f"{levels['excellent']} files", f"{excellent_pct:.1f}%")
+            
+            with col2:
+                good_pct = (levels['good'] / total_files) * 100
+                st.metric("Good (80-89%)", f"{levels['good']} files", f"{good_pct:.1f}%")
+            
+            with col3:
+                fair_pct = (levels['fair'] / total_files) * 100
+                st.metric("Fair (60-79%)", f"{levels['fair']} files", f"{fair_pct:.1f}%")
+            
+            with col4:
+                poor_pct = (levels['poor'] / total_files) * 100
+                st.metric("Poor (<60%)", f"{levels['poor']} files", f"{poor_pct:.1f}%")
+    
+    # Module-level coverage
+    if 'modules' in parsed_coverage and parsed_coverage['modules']:
+        st.subheader("📁 Module Coverage")
+        
+        modules_data = []
+        for module, data in parsed_coverage['modules'].items():
+            modules_data.append({
+                'Module': module.title(),
+                'Files': data['files'],
+                'Coverage %': round(data['coverage_percentage'], 1),
+                'Lines Covered': data['covered_lines'],
+                'Total Lines': data['total_lines']
+            })
+        
+        if modules_data:
+            modules_df = pd.DataFrame(modules_data)
+            modules_df = modules_df.sort_values('Coverage %', ascending=False)
+            
+            # Configure AgGrid for modules
+            gb_modules = GridOptionsBuilder.from_dataframe(modules_df)
+            gb_modules.configure_default_column(
+                sortable=True,
+                filterable=True,
+                resizable=True,
+                editable=False
+            )
+            gb_modules.configure_column("Module", width=150, pinned="left")
+            gb_modules.configure_column("Files", width=80, type=["numericColumn", "numberColumnFilter"])
+            gb_modules.configure_column("Coverage %", width=120, type=["numericColumn", "numberColumnFilter"])
+            gb_modules.configure_column("Lines Covered", width=120, type=["numericColumn", "numberColumnFilter"])
+            gb_modules.configure_column("Total Lines", width=120, type=["numericColumn", "numberColumnFilter"])
+            
+            grid_options_modules = gb_modules.build()
+            
+            AgGrid(
+                modules_df,
+                gridOptions=grid_options_modules,
+                data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
+                update_mode=GridUpdateMode.SELECTION_CHANGED,
+                theme="streamlit"
+            )
+
+
+def display_coverage_details(coverage_data: Dict):
+    """
+    Display detailed coverage information with file-level breakdown.
+    
+    Args:
+        coverage_data: Coverage data dictionary
+    """
+    if not coverage_data:
+        st.warning("No coverage data available")
+        return
+    
+    parsed_coverage = parse_coverage_data(coverage_data)
+    
+    if not parsed_coverage:
+        st.error("Failed to parse coverage data")
+        return
+    
+    st.subheader("📋 Detailed Coverage Report")
+    
+    # File-level coverage table
+    if parsed_coverage.get('files'):
+        files_df = pd.DataFrame(parsed_coverage['files'])
+        files_df = files_df.sort_values('coverage_percentage', ascending=False)
+        
+        # Add coverage level column
+        files_df['Coverage Level'] = files_df['coverage_percentage'].apply(get_coverage_level)
+        files_df['Coverage %'] = files_df['coverage_percentage'].round(1)
+        
+        # Reorder columns
+        files_df = files_df[['file', 'Coverage Level', 'Coverage %', 'lines_covered', 'lines_total', 'missing_lines', 'missing_line_numbers']]
+        files_df.columns = ['File', 'Level', 'Coverage %', 'Covered', 'Total', 'Missing', 'Missing Lines']
+        
+        # Configure AgGrid options
+        gb = GridOptionsBuilder.from_dataframe(files_df)
+        gb.configure_default_column(
+            sortable=True,
+            filterable=True,
+            resizable=True,
+            editable=False
+        )
+        gb.configure_column("File", width=300, pinned="left")
+        gb.configure_column("Level", width=100)
+        gb.configure_column("Coverage %", width=100, type=["numericColumn", "numberColumnFilter"])
+        gb.configure_column("Covered", width=80, type=["numericColumn", "numberColumnFilter"])
+        gb.configure_column("Total", width=80, type=["numericColumn", "numberColumnFilter"])
+        gb.configure_column("Missing", width=80, type=["numericColumn", "numberColumnFilter"])
+        gb.configure_column("Missing Lines", width=200)
+        
+        grid_options = gb.build()
+        
+        # Display the AgGrid
+        grid_response = AgGrid(
+            files_df,
+            gridOptions=grid_options,
+            data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
+            update_mode=GridUpdateMode.SELECTION_CHANGED,
+            theme="streamlit"
+        )
+        
+        # Show files that need attention
+        low_coverage_files = files_df[files_df['Coverage %'] < 80]
+        if not low_coverage_files.empty:
+            st.subheader("⚠️ Files Needing Coverage Improvement")
+            st.dataframe(low_coverage_files[['File', 'Coverage %', 'Missing']], use_container_width=True)
+
+
+def get_coverage_level(coverage_percentage: float) -> str:
+    """
+    Get coverage level description based on percentage.
+    
+    Args:
+        coverage_percentage: Coverage percentage (0-100)
+        
+    Returns:
+        Coverage level description
+    """
+    if coverage_percentage >= 90:
+        return "🟢 Excellent"
+    elif coverage_percentage >= 80:
+        return "🔵 Good"
+    elif coverage_percentage >= 60:
+        return "🟡 Fair"
+    else:
+        return "🔴 Poor"
+
+
+def display_coverage_insights(coverage_data: Dict):
+    """
+    Display insights and recommendations based on coverage data.
+    
+    Args:
+        coverage_data: Coverage data dictionary
+    """
+    if not coverage_data:
+        return
+    
+    parsed_coverage = parse_coverage_data(coverage_data)
+    
+    if not parsed_coverage:
+        return
+    
+    st.subheader("💡 Coverage Insights & Recommendations")
+    
+    insights = []
+    recommendations = []
+    
+    # Analyze overall coverage
+    if 'summary' in parsed_coverage:
+        summary = parsed_coverage['summary']
+        coverage_pct = summary.get('coverage_percentage', 0)
+        
+        if coverage_pct >= 90:
+            insights.append("🎉 Excellent overall coverage! Your codebase is well-tested.")
+        elif coverage_pct >= 80:
+            insights.append("👍 Good coverage! Consider improving coverage in specific areas.")
+        elif coverage_pct >= 60:
+            insights.append("⚠️ Fair coverage. Focus on increasing coverage in critical modules.")
+        else:
+            insights.append("🚨 Low coverage detected. Prioritize adding tests for critical functionality.")
+    
+    # Analyze file distribution
+    if 'coverage_levels' in parsed_coverage:
+        levels = parsed_coverage['coverage_levels']
+        total_files = sum(levels.values())
+        
+        if total_files > 0:
+            poor_pct = (levels['poor'] / total_files) * 100
+            if poor_pct > 20:
+                insights.append(f"⚠️ {poor_pct:.1f}% of files have poor coverage (<60%)")
+                recommendations.append("Focus on files with <60% coverage first")
+            
+            excellent_pct = (levels['excellent'] / total_files) * 100
+            if excellent_pct >= 70:
+                insights.append("🌟 Most files have excellent coverage!")
+    
+    # Module-specific insights
+    if 'modules' in parsed_coverage:
+        low_coverage_modules = []
+        for module, data in parsed_coverage['modules'].items():
+            if data['coverage_percentage'] < 70:
+                low_coverage_modules.append(module)
+        
+        if low_coverage_modules:
+            insights.append(f"📁 Modules needing attention: {', '.join(low_coverage_modules)}")
+            recommendations.append(f"Prioritize testing in: {', '.join(low_coverage_modules)}")
+    
+    # Display insights
+    if insights:
+        st.write("**Key Insights:**")
+        for insight in insights:
+            st.write(f"• {insight}")
+    
+    # Display recommendations
+    if recommendations:
+        st.write("**Recommendations:**")
+        for rec in recommendations:
+            st.write(f"• {rec}")
+    
+    # Coverage improvement tips
+    st.write("**General Tips:**")
+    st.write("• Focus on critical business logic and error handling paths")
+    st.write("• Test edge cases and boundary conditions")
+    st.write("• Consider integration tests for complex workflows")
+    st.write("• Use parameterized tests to cover multiple scenarios")
 
 
 def display_test_summary(results: Dict):
@@ -251,120 +590,6 @@ def display_test_summary(results: Dict):
                 st.metric("Coverage", "N/A")
         else:
             st.metric("Coverage", "N/A")
-
-
-def display_coverage_details(coverage_data: Dict):
-    """
-    Display detailed coverage information.
-    
-    Args:
-        coverage_data: Coverage data dictionary
-    """
-    if not coverage_data:
-        st.warning("No coverage data available")
-        return
-    
-    parsed_coverage = parse_coverage_data(coverage_data)
-    
-    st.subheader("📈 Code Coverage Details")
-    
-    # Overall coverage
-    if 'summary' in parsed_coverage:
-        summary = parsed_coverage['summary']
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.metric(
-                "Lines Covered", 
-                f"{summary.get('lines_covered', 0)} / {summary.get('lines_total', 0)}"
-            )
-        
-        with col2:
-            coverage_pct = summary.get('coverage_percentage', 0)
-            st.metric("Coverage %", f"{coverage_pct:.1f}%")
-        
-        with col3:
-            st.metric("Missing Lines", summary.get('missing_lines', 0))
-        
-        # Coverage progress bar
-        if summary.get('lines_total', 0) > 0:
-            coverage_ratio = summary.get('lines_covered', 0) / summary.get('lines_total', 0)
-            st.progress(coverage_ratio)
-    
-    # Show summary table like pytest output (now after metrics)
-    if 'files' in coverage_data:
-        summary_rows = []
-        for file_path, file_data in coverage_data['files'].items():
-            summary = file_data.get('summary', {})
-            coverage_pct = summary.get('percent_covered_display', summary.get('percent_covered', 0))
-            summary_rows.append({
-                "File": file_path.replace("\\", "/"),
-                "Stmts": summary.get("num_statements", 0),
-                "Miss": summary.get("missing_lines", 0),
-                "Cover": coverage_pct,  # Keep as numeric for sorting
-                "Missing": ", ".join(str(x) for x in file_data.get("missing_lines", []))
-            })
-        if summary_rows:
-            import pandas as pd
-            df = pd.DataFrame(summary_rows)
-            st.subheader("📋 Coverage Summary Table")
-            
-            # Configure AgGrid options
-            gb = GridOptionsBuilder.from_dataframe(df)
-            gb.configure_default_column(
-                sortable=True,
-                filterable=True,
-                resizable=True,
-                editable=False
-            )
-            gb.configure_column("File", width=300, pinned="left")
-            gb.configure_column("Stmts", width=80, type=["numericColumn", "numberColumnFilter"])
-            gb.configure_column("Miss", width=80, type=["numericColumn", "numberColumnFilter"])
-            gb.configure_column("Cover", header_name="Cover %", width=100, type=["numericColumn", "numberColumnFilter"])
-            gb.configure_column("Missing", width=200)
-            
-            grid_options = gb.build()
-            
-            # Display the AgGrid
-            grid_response = AgGrid(
-                df,
-                gridOptions=grid_options,
-                data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-                update_mode=GridUpdateMode.SELECTION_CHANGED,
-                theme="streamlit"
-            )
-
-    # File-level coverage
-    if parsed_coverage.get('files'):
-        st.subheader("📁 File-Level Coverage")
-        
-        files_df = pd.DataFrame(parsed_coverage['files'])
-        files_df = files_df.sort_values('coverage_percentage', ascending=False)
-        
-        # Configure AgGrid options for file-level coverage
-        gb_files = GridOptionsBuilder.from_dataframe(files_df)
-        gb_files.configure_default_column(
-            sortable=True,
-            filterable=True,
-            resizable=True,
-            editable=False
-        )
-        gb_files.configure_column("file", header_name="File", width=300, pinned="left")
-        gb_files.configure_column("lines_covered", header_name="Lines Covered", width=120, type=["numericColumn", "numberColumnFilter"])
-        gb_files.configure_column("lines_total", header_name="Total Lines", width=120, type=["numericColumn", "numberColumnFilter"])
-        gb_files.configure_column("coverage_percentage", header_name="Coverage %", width=120, type=["numericColumn", "numberColumnFilter"])
-        
-        grid_options_files = gb_files.build()
-        
-        # Display the AgGrid for file-level coverage
-        grid_response_files = AgGrid(
-            files_df,
-            gridOptions=grid_options_files,
-            data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-            update_mode=GridUpdateMode.SELECTION_CHANGED,
-            theme="streamlit"
-        )
 
 
 def display_test_results(test_results: Dict):
@@ -510,6 +735,7 @@ def load_existing_test_results() -> Dict:
         results['status'] = 'no_file'
         results['message'] = f"No test results file found at {test_results_file}"
         st.warning(f"⚠️ No test results file found. Run 'python scripts/run_tests.py' to generate results.")
+    
     # Load coverage data if available
     if coverage_file.exists():
         try:
@@ -517,6 +743,7 @@ def load_existing_test_results() -> Dict:
                 results['coverage_data'] = json.load(f)
         except Exception as e:
             results['coverage_error'] = str(e)
+    
     return results
 
 
@@ -564,25 +791,25 @@ def render_testing_results():
         display_test_summary(results)
         
         # Create tabs for different sections
-        tab1, tab2, tab3 = st.tabs([
-            "📊 Coverage", 
+        tab1, tab2, tab3, tab4 = st.tabs([
+            "📊 Coverage Overview", 
+            "📋 Coverage Details",
             "🧪 Test Results", 
             "📝 Logs"
-            # "📋 Raw Data"  # Commented out to simplify UI
         ])
         
         with tab1:
-            display_coverage_details(results.get('coverage_data', {}))
+            display_coverage_overview(results.get('coverage_data', {}))
+            display_coverage_insights(results.get('coverage_data', {}))
         
         with tab2:
-            display_test_results(results.get('test_results', {}))
+            display_coverage_details(results.get('coverage_data', {}))
         
         with tab3:
-            display_test_execution_logs(results)
+            display_test_results(results.get('test_results', {}))
         
-        # with tab4:
-        #     st.subheader("🔍 Raw Test Data")
-        #     st.json(results['test_results'])
+        with tab4:
+            display_test_execution_logs(results)
     
     # Show instructions if no results
     elif results['status'] == 'no_file':

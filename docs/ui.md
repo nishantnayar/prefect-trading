@@ -10,6 +10,7 @@ The Prefect Trading System includes a modern, responsive Streamlit-based user in
 - **Entry Point**: Main Streamlit application
 - **Navigation**: Sidebar-based navigation with multiple pages
 - **Auto-refresh**: 10-second automatic page refresh
+- **Manual Refresh**: Sidebar refresh button for force updates
 - **Custom Styling**: Professional CSS styling
 
 ### 2. Home Page (`src/ui/home.py`)
@@ -21,7 +22,21 @@ The Prefect Trading System includes a modern, responsive Streamlit-based user in
 - **Quick Actions**: Common trading operations
 - **Market News**: Latest news articles
 
-### 3. UI Components (`src/ui/components/`)
+### 3. Portfolio Page (`src/ui/portfolio.py`)
+- **Account Overview**: Detailed account information and status
+- **Position Table**: Complete list of positions with P&L calculations
+- **Portfolio Allocation**: Pie chart showing position distribution
+- **Trading History**: Detailed order history and performance metrics
+- **Risk Analysis**: Comprehensive risk metrics and warnings
+
+### 4. Testing Page (`src/ui/components/testing_results.py`)
+- **Coverage Overview**: Overall test coverage metrics with visual indicators
+- **File-Level Coverage**: Detailed breakdown by individual files
+- **Test Results**: Comprehensive test execution results
+- **Execution Logs**: Detailed logs and error information
+- **Interactive Tables**: AgGrid integration for advanced table functionality
+
+### 5. UI Components (`src/ui/components/`)
 
 #### Market Status Component (`market_status.py`)
 ```python
@@ -64,16 +79,17 @@ def get_current_cst_formatted():
 
 #### Testing Results Component (`testing_results.py`)
 ```python
-def display_testing_results():
+def render_testing_results():
     """
-    Display comprehensive testing results and coverage metrics.
+    Main function to render the testing results page.
     
     Features:
     - Coverage summary with color-coded metrics
-    - File-level coverage breakdown
-    - Interactive AgGrid tables with sorting/filtering
+    - File-level coverage breakdown in interactive AgGrid tables
+    - Test execution results and statistics
     - Real-time coverage data from JSON reports
     - Professional styling with progress indicators
+    - Manual refresh and test execution capabilities
     """
 ```
 
@@ -84,6 +100,7 @@ def display_testing_results():
 - **Live Data**: Real-time market data updates
 - **Status Indicators**: Live market status updates
 - **News Feed**: Latest news articles
+- **Manual Refresh**: Sidebar button for immediate updates
 
 ### 2. Responsive Design
 - **Mobile-friendly**: Optimized for mobile devices
@@ -138,7 +155,23 @@ def display_file_coverage():
     """
 ```
 
-### 3. Coverage Data Integration
+### 3. Test Execution
+Comprehensive test execution results and statistics:
+
+```python
+def display_test_results():
+    """
+    Display test execution results and statistics.
+    
+    Features:
+    - Test outcome summary (passed/failed/skipped)
+    - Execution time and performance metrics
+    - Individual test details with status indicators
+    - Error messages and debugging information
+    """
+```
+
+### 4. Coverage Data Integration
 The component reads coverage data from JSON reports:
 
 ```python
@@ -151,12 +184,14 @@ def load_coverage_data():
     """
 ```
 
-### 4. Recent Improvements
+### 5. Recent Improvements
 - **AgGrid Integration**: Replaced basic tables with advanced AgGrid functionality
 - **Path Normalization**: Fixed Windows/Unix path differences for accurate coverage display
 - **Deprecation Fixes**: Removed deprecated `fit_columns_on_grid_load` parameter
 - **Enhanced Sorting**: Improved table sorting with numeric value preservation
 - **Better Error Handling**: Graceful handling of missing coverage data
+- **Test Execution**: Added ability to run tests directly from the UI
+- **Real-time Updates**: Manual refresh capabilities for immediate data updates
 
 ## Page Structure
 
@@ -177,13 +212,43 @@ def load_coverage_data():
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 2. Analysis Page
+### 2. Portfolio Page
+```
+┌─────────────────────────────────────────────────────────┐
+│ Account Overview (balance, buying power, status)      │
+├─────────────────────────────────────────────────────────┤
+│ Positions Table (symbol, shares, P&L, allocation)     │
+├─────────────────────────────────────────────────────────┤
+│ Portfolio Allocation (pie chart visualization)        │
+├─────────────────────────────────────────────────────────┤
+│ Trading History (recent trades and performance)       │
+├─────────────────────────────────────────────────────────┤
+│ Risk Analysis (margin, concentration, warnings)       │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 3. Testing Page
+```
+┌─────────────────────────────────────────────────────────┐
+│ Test Summary (overall results and execution time)     │
+├─────────────────────────────────────────────────────────┤
+│ Coverage Overview (overall metrics and insights)      │
+├─────────────────────────────────────────────────────────┤
+│ Coverage Details (file-level breakdown in AgGrid)     │
+├─────────────────────────────────────────────────────────┤
+│ Test Results (individual test outcomes)               │
+├─────────────────────────────────────────────────────────┤
+│ Execution Logs (stdout, stderr, errors)               │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 4. Analysis Page
 - **Data Analysis**: Historical data analysis
 - **Trading Signals**: Technical analysis indicators
 - **Performance Metrics**: Portfolio performance analysis
 - **Risk Assessment**: Risk analysis tools
 
-### 3. Settings Page
+### 5. Settings Page
 - **User Preferences**: User-specific settings
 - **System Configuration**: System-level settings
 - **API Configuration**: API key management

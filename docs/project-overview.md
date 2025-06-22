@@ -87,18 +87,22 @@ The Prefect Trading System is a comprehensive financial data collection and anal
   - Historical data updates and validation
   - Company information refresh
 
-### 4. UI Layer
+### 4. User Interface
 
 #### Streamlit Dashboard
-- **Purpose**: Modern, responsive web interface for data visualization and interaction
+- **Purpose**: Modern, responsive web interface for data visualization and system management
+- **Architecture**: Component-based design with reusable UI elements
+- **Pages**: 5 main pages (Home, Portfolio, Analysis, Testing, Settings)
 - **Features**:
   - Real-time market data visualization with auto-refresh
   - Portfolio management interface with expandable sections
   - News feed integration with article previews
   - Market status monitoring with timezone support
   - Symbol selector with search functionality
+  - Testing results and coverage visualization
   - Responsive design optimized for different screen sizes
   - Custom CSS styling for professional appearance
+  - Manual refresh capabilities for immediate updates
 
 ### 5. Workflow Management
 
@@ -149,6 +153,16 @@ Database → Data Processing → UI Components → User Interface → User Actio
 - **Schedule**: 9:30AM EST on weekdays
 - **Purpose**: Real-time market data streaming
 - **Components**: WebSocket connection, real-time processing, database storage
+
+### 4. Portfolio Management Flow
+- **Schedule**: Real-time updates during market hours
+- **Purpose**: Portfolio tracking and analysis
+- **Components**: Alpaca API integration, position tracking, performance metrics
+
+### 5. Testing and Quality Assurance Flow
+- **Schedule**: On-demand and automated execution
+- **Purpose**: Code quality and system reliability
+- **Components**: Automated test execution, coverage analysis, results visualization
 
 ## Technology Stack
 

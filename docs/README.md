@@ -18,10 +18,12 @@ The Prefect Trading System is a comprehensive financial data collection and anal
 - **[Development Guide](development.md)** - Coding standards, workflows, and best practices
 - **[API Documentation](api.md)** - External and internal API integrations
 - **[UI Documentation](ui.md)** - Streamlit interface and components
+- **[Portfolio Management](portfolio.md)** - Portfolio tracking and analysis features
 
 ### 🧪 Testing
 - **[Testing Guide](testing.md)** - Comprehensive testing strategy and implementation
 - **[Testing UI](testing-ui.md)** - Testing results interface documentation
+- **[Coverage Display](coverage-display.md)** - Test coverage visualization and analysis
 
 ## Community & Support
 - **GitHub Issues**: [Open an issue](https://github.com/your-repo/issues)
@@ -39,8 +41,10 @@ docs/
 ├── development.md               # Development guidelines and workflows
 ├── api.md                       # API documentation and integrations
 ├── ui.md                        # User interface documentation
+├── portfolio.md                 # Portfolio management features
 ├── testing.md                   # Complete testing guide (consolidated)
-└── testing-ui.md                # Testing results UI documentation
+├── testing-ui.md                # Testing results UI documentation
+└── coverage-display.md          # Test coverage visualization guide
 ```
 
 ## Key Features
@@ -58,16 +62,24 @@ docs/
 - **Data Validation**: Comprehensive data quality checks
 
 ### 🎯 User Interface
-- **Streamlit Dashboard**: Modern, responsive web interface
+- **Streamlit Dashboard**: Modern, responsive web interface with 5 main pages
 - **Real-time Updates**: Auto-refresh with live market data
-- **Interactive Components**: Symbol selection, portfolio management
+- **Interactive Components**: Symbol selection, portfolio management, testing results
 - **Professional Styling**: Custom CSS for optimal user experience
+- **Testing Integration**: Built-in testing results and coverage visualization
+
+### 💼 Portfolio Management
+- **Real-time Portfolio Data**: Live account information and positions
+- **Performance Tracking**: P&L calculations and trading history
+- **Risk Analysis**: Margin utilization and position concentration
+- **Visual Analytics**: Portfolio allocation charts and performance metrics
 
 ### 🧪 Testing Strategy
 - **Comprehensive Coverage**: Unit, integration, and E2E tests
 - **Performance Testing**: Load and stress testing capabilities
 - **UI Testing**: Automated interface testing
 - **CI/CD Integration**: Automated testing in deployment pipeline
+- **Coverage Visualization**: Interactive coverage reports and insights
 
 ## Technology Stack
 
@@ -81,6 +93,7 @@ docs/
 - **Streamlit**: Web application framework
 - **Custom CSS**: Professional styling
 - **Plotly**: Interactive visualizations
+- **AgGrid**: Advanced table functionality
 
 ### External APIs
 - **Alpaca Markets**: Market data and trading
@@ -98,6 +111,7 @@ docs/
 1. **Quick Setup**: Follow the [Setup Guide](setup.md) for immediate setup (30 minutes)
 2. **Development**: Review the [Development Guide](development.md) for coding standards
 3. **Testing**: Implement testing using the [Testing Guide](testing.md)
+4. **Portfolio**: Set up portfolio tracking with [Portfolio Management](portfolio.md)
 
 ## Contributing
 
@@ -117,4 +131,20 @@ When contributing to the project:
 
 ## License
 
-This project is licensed under the terms specified in the LICENSE file. 
+This project is licensed under the terms specified in the LICENSE file.
+
+## Recent Documentation Updates
+
+### December 2024
+- **UI Documentation**: Updated to reflect current 5-page navigation structure (Home, Portfolio, Analysis, Testing, Settings)
+- **Testing Documentation**: Added comprehensive coverage of Testing page features and AgGrid integration
+- **Portfolio Documentation**: Added detailed portfolio management features and real-time data integration
+- **Project Overview**: Updated system workflows to include Portfolio Management and Testing flows
+- **Main README**: Updated to reflect current navigation and feature set
+
+### Key Updates
+- Added Testing page documentation with coverage visualization features
+- Updated Portfolio page documentation with real-time data integration
+- Enhanced UI documentation with current navigation structure
+- Added information about AgGrid integration for advanced table functionality
+- Updated system workflows to include new features 

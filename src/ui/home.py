@@ -75,6 +75,15 @@ def display_portfolio_summary():
     """
     st.subheader("📊 Portfolio Overview")
     
+    # Add refresh button
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.write("")  # Spacer
+    with col2:
+        if st.button("🔄 Refresh", help="Refresh portfolio data"):
+            # Clear any cached data by forcing a new PortfolioManager instance
+            st.rerun()
+    
     try:
         # Get real portfolio data
         portfolio_manager = PortfolioManager()

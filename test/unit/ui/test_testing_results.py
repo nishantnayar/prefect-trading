@@ -129,6 +129,60 @@ class TestTestingResults:
         
         assert parsed == {}
     
+    def test_parse_coverage_data_with_modules(self):
+        """Test parsing coverage data with module grouping."""
+        from src.ui.components.testing_results import parse_coverage_data
+        
+        coverage_data = {
+            'totals': {
+                'covered_lines': 200,
+                'num_statements': 300,
+                'percent_covered': 66.67,
+                'missing_lines': 100
+            },
+            'files': {
+                'src/ui/test1.py': {
+                    'summary': {
+                        'covered_lines': 50,
+                        'num_statements': 75,
+                        'percent_covered': 66.67
+                    }
+                },
+                'src/ui/test2.py': {
+                    'summary': {
+                        'covered_lines': 50,
+                        'num_statements': 75,
+                        'percent_covered': 66.67
+                    }
+                },
+                'src/data/test3.py': {
+                    'summary': {
+                        'covered_lines': 100,
+                        'num_statements': 150,
+                        'percent_covered': 66.67
+                    }
+                }
+            }
+        }
+        
+        parsed = parse_coverage_data(coverage_data)
+        
+        assert 'modules' in parsed
+        assert 'ui' in parsed['modules']
+        assert 'data' in parsed['modules']
+        assert parsed['modules']['ui']['files'] == 2
+        assert parsed['modules']['data']['files'] == 1
+        assert 'coverage_levels' in parsed
+    
+    def test_get_coverage_level(self):
+        """Test coverage level categorization."""
+        from src.ui.components.testing_results import get_coverage_level
+        
+        assert get_coverage_level(95.0) == "🟢 Excellent"
+        assert get_coverage_level(85.0) == "🔵 Good"
+        assert get_coverage_level(70.0) == "🟡 Fair"
+        assert get_coverage_level(45.0) == "🔴 Poor"
+    
     @patch('streamlit.button')
     @patch('streamlit.spinner')
     @patch('streamlit.success')
@@ -158,7 +212,10 @@ class TestTestingResults:
     @patch('streamlit.subheader')
     @patch('streamlit.columns')
     @patch('streamlit.tabs')
-    def test_render_testing_results_with_cached_results(self, mock_tabs, mock_columns, mock_subheader, mock_success, mock_spinner, mock_button):
+    @patch('pathlib.Path.exists')
+    @patch('builtins.open')
+    @patch('json.load')
+    def test_render_testing_results_with_cached_results(self, mock_json_load, mock_open, mock_exists, mock_tabs, mock_columns, mock_subheader, mock_success, mock_spinner, mock_button):
         """Test rendering with cached results."""
         from src.ui.components.testing_results import render_testing_results
         
@@ -171,26 +228,173 @@ class TestTestingResults:
         
         mock_columns.side_effect = mock_columns_side_effect
         
-        # Mock tabs to return context managers - now expecting 3 tabs instead of 4
+        # Mock tabs to return context managers - now expecting 4 tabs
         mock_tab1 = MockContextManager("tab1")
         mock_tab2 = MockContextManager("tab2")
         mock_tab3 = MockContextManager("tab3")
-        mock_tabs.return_value = [mock_tab1, mock_tab2, mock_tab3]
+        mock_tab4 = MockContextManager("tab4")
+        mock_tabs.return_value = [mock_tab1, mock_tab2, mock_tab3, mock_tab4]
         
-        # Mock session state with cached results
-        cached_results = {
-            'status': 'success',
-            'execution_time': 10.5,
-            'test_results': {
-                'summary': {'total': 5, 'passed': 4, 'failed': 1}
-            },
-            'coverage_data': {
-                'totals': {'covered_lines': 100, 'num_statements': 150, 'percent_covered': 66.67}
-            }
-        }
+        # Mock file existence checks
+        def mock_exists_side_effect(*args, **kwargs):
+            return True
         
-        with patch('streamlit.session_state', {'test_results': cached_results}):
+        mock_exists.side_effect = mock_exists_side_effect
+        
+        # Mock file opening and JSON loading
+        mock_file_context = mock_open()
+        mock_open.return_value = mock_file_context
+        
+        # Mock JSON loading to return different data based on the file being opened
+        def mock_json_load_side_effect(file_obj):
+            # Get the file path from the mock call
+            call_args = mock_open.call_args
+            if call_args:
+                file_path = str(call_args[0][0])  # First argument is the file path
+                print(f"DEBUG: Mock JSON load called with file path: {file_path}")
+                
+                if 'test_results.json' in file_path:
+                    print("DEBUG: Returning test results data")
+                    return {
+                        'timestamp': '2025-06-22T12:00:00',
+                        'summary': {'total': 5, 'passed': 4, 'failed': 1},
+                        'execution_time': 10.5,
+                        'stdout': '',
+                        'stderr': '',
+                        'error': ''
+                    }
+                elif 'coverage.json' in file_path:
+                    print("DEBUG: Returning coverage data")
+                    return {
+                        'totals': {
+                            'covered_lines': 100,
+                            'num_statements': 150,
+                            'percent_covered': 66.67,
+                            'percent_covered_display': '67'
+                        },
+                        'files': {
+                            'src/test.py': {
+                                'summary': {
+                                    'covered_lines': 50,
+                                    'num_statements': 75,
+                                    'percent_covered': 66.67
+                                },
+                                'missing_lines': []
+                            }
+                        }
+                    }
+            print(f"DEBUG: No match found for file")
+            return {}
+        
+        mock_json_load.side_effect = mock_json_load_side_effect
+        
+        # Mock session state to be empty (will use file loading instead)
+        with patch('streamlit.session_state', {}):
             render_testing_results()
         
         # Should display the cached results
-        mock_subheader.assert_called() 
+        mock_subheader.assert_called()
+    
+    @patch('streamlit.metric')
+    @patch('streamlit.progress')
+    @patch('streamlit.caption')
+    @patch('streamlit.subheader')
+    def test_display_coverage_overview(self, mock_subheader, mock_caption, mock_progress, mock_metric):
+        """Test coverage overview display."""
+        from src.ui.components.testing_results import display_coverage_overview
+        
+        coverage_data = {
+            'totals': {
+                'covered_lines': 100,
+                'num_statements': 150,
+                'percent_covered': 66.67,
+                'percent_covered_display': '67'
+            },
+            'files': {
+                'src/ui/test.py': {
+                    'summary': {
+                        'covered_lines': 50,
+                        'num_statements': 75,
+                        'percent_covered': 66.67
+                    },
+                    'missing_lines': []
+                }
+            }
+        }
+        
+        display_coverage_overview(coverage_data)
+        
+        # Should call subheader for coverage overview
+        mock_subheader.assert_called()
+        # Should call metric for coverage percentage
+        mock_metric.assert_called()
+    
+    @patch('streamlit.warning')
+    def test_display_coverage_overview_no_data(self, mock_warning):
+        """Test coverage overview display with no data."""
+        from src.ui.components.testing_results import display_coverage_overview
+        
+        display_coverage_overview({})
+        
+        mock_warning.assert_called_with("No coverage data available")
+    
+    @patch('streamlit.metric')
+    @patch('streamlit.dataframe')
+    @patch('streamlit.subheader')
+    def test_display_coverage_details(self, mock_subheader, mock_dataframe, mock_metric):
+        """Test coverage details display."""
+        from src.ui.components.testing_results import display_coverage_details
+        
+        coverage_data = {
+            'totals': {
+                'covered_lines': 100,
+                'num_statements': 150,
+                'percent_covered': 66.67
+            },
+            'files': {
+                'src/ui/test.py': {
+                    'summary': {
+                        'covered_lines': 50,
+                        'num_statements': 75,
+                        'percent_covered': 66.67
+                    },
+                    'missing_lines': []
+                }
+            }
+        }
+        
+        display_coverage_details(coverage_data)
+        
+        # Should call subheader for detailed coverage report
+        mock_subheader.assert_called()
+    
+    @patch('streamlit.write')
+    @patch('streamlit.subheader')
+    def test_display_coverage_insights(self, mock_subheader, mock_write):
+        """Test coverage insights display."""
+        from src.ui.components.testing_results import display_coverage_insights
+        
+        coverage_data = {
+            'totals': {
+                'covered_lines': 100,
+                'num_statements': 150,
+                'percent_covered': 66.67
+            },
+            'files': {
+                'src/ui/test.py': {
+                    'summary': {
+                        'covered_lines': 50,
+                        'num_statements': 75,
+                        'percent_covered': 66.67
+                    },
+                    'missing_lines': []
+                }
+            }
+        }
+        
+        display_coverage_insights(coverage_data)
+        
+        # Should call subheader for insights
+        mock_subheader.assert_called()
+        # Should write insights and recommendations
+        mock_write.assert_called() 

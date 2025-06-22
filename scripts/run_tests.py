@@ -105,6 +105,45 @@ def parse_pytest_output(stdout, stderr):
     return results
 
 
+def normalize_coverage_data(coverage_data):
+    """
+    Normalize coverage data to ensure consistent format for UI consumption.
+    
+    Args:
+        coverage_data: Raw coverage data from pytest-cov
+        
+    Returns:
+        Normalized coverage data with consistent structure
+    """
+    if not coverage_data:
+        return {}
+    
+    normalized = {
+        'meta': coverage_data.get('meta', {}),
+        'files': {},
+        'totals': coverage_data.get('totals', {})
+    }
+    
+    # Normalize file paths and ensure consistent structure
+    for file_path, file_data in coverage_data.get('files', {}).items():
+        # Normalize file path separators
+        normalized_path = file_path.replace('\\', '/')
+        
+        # Ensure file data has required structure
+        normalized_file_data = {
+            'executed_lines': file_data.get('executed_lines', []),
+            'summary': file_data.get('summary', {}),
+            'missing_lines': file_data.get('missing_lines', []),
+            'excluded_lines': file_data.get('excluded_lines', []),
+            'functions': file_data.get('functions', {}),
+            'classes': file_data.get('classes', {})
+        }
+        
+        normalized['files'][normalized_path] = normalized_file_data
+    
+    return normalized
+
+
 def run_all_tests():
     """Run all tests and output JSON results."""
     print("Running all tests...")
@@ -112,13 +151,18 @@ def run_all_tests():
     test_path = project_root / "test"
     build_dir = project_root / "build"
     results_file = build_dir / "test_results.json"
+    coverage_file = build_dir / "coverage.json"
     
     # Ensure build directory exists
     build_dir.mkdir(exist_ok=True)
     
+    # Updated command to generate both HTML and JSON coverage reports
     cmd = [
         sys.executable, '-m', 'pytest', str(test_path), '-v',
-        '--cov=src', '--cov-report=term-missing', '--cov-report=html:build/htmlcov'
+        '--cov=src', 
+        '--cov-report=term-missing', 
+        '--cov-report=html:build/htmlcov',
+        '--cov-report=json:build/coverage.json'
     ]
     
     try:
@@ -153,6 +197,29 @@ def run_all_tests():
         # Write JSON results
         with open(results_file, 'w', encoding='utf-8') as f:
             json.dump(test_results, f, indent=2)
+        
+        # Normalize and write coverage data if it exists
+        if coverage_file.exists():
+            try:
+                with open(coverage_file, 'r', encoding='utf-8') as f:
+                    coverage_data = json.load(f)
+                
+                # Normalize the coverage data
+                normalized_coverage = normalize_coverage_data(coverage_data)
+                
+                # Write normalized coverage data
+                with open(coverage_file, 'w', encoding='utf-8') as f:
+                    json.dump(normalized_coverage, f, indent=2)
+                
+                print(f"Coverage data normalized and written to: {coverage_file}")
+                
+                # Print coverage summary
+                if 'totals' in normalized_coverage:
+                    totals = normalized_coverage['totals']
+                    print(f"Coverage Summary: {totals.get('covered_lines', 0)}/{totals.get('num_statements', 0)} lines covered ({totals.get('percent_covered_display', '0')}%)")
+                
+            except Exception as e:
+                print(f"Warning: Could not normalize coverage data: {e}")
         
         print(f"\nTest Summary: {test_results['summary']}")
         print(f"Execution Time: {execution_time:.2f} seconds")

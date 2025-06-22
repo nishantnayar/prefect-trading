@@ -31,6 +31,9 @@ A comprehensive trading system built with **Prefect** for automated market data 
   - Market news feed with article previews
   - Interactive symbol selector
   - Responsive design for all devices
+  - **5 Main Pages**: Home, Portfolio, Analysis, Testing, Settings
+  - **Testing Integration**: Built-in testing results and coverage visualization
+  - **Portfolio Management**: Comprehensive portfolio tracking and analysis
 
 ### 🗄️ Database & Storage
 - **PostgreSQL Integration**
@@ -207,7 +210,9 @@ market_data_websocket_flow()
 1. Open `http://localhost:8501` in your browser
 2. Navigate through the dashboard sections:
    - **Home**: Overview of portfolio and market data
+   - **Portfolio**: Detailed portfolio management and analysis
    - **Analysis**: Data analysis and trading signals
+   - **Testing**: Test results and coverage visualization
    - **Settings**: System configuration
 
 ### Monitoring

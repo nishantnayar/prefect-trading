@@ -34,6 +34,11 @@ load_css()
 # 4. Refresh page
 st_autorefresh(interval=10000)
 
+# 4. Manual refresh button in sidebar
+with st.sidebar:
+    if st.button("🔄 Refresh Data", help="Force refresh all data on this page"):
+        st.rerun()
+
 
 def main():
     """Main application entry point."""

@@ -372,6 +372,14 @@ def render_portfolio():
     """Main function to render the comprehensive portfolio page."""
     st.title("💼 Portfolio Management")
     
+    # Add refresh button
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.write("")  # Spacer
+    with col2:
+        if st.button("🔄 Refresh Data", help="Refresh all portfolio data"):
+            st.rerun()
+    
     try:
         # Initialize portfolio manager
         portfolio_manager = PortfolioManager()
