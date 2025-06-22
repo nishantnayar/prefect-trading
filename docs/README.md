@@ -1,7 +1,5 @@
 # Prefect Trading System Documentation
 
-![Project Logo](logo.png)
-
 ## What is Prefect Trading System?
 
 Prefect Trading System is a modern, modular platform for financial data collection, analysis, and trading automation. It integrates real-time and historical data, robust workflow orchestration, and a professional UI for both developers and traders.

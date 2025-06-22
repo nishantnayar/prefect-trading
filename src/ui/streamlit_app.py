@@ -42,7 +42,7 @@ def main():
         selected = option_menu.option_menu(
             menu_title="Trading System",
             options=["Home", "Analysis", "Testing", "Settings"],
-            icons=["house", "graph-up", "flask", "gear"],
+            icons=["house", "graph-up", "clipboard-check", "gear"],
             menu_icon="chart-line",
             default_index=0,
         )
