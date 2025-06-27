@@ -12,7 +12,7 @@ deployments:
   tags: ["hourly", "data"]
   description: "Ingests hourly market data"
   schedule:
-    cron: "1 9-15 * * 1-5"  # Every hour from 9AM-3PM EST Mon-Fri
+    cron: "1 9-16 * * 1-5"  # Every hour from 9AM-4PM EST Mon-Fri
     timezone: America/New_York
   flow_name: hourly_process_flow
   entrypoint: "main.py:hourly_process_flow"  # Fixed typo from 'proces' to 'process'
