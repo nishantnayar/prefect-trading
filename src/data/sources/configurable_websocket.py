@@ -287,6 +287,7 @@ async def recycler_websocket_connection():
 
             # Initialize persistence tracking
             last_persistence_time = datetime.now()
+            data_received = False
 
             while True:
                 # Check if it's time for hourly persistence
@@ -301,9 +302,10 @@ async def recycler_websocket_connection():
                         logger.error(f"Hourly data persistence failed: {e}")
 
                 try:
-                    # Set a timeout for receiving messages
-                    message = await asyncio.wait_for(websocket.recv(), timeout=1.0)
+                    # Set a timeout for receiving messages - increased to handle delays
+                    message = await asyncio.wait_for(websocket.recv(), timeout=10.0)  # 10 seconds to handle 5-second delays
                     data = json.loads(message)
+                    data_received = True
                     
                     # Process the data (same format as Alpaca)
                     if isinstance(data, list):
@@ -329,10 +331,19 @@ async def recycler_websocket_connection():
                                 logger.info(f"Skipping non-AAPL symbol: {symbol}")
                                 
                 except asyncio.TimeoutError:
-                    # Timeout is expected, continue the loop
+                    # Timeout is expected with 5-second delays, continue the loop
+                    logger.debug("Timeout waiting for message (expected with 5-second delays)")
                     continue
                 except websockets.exceptions.ConnectionClosedError:
                     logger.warning("Data recycler WebSocket connection closed.")
+                    # Save any remaining data before exiting
+                    if data_received:
+                        logger.info("Saving remaining data to PostgreSQL...")
+                        try:
+                            save_redis_data_to_postgres()
+                            logger.info("Data saved successfully")
+                        except Exception as e:
+                            logger.error(f"Failed to save remaining data: {e}")
                     return
                 except Exception as e:
                     logger.error(f"Error processing recycled message: {e}")

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Configurable parameters
 SYMBOL = "AAPL"
-REPLAY_DELAY_SECONDS = 60.0  # 1 minute between messages
+REPLAY_DELAY_SECONDS = 5.0  # 5 seconds between messages for faster testing
 
 async def fetch_all_data(symbol):
     """Fetch all historical data for the symbol from the database."""
