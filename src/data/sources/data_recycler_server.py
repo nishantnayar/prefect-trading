@@ -48,28 +48,42 @@ async def fetch_all_data(symbol):
         db.close()
     return data
 
-async def stream_data(websocket, path):
+async def stream_data(websocket):
     logger.info(f"Client connected: {websocket.remote_address}")
-    # Fetch all data for AAPL
-    data = await fetch_all_data(SYMBOL)
-    logger.info(f"Streaming {len(data)} records for {SYMBOL}")
-    for record in data:
-        # Mimic Alpaca bar message format (as a list of dicts)
-        message = json.dumps([
-            {
-                "S": record["symbol"],
-                "t": record["timestamp"],
-                "o": record["open"],
-                "h": record["high"],
-                "l": record["low"],
-                "c": record["close"],
-                "v": record["volume"]
-            }
-        ])
-        await websocket.send(message)
-        await asyncio.sleep(REPLAY_DELAY_SECONDS)
-    logger.info(f"Finished streaming data for {SYMBOL} to {websocket.remote_address}")
-    await websocket.close()
+    try:
+        # Fetch all data for AAPL
+        logger.info("Fetching data from database...")
+        data = await fetch_all_data(SYMBOL)
+        logger.info(f"Fetched {len(data)} records for {SYMBOL}")
+        
+        if not data:
+            logger.warning("No data found for AAPL")
+            await websocket.close()
+            return
+            
+        logger.info("Starting to stream data...")
+        for i, record in enumerate(data):
+            logger.info(f"Streaming record {i+1}/{len(data)}")
+            # Mimic Alpaca bar message format (as a list of dicts)
+            message = json.dumps([
+                {
+                    "S": record["symbol"],
+                    "t": record["timestamp"],
+                    "o": record["open"],
+                    "h": record["high"],
+                    "l": record["low"],
+                    "c": record["close"],
+                    "v": record["volume"]
+                }
+            ])
+            await websocket.send(message)
+            logger.info(f"Sent message {i+1}")
+            await asyncio.sleep(REPLAY_DELAY_SECONDS)
+        logger.info(f"Finished streaming data for {SYMBOL} to {websocket.remote_address}")
+        await websocket.close()
+    except Exception as e:
+        logger.error(f"Error in stream_data: {e}")
+        await websocket.close()
 
 if __name__ == "__main__":
     logger.info("Starting minimal data recycler WebSocket server on ws://localhost:8765 ...")

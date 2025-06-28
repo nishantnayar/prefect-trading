@@ -163,3 +163,4 @@ src/data/sources/yahoo_raw_data.csv
 src/archive/GNews.py
 src/archive/Redis.py
 /src/archive
+/prefect-trading-main
