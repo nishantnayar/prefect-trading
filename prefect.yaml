@@ -49,3 +49,17 @@ deployments:
   work_pool:
     name: realtime  # Using your existing realtime pool
     work_queue_name: default  # Changed from realtime_work_queue to default
+
+- name: recycler-websocket-test
+  version: 1.0.0
+  tags: ["recycler", "test", "data"]
+  description: "Tests websocket functionality using recycled historical data"
+  schedule:
+    cron: "0 20 * * *"  # 8PM daily for testing
+    timezone: America/New_York
+  flow_name: market_data_websocket_flow
+  entrypoint: "src/data/sources/configurable_websocket.py:market_data_websocket_flow"
+  parameters: {}
+  work_pool:
+    name: realtime  # Using existing realtime pool
+    work_queue_name: default

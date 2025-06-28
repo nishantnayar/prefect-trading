@@ -15,6 +15,23 @@ alpaca:
   base_url: https://paper-api.alpaca.markets  # Using paper trading by default
   data_url: "https://data.alpaca.markets"
 
+# WebSocket Configuration
+websocket:
+  mode: "recycler"  # "alpaca" or "recycler"
+  recycler:
+    server_url: "ws://localhost:8765"
+    replay_mode: "loop"  # "loop", "date_range", "single_pass"
+    replay_speed: 1.0
+    date_range:
+      start_date: "2025-06-23"  # My earliest available data
+      end_date: "2025-06-30"    # Example date range
+    # symbols: ["AAPL", "MSFT", "GOOGL"]
+    symbols: ["AAPL"]
+    loop_count: -1  # -1 = infinite, 1 = single pass
+    data_retention:
+      recycled_data_days: 1  # Keep recycled data for 1 day
+      auto_cleanup: true     # Automatically clean up old recycled data
+
 # Application Settings
 app:
   environment: ${ENVIRONMENT}

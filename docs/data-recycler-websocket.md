@@ -2,9 +2,9 @@
 
 ## Overview
 
-The Data Recycler WebSocket System allows you to recycle existing market data from your database to simulate real-time market data feeds during non-market hours. This system creates a local WebSocket server that replays historical data in the same format as Alpaca's WebSocket API, enabling seamless testing and development without requiring live market data.
+The Data Recycler WebSocket System allows me to recycle existing market data from my database to simulate real-time market data feeds during non-market hours. This system creates a local WebSocket server that replays historical data in the same format as Alpaca's WebSocket API, enabling seamless testing and development without requiring live market data.
 
-**Note**: Your database contains market data starting from **2025-06-23**. All replay scenarios will use dates from this period onwards.
+**Note**: My database contains market data starting from **2025-06-23**. All replay scenarios will use dates from this period onwards.
 
 ## Key Features
 
@@ -88,14 +88,14 @@ websocket:
   recycler:
     replay_mode: "date_range"
     date_range:
-      start_date: "2025-06-23"  # Your earliest available data
+      start_date: "2025-06-23"  # My earliest available data
       end_date: "2025-06-30"    # Example: first week of data
     replay_speed: 2.0
     symbols: ["AAPL", "MSFT"]
 ```
 
 **Features:**
-- Replays data from specific date ranges within your available data
+- Replays data from specific date ranges within my available data
 - Useful for testing specific market conditions or events
 - Can replay volatile periods, earnings announcements, etc.
 
@@ -168,7 +168,7 @@ websocket:
     replay_mode: "loop"  # "loop", "date_range", "single_pass"
     replay_speed: 1.0
     date_range:
-      start_date: "2025-06-23"  # Your earliest available data
+      start_date: "2025-06-23"  # My earliest available data
       end_date: "2025-06-30"    # Example date range
     symbols: ["AAPL", "MSFT", "GOOGL"]
     loop_count: -1  # -1 = infinite, 1 = single pass
@@ -289,7 +289,7 @@ websocket:
   recycler:
     replay_mode: "date_range"
     date_range:
-      start_date: "2025-06-23"  # Your earliest available data
+      start_date: "2025-06-23"  # My earliest available data
       end_date: "2025-06-25"    # Example: first few days
     replay_speed: 1.0
     symbols: ["AAPL", "MSFT"]
@@ -313,7 +313,7 @@ websocket:
   recycler:
     replay_mode: "date_range"
     date_range:
-      start_date: "2025-06-23"  # Your data start date
+      start_date: "2025-06-23"  # My data start date
       end_date: "2025-07-23"    # Example: first month of data
     replay_speed: 1.0
     symbols: ["AAPL"]
@@ -321,8 +321,8 @@ websocket:
 
 ## Benefits
 
-1. **Realistic Testing**: Uses actual market data patterns and movements from your database
-2. **24/7 Development**: Can test during non-market hours using your existing data
+1. **Realistic Testing**: Uses actual market data patterns and movements from my database
+2. **24/7 Development**: Can test during non-market hours using my existing data
 3. **Flexible Scenarios**: Replay specific market conditions or time periods from 2025-06-23 onwards
 4. **Speed Control**: Accelerate testing with faster replay speeds
 5. **Zero Risk**: Original system remains unchanged
@@ -336,7 +336,7 @@ websocket:
 
 1. **No Historical Data Available**
    - Ensure `market_data` table has data for the requested symbols starting from 2025-06-23
-   - Check date ranges are within your available data period
+   - Check date ranges are within my available data period
    - Use the data availability checker utility
 
 2. **WebSocket Connection Failed**
@@ -401,4 +401,4 @@ logging:
 
 ## Data Availability Note
 
-**Important**: Your database contains market data starting from **2025-06-23**. When configuring date ranges for replay, ensure all dates fall within this period. The system will automatically validate date ranges and warn if requested dates are outside the available data range. 
+**Important**: My database contains market data starting from **2025-06-23**. When configuring date ranges for replay, I need to ensure all dates fall within this period. The system will automatically validate date ranges and warn if requested dates are outside the available data range. 
