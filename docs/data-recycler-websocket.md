@@ -4,6 +4,8 @@
 
 The Data Recycler WebSocket System allows you to recycle existing market data from your database to simulate real-time market data feeds during non-market hours. This system creates a local WebSocket server that replays historical data in the same format as Alpaca's WebSocket API, enabling seamless testing and development without requiring live market data.
 
+**Note**: Your database contains market data starting from **2025-06-23**. All replay scenarios will use dates from this period onwards.
+
 ## Key Features
 
 - **Real Market Data**: Uses actual historical market data instead of generated dummy data
@@ -34,7 +36,7 @@ The Data Recycler WebSocket System allows you to recycle existing market data fr
 ### 1. Data Recycler Server (`src/data/sources/data_recycler_server.py`)
 
 A local WebSocket server that:
-- Loads historical data from the `market_data` table
+- Loads historical data from the `market_data` table (starting from 2025-06-23)
 - Replays data in Alpaca WebSocket format
 - Supports multiple replay modes and speed controls
 - Simulates authentication and subscription responses
@@ -75,7 +77,7 @@ websocket:
 ```
 
 **Features:**
-- Continuously loops through all available historical data
+- Continuously loops through all available historical data (from 2025-06-23 onwards)
 - When reaching the end, starts over from the beginning
 - Ideal for continuous testing and development
 
@@ -86,14 +88,14 @@ websocket:
   recycler:
     replay_mode: "date_range"
     date_range:
-      start_date: "2024-01-15"
-      end_date: "2024-01-20"
+      start_date: "2025-06-23"  # Your earliest available data
+      end_date: "2025-06-30"    # Example: first week of data
     replay_speed: 2.0
     symbols: ["AAPL", "MSFT"]
 ```
 
 **Features:**
-- Replays data from specific date ranges
+- Replays data from specific date ranges within your available data
 - Useful for testing specific market conditions or events
 - Can replay volatile periods, earnings announcements, etc.
 
@@ -166,8 +168,8 @@ websocket:
     replay_mode: "loop"  # "loop", "date_range", "single_pass"
     replay_speed: 1.0
     date_range:
-      start_date: "2024-01-01"
-      end_date: "2024-01-31"
+      start_date: "2025-06-23"  # Your earliest available data
+      end_date: "2025-06-30"    # Example date range
     symbols: ["AAPL", "MSFT", "GOOGL"]
     loop_count: -1  # -1 = infinite, 1 = single pass
     data_retention:
@@ -287,8 +289,8 @@ websocket:
   recycler:
     replay_mode: "date_range"
     date_range:
-      start_date: "2024-01-15"  # Specific event date
-      end_date: "2024-01-20"
+      start_date: "2025-06-23"  # Your earliest available data
+      end_date: "2025-06-25"    # Example: first few days
     replay_speed: 1.0
     symbols: ["AAPL", "MSFT"]
 ```
@@ -304,11 +306,24 @@ websocket:
     loop_count: 1
 ```
 
+### 4. Available Data Range Testing
+```yaml
+websocket:
+  mode: "recycler"
+  recycler:
+    replay_mode: "date_range"
+    date_range:
+      start_date: "2025-06-23"  # Your data start date
+      end_date: "2025-07-23"    # Example: first month of data
+    replay_speed: 1.0
+    symbols: ["AAPL"]
+```
+
 ## Benefits
 
-1. **Realistic Testing**: Uses actual market data patterns and movements
-2. **24/7 Development**: Can test during non-market hours
-3. **Flexible Scenarios**: Replay specific market conditions or time periods
+1. **Realistic Testing**: Uses actual market data patterns and movements from your database
+2. **24/7 Development**: Can test during non-market hours using your existing data
+3. **Flexible Scenarios**: Replay specific market conditions or time periods from 2025-06-23 onwards
 4. **Speed Control**: Accelerate testing with faster replay speeds
 5. **Zero Risk**: Original system remains unchanged
 6. **Easy Rollback**: Simple configuration change to switch back
@@ -320,8 +335,9 @@ websocket:
 ### Common Issues
 
 1. **No Historical Data Available**
-   - Ensure `market_data` table has data for the requested symbols
-   - Check date ranges are within available data
+   - Ensure `market_data` table has data for the requested symbols starting from 2025-06-23
+   - Check date ranges are within your available data period
+   - Use the data availability checker utility
 
 2. **WebSocket Connection Failed**
    - Verify data recycler server is running on correct port
@@ -334,6 +350,21 @@ websocket:
 4. **Database Performance**
    - Consider indexing on `data_source` column
    - Implement data cleanup for old recycled data
+
+### Data Availability Checker
+
+```python
+# Check available data ranges
+from src.utils.data_recycler_utils import get_available_date_ranges
+
+# Get available date ranges for AAPL
+ranges = get_available_date_ranges('AAPL')
+print(f"Available data for AAPL: {ranges}")
+
+# Get data statistics
+stats = get_data_statistics('AAPL')
+print(f"Data statistics: {stats}")
+```
 
 ### Debug Mode
 
@@ -366,4 +397,8 @@ logging:
 1. **Memory Usage**: Large datasets may require significant memory
 2. **Database Load**: Consider read-only replicas for large datasets
 3. **Network**: Local WebSocket connections minimize network overhead
-4. **Cleanup**: Regular cleanup of old recycled data to prevent bloat 
+4. **Cleanup**: Regular cleanup of old recycled data to prevent bloat
+
+## Data Availability Note
+
+**Important**: Your database contains market data starting from **2025-06-23**. When configuring date ranges for replay, ensure all dates fall within this period. The system will automatically validate date ranges and warn if requested dates are outside the available data range. 
