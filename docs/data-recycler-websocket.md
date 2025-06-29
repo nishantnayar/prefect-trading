@@ -9,6 +9,8 @@ The Data Recycler WebSocket System allows me to recycle existing market data fro
 ## Key Features
 
 - **Real Market Data**: Uses actual historical market data instead of generated dummy data
+- **Real-Time Timestamps**: Sends data with current timestamps (not historical) for realistic testing
+- **1-Minute Intervals**: Simulates real market data timing with 60-second delays between messages
 - **Multiple Replay Modes**: Loop, date range, and single pass replay options
 - **Speed Control**: Adjustable replay speed (0.5x to 10x real-time)
 - **Seamless Switching**: Easy configuration to switch between real Alpaca and recycled data
@@ -37,9 +39,11 @@ The Data Recycler WebSocket System allows me to recycle existing market data fro
 
 A local WebSocket server that:
 - Loads historical data from the `market_data` table (starting from 2025-06-23)
-- Replays data in Alpaca WebSocket format
+- Replays data in Alpaca WebSocket format with current timestamps
+- Uses 60-second intervals between messages to simulate real market data timing
 - Supports multiple replay modes and speed controls
 - Simulates authentication and subscription responses
+- Streams data in a single pass (one complete cycle through all available data)
 
 ### 2. Configurable WebSocket Client (`src/data/sources/configurable_websocket.py`)
 
@@ -186,6 +190,52 @@ export RECYCLER_REPLAY_SPEED=2.0
 export RECYCLER_SYMBOLS=AAPL,MSFT
 ```
 
+## Current Configuration
+
+### Server Configuration (`src/data/sources/data_recycler_server.py`)
+
+```python
+# Current settings
+SYMBOL = "AAPL"  # Currently hardcoded to AAPL
+REPLAY_DELAY_SECONDS = 60.0  # 1-minute intervals
+SERVER_PORT = 8765  # WebSocket server port
+```
+
+### Usage Examples
+
+#### 1. Start Data Recycler Server
+```bash
+# Run the server directly
+python -m src.data.sources.data_recycler_server
+
+# Server will:
+# - Load all AAPL data from database
+# - Stream each record with 60-second delays
+# - Use current timestamps for each message
+# - Close connection after streaming all data once
+```
+
+#### 2. Connect with Configurable Client
+```bash
+# Run the configurable websocket client
+python -m src.data.sources.configurable_websocket
+
+# Client will:
+# - Connect to recycler server on localhost:8765
+# - Receive data every 60 seconds
+# - Store data with 'recycled' data_source
+# - Process data through existing pipeline
+```
+
+#### 3. Monitor Data Flow
+```bash
+# Check the logs to see:
+# - Connection established
+# - Data being streamed with current timestamps
+# - 60-second intervals between messages
+# - Connection closing after all data sent
+```
+
 ## Usage
 
 ### 1. Start Data Recycler Server
@@ -223,6 +273,33 @@ python scripts/switch_to_alpaca.py
 ```bash
 # Clean up old recycled data
 python scripts/cleanup_recycled_data.py
+```
+
+### 5. Manually Save Redis Data to PostgreSQL
+
+If you want to immediately persist recycled data from Redis to PostgreSQL (instead of waiting for the automatic hourly save), you can run the following script:
+
+```bash
+python -m scripts.manual_save
+```
+
+This will trigger the save function and print the result. You should see output like:
+
+```
+Saving Redis data to PostgreSQL...
+Manual save complete.
+```
+
+You can then verify the data in your database using:
+
+```sql
+SELECT data_source, COUNT(1) FROM market_data GROUP BY data_source;
+```
+
+And to see the most recent recycled records:
+
+```sql
+SELECT * FROM market_data WHERE data_source = 'recycled' ORDER BY timestamp DESC LIMIT 10;
 ```
 
 ## Integration with Existing System
@@ -334,20 +411,27 @@ websocket:
 
 ### Common Issues
 
-1. **No Historical Data Available**
+1. **Connection Closes Immediately**
+   - **Expected Behavior**: The current implementation streams all data once then closes
+   - **Solution**: This is normal for single pass mode. Restart the server to replay data again
+   - **Alternative**: Modify server code to implement loop mode for continuous streaming
+
+2. **No Historical Data Available**
    - Ensure `market_data` table has data for the requested symbols starting from 2025-06-23
    - Check date ranges are within my available data period
    - Use the data availability checker utility
 
-2. **WebSocket Connection Failed**
-   - Verify data recycler server is running on correct port
+3. **WebSocket Connection Failed**
+   - Verify data recycler server is running on correct port (8765)
    - Check firewall settings
+   - Ensure no other service is using port 8765
 
-3. **Replay Speed Issues**
-   - Adjust `replay_speed` configuration
-   - Monitor system resources during high-speed replay
+4. **Timing Issues**
+   - **Current Setting**: 60-second intervals between messages
+   - **Adjustment**: Modify `REPLAY_DELAY_SECONDS` in `data_recycler_server.py`
+   - **Real-time Simulation**: Messages use current timestamps, not historical ones
 
-4. **Database Performance**
+5. **Database Performance**
    - Consider indexing on `data_source` column
    - Implement data cleanup for old recycled data
 
@@ -401,4 +485,37 @@ logging:
 
 ## Data Availability Note
 
-**Important**: My database contains market data starting from **2025-06-23**. When configuring date ranges for replay, I need to ensure all dates fall within this period. The system will automatically validate date ranges and warn if requested dates are outside the available data range. 
+**Important**: My database contains market data starting from **2025-06-23**. When configuring date ranges for replay, I need to ensure all dates fall within this period. The system will automatically validate date ranges and warn if requested dates are outside the available data range.
+
+## Current Implementation
+
+### Timing Behavior
+
+The current data recycler server implementation:
+
+- **Message Interval**: 60 seconds (1 minute) between each data message
+- **Timestamp Handling**: Uses current timestamps instead of historical ones
+- **Data Flow**: Streams all available data once, then closes connection
+- **Real-Time Simulation**: Each message timestamp reflects when it's actually sent
+
+**Example Message Flow:**
+```
+Message 1: 2025-01-27T19:46:23.128 (current time)
+Message 2: 2025-01-27T19:47:23.128 (1 minute later)
+Message 3: 2025-01-27T19:48:23.128 (2 minutes later)
+...
+```
+
+### Single Pass Mode (Current Default)
+
+The server currently operates in single pass mode:
+- Loads all historical AAPL data from the database
+- Streams each record with 60-second delays
+- Uses current timestamps for each message
+- Closes connection after streaming all data once
+
+This mode is ideal for:
+- Testing data processing pipelines
+- Validating data storage and retrieval
+- Simulating realistic market data timing
+- Development during non-market hours 

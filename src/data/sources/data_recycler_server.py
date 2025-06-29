@@ -8,6 +8,7 @@ in a single pass, with a fixed delay between messages.
 import asyncio
 import json
 import websockets
+from datetime import datetime
 from src.utils.data_recycler_utils import get_sample_data, get_available_date_ranges
 from src.database.database_connectivity import DatabaseConnectivity
 import logging
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Configurable parameters
 SYMBOL = "AAPL"
-REPLAY_DELAY_SECONDS = 5.0  # 5 seconds between messages for faster testing
+REPLAY_DELAY_SECONDS = 60.0  # 60 seconds (1 minute) between messages to match real market data
 
 async def fetch_all_data(symbol):
     """Fetch all historical data for the symbol from the database."""
@@ -64,11 +65,13 @@ async def stream_data(websocket):
         logger.info("Starting to stream data...")
         for i, record in enumerate(data):
             logger.info(f"Streaming record {i+1}/{len(data)}")
+            # Use current timestamp instead of historical timestamp
+            current_time = datetime.now().isoformat()
             # Mimic Alpaca bar message format (as a list of dicts)
             message = json.dumps([
                 {
                     "S": record["symbol"],
-                    "t": record["timestamp"],
+                    "t": current_time,  # Use current time instead of record["timestamp"]
                     "o": record["open"],
                     "h": record["high"],
                     "l": record["low"],
@@ -77,7 +80,7 @@ async def stream_data(websocket):
                 }
             ])
             await websocket.send(message)
-            logger.info(f"Sent message {i+1}")
+            logger.info(f"Sent message {i+1} at {current_time}")
             await asyncio.sleep(REPLAY_DELAY_SECONDS)
         logger.info(f"Finished streaming data for {SYMBOL} to {websocket.remote_address}")
         await websocket.close()
