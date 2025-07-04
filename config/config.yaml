@@ -8,6 +8,33 @@ database:
   pool_size: 5
   max_overflow: 10
 
+# MLflow Configuration
+mlflow:
+  tracking_uri: ${MLFLOW_TRACKING_URI:-http://localhost:5000}
+  registry_uri: ${MLFLOW_REGISTRY_URI:-http://localhost:5000}
+  experiment_name: "pairs_trading"
+  artifact_root: ${MLFLOW_ARTIFACT_ROOT:-file:./mlruns}
+  
+model_registry:
+  naming_pattern: "pairs_trading_gru_garch_{sector}_{version}_{date}"
+  stages:
+    - staging
+    - production
+    - archived
+  
+# Currently only technology sector is active
+# Future: Add healthcare, financial sectors as needed
+sectors:
+  active: ["technology"]
+  available: ["technology", "healthcare", "financial"]
+  
+performance_thresholds:
+  f1_score_improvement: 0.02
+  sharpe_ratio_improvement: 0.1
+  max_drawdown_improvement: 0.01
+  f1_score_minimum: 0.70
+  sharpe_ratio_minimum: 1.0
+
 # Alpaca Configuration
 alpaca:
   api_key: ${ALPACA_API_KEY}

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the architecture and implementation strategy for an **enterprise-level GARCH-based pairs trading system** with integrated MLflow model management. The system combines sophisticated volatility forecasting using GARCH models with automated model lifecycle management, periodic rebaselining, and seamless integration with existing trading infrastructure.
+This document outlines the architecture and implementation strategy for an **enterprise-level GARCH-based pairs trading system** with integrated MLflow model management. The system is designed for multi-sector support (e.g., technology, healthcare, financial), but **currently only the technology sector is active**. The architecture, experiment tracking, and model management are all future-proofed for seamless expansion to additional sectors.
 
 ## System Architecture
 
@@ -63,16 +63,17 @@ This document outlines the architecture and implementation strategy for an **ent
 #### Experiment Hierarchy
 ```
 pairs_trading/
-├── technology_sector/
+├── technology_sector/   # Currently active
 │   ├── gru_garch_hybrid_v1/
 │   ├── gru_garch_hybrid_v2/
 │   └── gru_garch_hybrid_v3/
-├── healthcare_sector/
+├── healthcare_sector/   # For future expansion
 │   ├── gru_garch_hybrid_v1/
 │   └── gru_garch_hybrid_v2/
-└── financial_sector/
+└── financial_sector/    # For future expansion
     └── gru_garch_hybrid_v1/
 ```
+> **Note:** Only `technology_sector` is currently in use. The structure is designed for easy addition of new sectors.
 
 #### Tracked Parameters
 ```python
@@ -145,13 +146,14 @@ statistical_metrics = {
 }
 ```
 
-### Model Registry Structure
-
 #### Model Naming Convention
 ```
 pairs_trading_gru_garch_{sector}_{version}_{date}
 Example: pairs_trading_gru_garch_technology_v2_20250514
 ```
+> **Note:** Only `technology` sector models are currently registered. Naming is multi-sector ready.
+
+### Model Registry Structure
 
 #### Model Stages
 1. **Staging**: Newly trained models awaiting validation
@@ -546,33 +548,7 @@ mlflow:
   tracking_uri: "http://localhost:5000"
   registry_uri: "http://localhost:5000"
   experiment_name: "pairs_trading"
-  
-model_registry:
-  naming_pattern: "pairs_trading_gru_garch_{sector}_{version}_{date}"
-  stages:
-    - staging
-    - production
-    - archived
-  
-rebaselining:
-  weekly:
-    schedule: "0 2 * * 0"  # Sunday 2 AM
-    sectors: ["technology", "healthcare", "financial"]
-    data_window_days: 730
-    validation_window_days: 90
-    
-  monthly:
-    schedule: "0 2 1-7 * 0"  # First Sunday of month
-    sectors: ["technology", "healthcare", "financial"]
-    data_window_days: 1095
-    validation_window_days: 180
-    
-performance_thresholds:
-  f1_score_improvement: 0.02
-  sharpe_ratio_improvement: 0.1
-  max_drawdown_improvement: 0.01
-  f1_score_minimum: 0.70
-  sharpe_ratio_minimum: 1.0
+  # Only technology sector is currently active
 ```
 
 ### GARCH-GRU Strategy Configuration
@@ -633,49 +609,30 @@ garch_gru_pairs:
 ## Implementation Strategy
 
 ### Phase 1: MLflow Foundation (Weeks 1-2)
-1. **MLflow Server Setup**
-   - Install and configure MLflow server
-   - Set up experiment tracking
-   - Configure model registry
-   - Create database tables for model management
+- **MLflow Server Setup**: Install and configure MLflow server for experiment tracking and model registry.
+- **Basic Integration**: Instrument GRU training code with MLflow for the technology sector.
+- **Production Integration**: System is designed for multi-sector support, but only technology is active.
 
-2. **Basic Integration**
-   - Instrument existing GRU training code with MLflow
-   - Create model registry integration
-   - Implement basic model serving
+## Future Enhancements
 
-### Phase 2: Automated Training Pipeline (Weeks 3-4)
-1. **Automated Training Pipeline**
-   - Create Prefect flows for periodic retraining
-   - Implement data validation and preprocessing
-   - Add automated model evaluation and comparison
+### Multi-Sector Expansion
+- The system is architected for multiple sectors (technology, healthcare, financial, etc.).
+- To add a new sector, simply create a new MLflow experiment and follow the existing naming convention.
+- All code and configuration are ready for seamless expansion.
 
-2. **Model Promotion Logic**
-   - Implement performance comparison algorithms
-   - Create automated promotion workflows
-   - Add rollback capabilities and alerts
+### Custom Database Tables (For Advanced Analytics)
+- The following tables are **not required for basic MLflow operation** and are not part of the current implementation.
+- They are recommended for advanced analytics, trading signal attribution, and custom reporting:
+  - `model_registry`: Custom model metadata and versioning
+  - `model_performance_history`: Historical model performance tracking
+  - `trading_signals`: Attribution of trading signals to specific models
+  - `pairs_data`: Enhanced storage for pairs trading analytics
+  - `model_training_logs`: Detailed logs of model training sessions
+- These tables can be added later via SQL migrations as your needs grow.
 
-### Phase 3: Production Integration (Weeks 5-6)
-1. **Trading System Integration**
-   - Modify signal generation to use MLflow-served models
-   - Implement real-time model switching
-   - Add performance monitoring and attribution
-
-2. **Monitoring and Alerting**
-   - Create dashboards for model performance
-   - Implement alerting for model degradation
-   - Add audit trails and comprehensive logging
-
-### Phase 4: Optimization and Scaling (Weeks 7-8)
-1. **Advanced Features**
-   - Implement A/B testing capabilities
-   - Add ensemble model support
-   - Create advanced performance analytics
-
-2. **Multi-Sector Expansion**
-   - Extend to additional sectors
-   - Implement sector-specific model optimization
-   - Create cross-sector correlation monitoring
+> **Summary:**
+> - **Currently:** Only technology sector is active, using MLflow's built-in tables.
+> - **Future:** Multi-sector support and custom analytics tables are ready to be enabled as your project grows.
 
 ## Key Features
 
@@ -807,26 +764,6 @@ Where:
 - **Model Inference Latency**: Target < 100ms
 - **Data Pipeline Reliability**: Target > 99.9%
 - **Alert Response Time**: Target < 5 minutes
-
-## Future Enhancements
-
-### Advanced Model Management
-- **Multi-Model Ensembles**: Combining multiple GRU-GARCH models
-- **Online Learning**: Continuous model adaptation
-- **Transfer Learning**: Leveraging models across sectors
-- **Explainable AI**: Model interpretability and feature importance
-
-### Advanced Trading Features
-- **Multi-Pair Portfolios**: Managing multiple symbol pairs simultaneously
-- **Dynamic Pair Selection**: Automated pair identification and selection
-- **Market Regime Detection**: Adapting strategies to market conditions
-- **Alternative Data Integration**: News sentiment, options flow, etc.
-
-### Infrastructure Improvements
-- **Microservices Architecture**: Scalable model serving
-- **Real-time Streaming**: Apache Kafka integration
-- **Advanced Monitoring**: Prometheus and Grafana integration
-- **Cloud Deployment**: AWS/GCP/Azure integration
 
 ## Conclusion
 
