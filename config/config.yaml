@@ -53,8 +53,7 @@ websocket:
     date_range:
       start_date: "2025-06-23"  # My earliest available data
       end_date: "2025-06-30"    # Example date range
-    # symbols: ["AAPL", "MSFT", "GOOGL"]
-    symbols: ["AAPL"]
+    symbols: ["AAPL", "PDFS", "ROG"]  # Pairs trading symbols (PDFS/ROG will use AAPL as proxy)
     loop_count: -1  # -1 = infinite, 1 = single pass
     data_retention:
       recycled_data_days: 1  # Keep recycled data for 1 day

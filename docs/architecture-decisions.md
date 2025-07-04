@@ -596,6 +596,122 @@ symbols = get_websocket_symbols()  # Gets symbols from config.yaml
 
 ---
 
+## 10. Multi-Symbol Data Recycler with Proxy Support
+
+### **Decision: Implement Configuration-Driven Multi-Symbol Support with AAPL Proxy Fallback**
+
+### **Context:**
+- Data recycler was hardcoded for AAPL only
+- User wants to trade PDFS and ROG pairs but doesn't have data for these symbols yet
+- Need to support multiple symbols while maintaining system functionality
+- Market is closed, so no immediate access to PDFS/ROG data
+
+### **Problem:**
+- Data recycler only supported single symbol (AAPL)
+- PDFS and ROG data not available in database yet
+- Need to test pairs trading infrastructure immediately
+- Want to transition to real data when available without code changes
+
+### **Options Considered:**
+
+#### **Option A: Keep Single Symbol (AAPL)**
+**Pros:**
+- No code changes required
+- Simple implementation
+- No risk of breaking existing functionality
+
+**Cons:**
+- Cannot test pairs trading with multiple symbols
+- Need to refactor later when PDFS/ROG data is available
+- Limited testing capabilities
+
+#### **Option B: Multi-Symbol with Proxy Support**
+**Pros:**
+- Immediate support for PDFS and ROG symbols
+- Uses AAPL data as proxy for missing symbols
+- Configuration-driven symbol management
+- Easy transition to real data when available
+- No code changes needed when real data becomes available
+
+**Cons:**
+- More complex implementation
+- Proxy data may not perfectly represent real symbol behavior
+- Need to manage symbol mapping logic
+
+#### **Option C: Wait for Real Data**
+**Pros:**
+- No proxy data complications
+- Real symbol behavior from the start
+
+**Cons:**
+- Cannot test pairs trading infrastructure immediately
+- Delays development and testing
+- No immediate solution for current needs
+
+### **Decision Rationale:**
+- **Primary Factor**: Immediate testing capability for pairs trading infrastructure
+- **Secondary Factor**: Easy transition path to real data when available
+- **Tertiary Factor**: Configuration-driven approach for future flexibility
+
+### **Implementation:**
+
+#### **1. Multi-Symbol Data Recycler**
+```python
+class MultiSymbolDataRecycler:
+    def __init__(self):
+        self.config = get_websocket_config()
+        self.symbols = self.config.get_recycler_symbols()
+        self.symbol_mapping = self._create_symbol_mapping()
+    
+    def _create_symbol_mapping(self) -> Dict[str, str]:
+        """Map requested symbols to available symbols with fallback"""
+        mapping = {}
+        available_symbols = self._get_available_symbols()
+        
+        for symbol in self.symbols:
+            if symbol in available_symbols:
+                mapping[symbol] = symbol  # Use actual data
+            else:
+                mapping[symbol] = FALLBACK_SYMBOL  # Use AAPL as proxy
+        return mapping
+```
+
+#### **2. Configuration Management**
+```yaml
+websocket:
+  mode: "recycler"
+  symbols: ["AAPL", "PDFS", "ROG"]
+  recycler:
+    symbols: ["AAPL", "PDFS", "ROG"]  # PDFS/ROG will use AAPL as proxy
+```
+
+#### **3. Symbol Management Utilities**
+- `scripts/manage_symbols.py`: Manage symbol configuration and simple data verification
+- Easy switching between testing and pairs trading modes
+- One command to check data availability after Monday's collection
+
+#### **4. Data Flow**
+```
+Requested: [AAPL, PDFS, ROG]
+Available: [AAPL]
+Mapping:   AAPL→AAPL, PDFS→AAPL, ROG→AAPL
+Result:    All symbols use AAPL data with correct symbol names
+```
+
+### **Results:**
+- **Immediate testing**: Can test pairs trading with PDFS/ROG symbols immediately
+- **Proxy data**: Uses AAPL data as realistic proxy for missing symbols
+- **Easy transition**: When real data becomes available, no code changes needed
+- **Configuration flexibility**: Easy to add/remove symbols via configuration
+- **Development continuity**: No delays in pairs trading development
+
+### **Transition Strategy:**
+1. **Phase 1**: Use AAPL proxy data for PDFS/ROG (current)
+2. **Phase 2**: Collect real PDFS/ROG data on Monday, check availability on Tuesday with `python scripts/manage_symbols.py status`
+3. **Automatic Transition**: System automatically uses real data when available (no code changes needed)
+
+---
+
 ## Summary of Key Decisions
 
 1. **PyTorch over TensorFlow**: Better Windows compatibility
@@ -607,6 +723,7 @@ symbols = get_websocket_symbols()  # Gets symbols from config.yaml
 7. **PortfolioManager singleton with caching**: Performance optimization and API efficiency
 8. **Centralized refresh functionality**: Better user experience and interface clarity
 9. **Dual WebSocket Implementation**: Maintain both implementations until code stabilizes
+10. **Multi-Symbol Data Recycler with Proxy Support**: Configuration-driven symbol management with fallback to AAPL data
 
 ## Future Enhancements
 
@@ -616,6 +733,7 @@ symbols = get_websocket_symbols()  # Gets symbols from config.yaml
 - Implement automated rebaselining workflows
 - Add model serving infrastructure
 - Add more symbol pairs for diversified trading
+- Transition from proxy data to real PDFS/ROG data when available
 
 ## Configuration Files Updated
 
@@ -625,6 +743,9 @@ symbols = get_websocket_symbols()  # Gets symbols from config.yaml
 - `docs/garch-pairs-trading.md`: Updated architecture documentation
 - `src/data/sources/alpaca_websocket.py`: Added PDFS and ROG symbols
 - `src/data/sources/configurable_websocket.py`: Added PDFS and ROG symbols
+- `src/data/sources/data_recycler_server.py`: Refactored for multi-symbol support with proxy fallback
+- `scripts/manage_symbols.py`: New utility for symbol configuration management
+- `scripts/test_multi_symbol_recycler.py`: Test script for verification
 
 ---
 
