@@ -344,13 +344,24 @@ The system implements a comprehensive error handling strategy:
 
 ## Future Enhancements
 
-### Planned Features
+> **📋 Centralized Registry**: All future enhancements are now tracked in the [Future Enhancements Registry](docs/architecture-decisions.md#future-enhancements-registry) for better project management and planning.
+
+### Project-Specific Enhancements
+
+#### Planned Features
 - **Machine Learning**: Predictive analytics and trading signals
 - **Advanced Analytics**: Portfolio optimization and risk analysis
 - **Mobile App**: Native mobile application
 - **API Gateway**: Public API for third-party integrations
 
-### Scalability Improvements
+#### Testing Infrastructure Improvements
+- **Complete Test Coverage**: Address critical gaps in data source and utility module testing
+- **Integration Testing**: End-to-end data pipeline and API integration tests
+- **Performance Testing**: Load testing and system performance validation
+- **Security Testing**: Comprehensive security validation and vulnerability assessment
+- **Data Quality Testing**: Automated data validation and quality assurance
+
+#### Scalability Improvements
 - **Microservices**: Break down into microservices architecture
 - **Cloud Deployment**: Full cloud-native deployment
 - **Real-time Analytics**: Advanced real-time analytics

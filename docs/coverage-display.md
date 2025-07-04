@@ -226,14 +226,25 @@ pytest-cov → coverage.json → normalize_coverage_data() → parse_coverage_da
 
 ## Future Enhancements
 
-### Planned Features
+> **📋 Centralized Registry**: All future enhancements are now tracked in the [Future Enhancements Registry](docs/architecture-decisions.md#future-enhancements-registry) for better project management and planning.
+
+### Coverage Display-Specific Enhancements
+
+#### Planned Features
 - **Historical Tracking**: Coverage trends over time
 - **Custom Thresholds**: Configurable coverage level boundaries
 - **Export Options**: PDF/CSV reports
 - **Integration**: CI/CD pipeline integration
 - **Notifications**: Coverage drop alerts
 
-### Potential Improvements
+#### Testing Infrastructure Improvements
+- **Complete Coverage Tracking**: Address gaps in data source and utility module testing
+- **Integration Coverage**: Track coverage for end-to-end integration tests
+- **Performance Test Coverage**: Include performance and load testing in coverage metrics
+- **Security Test Coverage**: Track coverage for security validation tests
+- **Data Quality Test Coverage**: Monitor coverage for data validation and quality tests
+
+#### Potential Improvements
 - **Branch Coverage**: Support for branch coverage metrics
 - **Function Coverage**: Detailed function-level analysis
 - **Test Impact**: Identify which tests affect which lines

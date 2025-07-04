@@ -312,14 +312,37 @@ TOTAL                                                    211     49    77%
 
 ## Future Enhancements
 
-### Planned Features
+> **📋 Centralized Registry**: All future enhancements are now tracked in the [Future Enhancements Registry](docs/architecture-decisions.md#future-enhancements-registry) for better project management and planning.
+
+### Testing-Specific Enhancements
+
+#### Planned Features
 - **Historical Tracking**: Coverage trends over time
 - **Custom Thresholds**: Configurable coverage level boundaries
 - **Export Options**: PDF/CSV reports
 - **Integration**: CI/CD pipeline integration
 - **Notifications**: Coverage drop alerts
 
-### Potential Improvements
+#### Critical Testing Gaps to Address
+
+##### High Priority (Critical Gaps)
+- **Data Source Unit Tests**: Complete unit tests for `alpaca_websocket.py`, `alpaca_historical_loader.py`, `alpaca_daily_loader.py`, `yahoo_finance_loader.py`, `news.py`, `data_recycler_server.py`, `configurable_websocket.py`, `hourly_persistence.py`
+- **Utility Module Tests**: Unit tests for `websocket_config.py`, `data_recycler_utils.py`, `market_hours.py`
+- **Database Integration Tests**: Real database operation tests, migration script tests, schema validation tests
+- **Error Handling Tests**: Network failures, API failures, database failures, data corruption scenarios
+
+##### Medium Priority (Important Gaps)
+- **Script Unit Tests**: Unit tests for `manage_symbols.py`, `setup_test_env.py`, `manual_save.py`
+- **Performance Tests**: Load testing, memory usage, API rate limiting, database performance
+- **Security Tests**: API key validation, input validation, data sanitization, authentication flows
+- **Data Quality Tests**: Data validation, data completeness, data consistency, data transformation accuracy
+
+##### Low Priority (Nice to Have)
+- **Documentation Tests**: API documentation accuracy, code examples validation, README validation
+- **UI Edge Case Tests**: Complex user interactions, large datasets, market holidays, responsive design
+- **Cross-Platform Tests**: Different operating systems compatibility
+
+#### Potential Improvements
 - **Branch Coverage**: Support for branch coverage metrics
 - **Function Coverage**: Detailed function-level analysis
 - **Test Impact**: Identify which tests affect which lines

@@ -145,7 +145,11 @@ Located in `src/data/sources/portfolio_manager.py`:
 
 ## Future Enhancements
 
-### Planned Features
+> **📋 Centralized Registry**: All future enhancements are now tracked in the [Future Enhancements Registry](docs/architecture-decisions.md#future-enhancements-registry) for better project management and planning.
+
+### Portfolio-Specific Enhancements
+
+#### Planned Features
 1. **Historical Performance**: Portfolio performance over time
 2. **Sector Analysis**: Position allocation by sector
 3. **Performance Charts**: Interactive charts for portfolio growth
@@ -153,7 +157,14 @@ Located in `src/data/sources/portfolio_manager.py`:
 5. **Risk Alerts**: Real-time risk notifications
 6. **Portfolio Rebalancing**: Tools for portfolio optimization
 
-### Integration Opportunities
+#### Testing Infrastructure
+1. **Portfolio Manager Unit Tests**: Complete unit test coverage for PortfolioManager class
+2. **API Integration Tests**: Real Alpaca API integration testing with mock fallbacks
+3. **Data Validation Tests**: Portfolio data validation and error handling tests
+4. **Performance Tests**: Load testing for portfolio data retrieval and caching
+5. **Security Tests**: API credential validation and secure data handling tests
+
+#### Integration Opportunities
 1. **Database Storage**: Store historical portfolio data locally
 2. **Performance Tracking**: Track portfolio performance over time
 3. **Automated Alerts**: Set up alerts for portfolio changes

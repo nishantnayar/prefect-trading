@@ -407,6 +407,11 @@ The data recycler system integrates seamlessly with your existing system:
 
 ## Future Enhancements
 
+> **📋 Centralized Registry**: All future enhancements are now tracked in the [Future Enhancements Registry](docs/architecture-decisions.md#future-enhancements-registry) for better project management and planning.
+
+### Data Recycler-Specific Enhancements
+
+#### Core System Enhancements
 1. **Advanced Proxy Logic**: Use multiple symbols as proxy data
 2. **Data Quality Metrics**: Monitor proxy data quality vs real data
 3. **Automated Data Collection**: Schedule data collection for missing symbols
@@ -415,6 +420,15 @@ The data recycler system integrates seamlessly with your existing system:
 6. **Multiple Data Sources**: Support for multiple historical data sources
 7. **Advanced Filtering**: Filter data by volume, price ranges, etc.
 8. **Scenario Builder**: Create custom market scenarios
+
+#### Testing Infrastructure Enhancements
+1. **Data Recycler Unit Tests**: Complete unit test coverage for `data_recycler_server.py`
+2. **WebSocket Integration Tests**: Real WebSocket connection testing with mock data
+3. **Multi-Symbol Testing**: Comprehensive testing of proxy data functionality
+4. **Configuration Testing**: Validation of all configuration options and edge cases
+5. **Performance Testing**: Load testing for large datasets and multiple concurrent connections
+6. **Data Quality Testing**: Automated validation of recycled data integrity and format
+7. **Error Handling Tests**: Network failure, data corruption, and configuration error scenarios
 
 ## Security Considerations
 
