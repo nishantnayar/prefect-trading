@@ -165,3 +165,4 @@ src/archive/Redis.py
 /src/archive
 /prefect-trading-main
 src/scripts/pairs_identification_GRU.ipynb
+/mlruns
