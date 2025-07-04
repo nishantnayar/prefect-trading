@@ -202,7 +202,7 @@ class MultiSymbolDataRecycler:
         logger.info(f"Completed {loop_count} loops")
         await websocket.close()
 
-async def stream_data_handler(websocket, path):
+async def stream_data_handler(websocket, path=None):
     """WebSocket connection handler"""
     recycler = MultiSymbolDataRecycler()
     await recycler.stream_data(websocket)
