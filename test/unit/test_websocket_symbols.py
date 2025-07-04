@@ -8,25 +8,32 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 def test_alpaca_websocket_symbols():
-    """Test that alpaca_websocket.py has the correct symbols."""
+    """Test that alpaca_websocket.py uses configuration for symbols."""
     print("🧪 Testing alpaca_websocket.py symbol configuration...")
     
     try:
         with open('src/data/sources/alpaca_websocket.py', 'r') as f:
             content = f.read()
         
-        # Check for symbol list
-        if "symbols = ['AAPL', 'PDFS', 'ROG']" in content:
-            print("✅ Symbol list correctly configured")
+        # Check for configuration import
+        if "from src.utils.websocket_config import" in content and "get_websocket_symbols" in content:
+            print("✅ Configuration import correctly configured")
         else:
-            print("❌ Symbol list not found or incorrect")
+            print("❌ Configuration import not found")
             return False
         
-        # Check for symbol processing
-        if "if symbol in ['AAPL', 'PDFS', 'ROG']:" in content:
-            print("✅ Symbol processing correctly configured")
+        # Check for configuration usage instead of hardcoded symbols
+        if "symbols = get_websocket_symbols()" in content:
+            print("✅ Configuration-based symbols correctly configured")
         else:
-            print("❌ Symbol processing not found or incorrect")
+            print("❌ Configuration-based symbols not found")
+            return False
+        
+        # Check for symbol processing using configuration
+        if "symbols = get_websocket_symbols()" in content and "if symbol in symbols:" in content:
+            print("✅ Symbol processing correctly uses configuration")
+        else:
+            print("❌ Symbol processing not using configuration")
             return False
         
         # Check for Redis key pattern
@@ -44,26 +51,33 @@ def test_alpaca_websocket_symbols():
         return False
 
 def test_configurable_websocket_symbols():
-    """Test that configurable_websocket.py has the correct symbols."""
+    """Test that configurable_websocket.py uses configuration for symbols."""
     print("\n🧪 Testing configurable_websocket.py symbol configuration...")
     
     try:
         with open('src/data/sources/configurable_websocket.py', 'r') as f:
             content = f.read()
         
-        # Check for symbol list (should appear twice - once for each WebSocket type)
-        symbol_count = content.count("symbols = ['AAPL', 'PDFS', 'ROG']")
-        if symbol_count >= 2:
-            print(f"✅ Symbol list correctly configured ({symbol_count} occurrences)")
+        # Check for configuration import
+        if "from src.utils.websocket_config import" in content and "get_websocket_symbols" in content:
+            print("✅ Configuration import correctly configured")
         else:
-            print(f"❌ Symbol list not found or incorrect (found {symbol_count} occurrences)")
+            print("❌ Configuration import not found")
             return False
         
-        # Check for symbol processing in Alpaca section
-        if "if symbol in ['AAPL', 'PDFS', 'ROG']:" in content:
-            print("✅ Symbol processing correctly configured")
+        # Check for configuration usage instead of hardcoded symbols
+        symbol_count = content.count("symbols = get_websocket_symbols()")
+        if symbol_count >= 2:
+            print(f"✅ Configuration-based symbols correctly configured ({symbol_count} occurrences)")
         else:
-            print("❌ Symbol processing not found or incorrect")
+            print(f"❌ Configuration-based symbols not found or incorrect (found {symbol_count} occurrences)")
+            return False
+        
+        # Check for symbol processing using configuration
+        if "symbols = get_websocket_symbols()" in content and "if symbol in symbols:" in content:
+            print("✅ Symbol processing correctly uses configuration")
+        else:
+            print("❌ Symbol processing not using configuration")
             return False
         
         # Check for data source handling
@@ -78,6 +92,28 @@ def test_configurable_websocket_symbols():
         
     except Exception as e:
         print(f"❌ Error testing configurable_websocket.py: {e}")
+        return False
+
+def test_config_file_symbols():
+    """Test that config.yaml has the correct symbols configured."""
+    print("\n🧪 Testing config.yaml symbol configuration...")
+    
+    try:
+        with open('config/config.yaml', 'r') as f:
+            content = f.read()
+        
+        # Check for websocket symbols configuration
+        if "symbols: [\"AAPL\", \"PDFS\", \"ROG\"]" in content:
+            print("✅ WebSocket symbols correctly configured in config.yaml")
+        else:
+            print("❌ WebSocket symbols not found or incorrect in config.yaml")
+            return False
+        
+        print("✅ config.yaml symbol configuration is correct")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error testing config.yaml: {e}")
         return False
 
 def test_symbol_pairs():
@@ -117,18 +153,21 @@ if __name__ == "__main__":
     # Run tests
     alpaca_test = test_alpaca_websocket_symbols()
     configurable_test = test_configurable_websocket_symbols()
+    config_test = test_config_file_symbols()
     pairs_test = test_symbol_pairs()
     
     print("\n📊 Test Results:")
     print(f"Alpaca WebSocket: {'✅ PASSED' if alpaca_test else '❌ FAILED'}")
     print(f"Configurable WebSocket: {'✅ PASSED' if configurable_test else '❌ FAILED'}")
+    print(f"Config File: {'✅ PASSED' if config_test else '❌ FAILED'}")
     print(f"Symbol Pairs: {'✅ PASSED' if pairs_test else '❌ FAILED'}")
     
-    if alpaca_test and configurable_test and pairs_test:
+    if alpaca_test and configurable_test and config_test and pairs_test:
         print("\n🎉 All tests passed! WebSocket configuration is ready for pairs trading.")
         print("\nNext steps:")
-        print("1. Start the WebSocket to collect data for AAPL (testing), PDFS and ROG (trading)")
+        print("1. Start the WebSocket to collect data for configured symbols")
         print("2. Create feature engineering pipeline for pairs trading")
         print("3. Implement cointegration testing for pair identification")
+        print("4. Symbols can now be easily changed in config.yaml")
     else:
         print("\n⚠️ Some tests failed. Please check the WebSocket configuration.") 

@@ -20,7 +20,7 @@ import pytz
 from prefect import flow, task, get_run_logger
 from prefect.blocks.system import Secret
 from src.database.database_connectivity import DatabaseConnectivity
-from src.utils.websocket_config import get_websocket_config, is_recycler_mode, is_alpaca_mode
+from src.utils.websocket_config import get_websocket_config, is_recycler_mode, is_alpaca_mode, get_websocket_symbols
 import os
 
 # Setup Redis connection
@@ -62,7 +62,7 @@ def save_redis_data_to_postgres():
         logger.info("Connected to PostgreSQL database")
         
         # Get all keys from Redis that match the pattern for our symbols
-        symbols = ['AAPL', 'PDFS', 'ROG']  # AAPL for testing, PDFS-ROG for pairs trading
+        symbols = get_websocket_symbols()
         all_keys = []
         for symbol in symbols:
             symbol_keys = redis_client.keys(f"{symbol}:*")
@@ -190,7 +190,7 @@ async def alpaca_websocket_connection():
                 return
 
             # Subscribe to real-time data for the stock symbols
-            symbols = ['AAPL', 'PDFS', 'ROG']  # AAPL for testing, PDFS-ROG for pairs trading
+            symbols = get_websocket_symbols()
             subscribe_message = {
                 "action": "subscribe",
                 "bars": symbols,
@@ -242,8 +242,9 @@ async def alpaca_websocket_connection():
                         for ohlc in data:
                             symbol = ohlc.get('S')
                             logger.info(f"Processing symbol: {symbol}")
-                            # Process AAPL (for testing), PDFS and ROG (for pairs trading)
-                            if symbol in ['AAPL', 'PDFS', 'ROG']:
+                            # Process symbols from configuration
+                            symbols = get_websocket_symbols()
+                            if symbol in symbols:
                                 ohlc_data = {
                                     "open": str(ohlc['o']),
                                     "high": str(ohlc['h']),
@@ -318,8 +319,9 @@ async def recycler_websocket_connection():
                         for ohlc in data:
                             symbol = ohlc.get('S')
                             logger.info(f"Processing recycled symbol: {symbol}")
-                            # Process AAPL (for testing), PDFS and ROG (for pairs trading)
-                            if symbol in ['AAPL', 'PDFS', 'ROG']:
+                            # Process symbols from configuration
+                            symbols = get_websocket_symbols()
+                            if symbol in symbols:
                                 ohlc_data = {
                                     "open": str(ohlc['o']),
                                     "high": str(ohlc['h']),

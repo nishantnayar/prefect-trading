@@ -56,6 +56,36 @@ def check_table_structure():
         print("News articles table columns:")
         for col in news_columns:
             print(f"  {col[0]}: {col[1]}")
+        
+        print()
+        
+        # Check yahoo_company_officers table
+        cursor.execute("""
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'yahoo_company_officers' 
+            ORDER BY ordinal_position
+        """)
+        officers_columns = cursor.fetchall()
+        print("Yahoo company officers table columns:")
+        for col in officers_columns:
+            print(f"  {col[0]}: {col[1]}")
+        
+        print()
+        
+        # Check yahoo_company_info table
+        cursor.execute("""
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'yahoo_company_info' 
+            ORDER BY ordinal_position
+        """)
+        company_info_columns = cursor.fetchall()
+        print("Yahoo company info table columns:")
+        for col in company_info_columns:
+            print(f"  {col[0]}: {col[1]}")
+        
+        print()
 
 if __name__ == "__main__":
     check_table_structure() 

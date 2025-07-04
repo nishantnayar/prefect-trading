@@ -295,6 +295,307 @@ This document records the key architectural decisions made during the developmen
 
 ---
 
+## 7. PortfolioManager Singleton Pattern and Caching System
+
+### **Decision: Implement Singleton Pattern with Intelligent Caching**
+
+### **Context:**
+- PortfolioManager was being instantiated multiple times across different UI components
+- Excessive API calls to Alpaca were causing performance issues and rate limiting
+- Multiple refresh buttons were scattered across different pages
+- Auto-refresh was causing complete page re-renders every 10 seconds
+
+### **Problem:**
+- Multiple "Portfolio Manager initialized successfully" log messages
+- Repeated API calls for the same data within seconds
+- Redundant refresh buttons creating user confusion
+- Poor performance due to unnecessary API calls
+- Auto-refresh bypassing caching system
+
+### **Options Considered:**
+
+#### **Option A: Keep Multiple Instances**
+**Pros:**
+- No code changes required
+- Each component manages its own data
+- Simple implementation
+
+**Cons:**
+- Multiple API connections
+- Excessive API calls
+- Poor performance
+- Rate limiting issues
+- Resource waste
+
+#### **Option B: Singleton Pattern with Caching**
+**Pros:**
+- Single instance across application
+- Intelligent caching reduces API calls
+- Better performance
+- Respects API rate limits
+- Clean architecture
+- Easy to monitor and debug
+
+**Cons:**
+- Requires refactoring existing code
+- More complex implementation
+- Need to manage cache invalidation
+
+### **Decision Rationale:**
+- **Primary Factor**: Performance and API efficiency
+- **Secondary Factor**: Clean architecture and maintainability
+- **Tertiary Factor**: Better user experience with faster response times
+
+### **Implementation:**
+
+#### **1. Singleton Pattern**
+```python
+class PortfolioManager:
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(PortfolioManager, cls).__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        if self._initialized:
+            return
+        # Initialize only once
+        self._initialized = True
+```
+
+#### **2. Caching System**
+```python
+def _get_cached_data(self, key: str):
+    """Get data from cache if it's still valid."""
+    if key in self._cache and key in self._cache_timestamps:
+        timestamp = self._cache_timestamps[key]
+        cache_duration = 10 if key.startswith('orders_') else self._cache_duration
+        if datetime.now() - timestamp < timedelta(seconds=cache_duration):
+            return self._cache[key]
+    return None
+```
+
+#### **3. Shared Instance Management**
+```python
+# In UI modules
+_portfolio_manager = None
+
+def get_portfolio_manager():
+    """Get or create a shared portfolio manager instance."""
+    global _portfolio_manager
+    if _portfolio_manager is None:
+        _portfolio_manager = PortfolioManager()
+    return _portfolio_manager
+```
+
+#### **4. Cache Duration Strategy**
+- **Orders**: 10 seconds (frequently changing)
+- **Account Info**: 30 seconds (relatively stable)
+- **Positions**: 30 seconds (moderately stable)
+- **Portfolio Summary**: 30 seconds (computed from other data)
+
+### **Results:**
+- **Single initialization**: Only one "Portfolio Manager initialized successfully" message
+- **Reduced API calls**: Caching eliminates redundant calls
+- **Better performance**: Faster response times for UI components
+- **Cleaner UI**: Single refresh button in sidebar
+- **Improved UX**: No more multiple refresh buttons
+
+---
+
+## 8. UI Refresh Button Consolidation
+
+### **Decision: Centralize Refresh Functionality**
+
+### **Context:**
+- Multiple refresh buttons were scattered across different pages
+- Users were confused about which refresh button to use
+- Redundant functionality was creating maintenance overhead
+- Auto-refresh was causing performance issues
+
+### **Problem:**
+- Home page had refresh button for portfolio section
+- Portfolio page had its own refresh button
+- Main sidebar had global refresh button
+- Auto-refresh was causing complete page re-renders every 10 seconds
+
+### **Options Considered:**
+
+#### **Option A: Keep Multiple Refresh Buttons**
+**Pros:**
+- Page-specific refresh control
+- No code changes required
+- Users can refresh specific sections
+
+**Cons:**
+- User confusion about which button to use
+- Redundant functionality
+- Inconsistent behavior
+- Maintenance overhead
+
+#### **Option B: Centralize Refresh in Sidebar**
+**Pros:**
+- Single point of control
+- Clear user interface
+- Consistent behavior
+- Easier maintenance
+- Better performance
+
+**Cons:**
+- Less granular control
+- All data refreshes together
+
+### **Decision Rationale:**
+- **Primary Factor**: User experience and interface clarity
+- **Secondary Factor**: Performance and maintenance
+- **Tertiary Factor**: Consistency across the application
+
+### **Implementation:**
+
+#### **1. Removed Redundant Buttons**
+- Removed refresh button from Home page portfolio section
+- Removed refresh button from Portfolio page
+- Kept testing results refresh button (different functionality)
+
+#### **2. Enhanced Main Sidebar Button**
+```python
+# Single refresh button in sidebar
+if st.button("🔄 Refresh All Data", help="Force refresh all portfolio and market data"):
+    clear_portfolio_manager()
+    st.rerun()
+```
+
+#### **3. Disabled Auto-refresh**
+```python
+# Auto-refresh disabled - using intelligent caching instead
+# st_autorefresh(interval=10000)  # Disabled to prevent excessive API calls
+```
+
+#### **4. Added User Guidance**
+```python
+st.caption("💡 Use the refresh button above to update all data across the app")
+```
+
+### **Results:**
+- **Cleaner interface**: Single refresh button
+- **Better UX**: Users know exactly where to refresh
+- **Improved performance**: No automatic page refreshes
+- **Consistent behavior**: All data refreshes together
+- **Easier maintenance**: One place to manage refresh logic
+
+---
+
+## 9. Dual WebSocket Implementation Strategy
+
+### **Decision: Maintain Both alpaca_websocket.py and configurable_websocket.py Until Code Stabilizes**
+
+### **Context:**
+- Successfully implemented configuration-based symbol management for both websocket implementations
+- `configurable_websocket.py` provides advanced features (Alpaca + Recycler modes)
+- `alpaca_websocket.py` is used by `main.py` and provides standalone Alpaca functionality
+- Code is still in development and stabilization phase
+
+### **Problem:**
+- `configurable_websocket.py` is more feature-rich but newer
+- `alpaca_websocket.py` is simpler but actively used by main.py
+- Need to ensure system stability while developing advanced features
+- Risk of breaking existing functionality during development
+
+### **Options Considered:**
+
+#### **Option A: Remove alpaca_websocket.py Immediately**
+**Pros:**
+- Single websocket implementation
+- Less code duplication
+- Cleaner architecture
+- All features in one place
+
+**Cons:**
+- Risk of breaking main.py functionality
+- No fallback if configurable_websocket has issues
+- Harder to debug and isolate issues
+- Development instability
+
+#### **Option B: Keep Both Implementations**
+**Pros:**
+- Stable main.py functionality
+- Fallback option if issues arise
+- Easier debugging and testing
+- Gradual migration path
+- Both use same configuration system
+
+**Cons:**
+- Code duplication
+- Maintenance overhead
+- Slightly larger codebase
+
+#### **Option C: Migrate main.py to configurable_websocket**
+**Pros:**
+- Single implementation
+- Advanced features available
+- Cleaner architecture
+
+**Cons:**
+- Risk of breaking existing functionality
+- More complex implementation
+- Potential stability issues during development
+
+### **Decision Rationale:**
+- **Primary Factor**: System stability during development phase
+- **Secondary Factor**: Risk mitigation with fallback option
+- **Tertiary Factor**: Gradual migration path to advanced features
+
+### **Implementation:**
+
+#### **1. Current State**
+- `alpaca_websocket.py`: Used by `main.py`, standalone Alpaca functionality
+- `configurable_websocket.py`: Advanced implementation with Alpaca + Recycler modes
+- Both use `get_websocket_symbols()` for configuration-based symbol management
+
+#### **2. Configuration Consistency**
+```python
+# Both files use the same configuration approach
+from src.utils.websocket_config import get_websocket_symbols
+symbols = get_websocket_symbols()  # Gets symbols from config.yaml
+```
+
+#### **3. Migration Strategy**
+- **Phase 1**: Maintain both implementations (current)
+- **Phase 2**: Test configurable_websocket thoroughly
+- **Phase 3**: Migrate main.py to use configurable_websocket
+- **Phase 4**: Remove alpaca_websocket.py once stable
+
+#### **4. Testing Approach**
+- Test both implementations independently
+- Compare functionality and performance
+- Ensure configurable_websocket handles all alpaca_websocket use cases
+- Validate main.py integration with configurable_websocket
+
+### **Success Criteria for Migration:**
+- Configurable_websocket passes all alpaca_websocket tests
+- Main.py works seamlessly with configurable_websocket
+- No performance degradation
+- All existing functionality preserved
+- Advanced features (Recycler mode) working correctly
+
+### **Timeline:**
+- **Immediate**: Keep both implementations
+- **Short-term**: Complete testing and validation
+- **Medium-term**: Migrate main.py to configurable_websocket
+- **Long-term**: Remove alpaca_websocket.py
+
+### **Results:**
+- **Stable development**: No risk to existing functionality
+- **Feature development**: Can enhance configurable_websocket safely
+- **Testing flexibility**: Can compare implementations
+- **Gradual migration**: Low-risk path to advanced features
+- **Configuration consistency**: Both use same symbol configuration
+
+---
+
 ## Summary of Key Decisions
 
 1. **PyTorch over TensorFlow**: Better Windows compatibility
@@ -303,6 +604,9 @@ This document records the key architectural decisions made during the developmen
 4. **MLflow built-in tables only**: Start simple, add custom tables later
 5. **MLflow server with PostgreSQL**: Production-ready with web UI
 6. **WebSocket symbols with testing**: AAPL for testing, PDFS-ROG for pairs trading
+7. **PortfolioManager singleton with caching**: Performance optimization and API efficiency
+8. **Centralized refresh functionality**: Better user experience and interface clarity
+9. **Dual WebSocket Implementation**: Maintain both implementations until code stabilizes
 
 ## Future Enhancements
 

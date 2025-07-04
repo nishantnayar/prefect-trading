@@ -45,6 +45,7 @@ alpaca:
 # WebSocket Configuration
 websocket:
   mode: "recycler"  # "alpaca" or "recycler"
+  symbols: ["AAPL", "PDFS", "ROG"]  # Symbols for websocket data collection
   recycler:
     server_url: "ws://localhost:8765"
     replay_mode: "loop"  # "loop", "date_range", "single_pass"

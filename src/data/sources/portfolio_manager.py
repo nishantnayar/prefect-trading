@@ -32,8 +32,21 @@ load_dotenv('config/.env', override=True)
 class PortfolioManager:
     """Manages portfolio data and metrics using Alpaca API."""
     
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls):
+        """Implement singleton pattern to prevent multiple initializations."""
+        if cls._instance is None:
+            cls._instance = super(PortfolioManager, cls).__new__(cls)
+        return cls._instance
+    
     def __init__(self):
         """Initialize the portfolio manager with Alpaca API clients."""
+        # Only initialize once
+        if self._initialized:
+            return
+            
         try:
             # Load Alpaca credentials
             api_key = Secret.load("alpaca-api-key").get()
@@ -52,11 +65,54 @@ class PortfolioManager:
                 secret_key=secret_key
             )
             
+            # Initialize cache
+            self._cache = {}
+            self._cache_timestamps = {}
+            self._cache_duration = 30  # Cache for 30 seconds
+            
+            self._initialized = True
             logger.info("Portfolio Manager initialized successfully")
             
         except Exception as e:
             logger.error(f"Failed to initialize Portfolio Manager: {str(e)}")
             raise
+    
+    def _get_cached_data(self, key: str):
+        """Get data from cache if it's still valid."""
+        if key in self._cache and key in self._cache_timestamps:
+            timestamp = self._cache_timestamps[key]
+            
+            # Use shorter cache duration for orders
+            cache_duration = 10 if key.startswith('orders_') else self._cache_duration
+            
+            if datetime.now() - timestamp < timedelta(seconds=cache_duration):
+                logger.debug(f"Cache HIT for key: {key}")
+                return self._cache[key]
+            else:
+                logger.debug(f"Cache EXPIRED for key: {key}")
+        else:
+            logger.debug(f"Cache MISS for key: {key}")
+        return None
+    
+    def _set_cached_data(self, key: str, data):
+        """Store data in cache with current timestamp."""
+        self._cache[key] = data
+        self._cache_timestamps[key] = datetime.now()
+        logger.debug(f"Cache SET for key: {key}")
+    
+    def clear_cache(self):
+        """Clear all cached data."""
+        self._cache.clear()
+        self._cache_timestamps.clear()
+        logger.info("Portfolio Manager cache cleared")
+    
+    def get_cache_stats(self):
+        """Get cache statistics for monitoring."""
+        return {
+            'cache_size': len(self._cache),
+            'cached_keys': list(self._cache.keys()),
+            'cache_duration': self._cache_duration
+        }
     
     def get_account_info(self) -> Dict:
         """Get account information from Alpaca.
@@ -64,6 +120,11 @@ class PortfolioManager:
         Returns:
             Dict containing account information
         """
+        # Check cache first
+        cached_data = self._get_cached_data('account_info')
+        if cached_data:
+            return cached_data
+            
         def safe_float(val):
             try:
                 return float(val) if val is not None else 0.0
@@ -116,6 +177,9 @@ class PortfolioManager:
                 account_info['pending_transfer_out'] = 0.0
             
             logger.info(f"Successfully retrieved account info for account {account_info['id']}")
+            
+            # Cache the result
+            self._set_cached_data('account_info', account_info)
             return account_info
             
         except Exception as e:
@@ -128,6 +192,11 @@ class PortfolioManager:
         Returns:
             List of dictionaries containing position information
         """
+        # Check cache first
+        cached_data = self._get_cached_data('positions')
+        if cached_data:
+            return cached_data
+            
         try:
             positions = self.trading_client.get_all_positions()
             
@@ -149,6 +218,8 @@ class PortfolioManager:
                 }
                 position_list.append(position_data)
             
+            # Cache the result
+            self._set_cached_data('positions', position_list)
             return position_list
             
         except Exception as e:
@@ -164,6 +235,13 @@ class PortfolioManager:
         Returns:
             List of dictionaries containing order information
         """
+        # Check cache first
+        cache_key = f'orders_{status}'
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data:
+            logger.info(f"Returning cached orders for status: {status}")
+            return cached_data
+            
         try:
             logger.info(f"Attempting to fetch orders with status: {status}")
             
@@ -209,6 +287,9 @@ class PortfolioManager:
                     continue
             
             logger.info(f"Successfully retrieved {len(order_list)} orders with status {status}")
+            
+            # Cache the result
+            self._set_cached_data(cache_key, order_list)
             return order_list
             
         except Exception as e:
@@ -224,6 +305,12 @@ class PortfolioManager:
         Returns:
             Dict containing portfolio metrics
         """
+        # Check cache first
+        cached_data = self._get_cached_data('portfolio_metrics')
+        if cached_data:
+            logger.info("Returning cached portfolio metrics")
+            return cached_data
+            
         try:
             account = self.get_account_info()
             positions = self.get_positions()
@@ -265,7 +352,7 @@ class PortfolioManager:
             else:
                 avg_trade_size = 0
             
-            return {
+            metrics_data = {
                 'total_value': total_value,
                 'cash': cash,
                 'equity': equity,
@@ -282,6 +369,10 @@ class PortfolioManager:
                 'pattern_day_trader': account.get('pattern_day_trader', False),
                 'trading_blocked': account.get('trading_blocked', False)
             }
+            
+            # Cache the result
+            self._set_cached_data('portfolio_metrics', metrics_data)
+            return metrics_data
             
         except Exception as e:
             logger.error(f"Error calculating portfolio metrics: {str(e)}")
@@ -375,6 +466,12 @@ class PortfolioManager:
         Returns:
             Dict containing portfolio summary data
         """
+        # Check cache first
+        cached_data = self._get_cached_data('portfolio_summary')
+        if cached_data:
+            logger.info("Returning cached portfolio summary")
+            return cached_data
+            
         try:
             metrics = self.calculate_portfolio_metrics()
             positions = self.get_positions()
@@ -414,7 +511,7 @@ class PortfolioManager:
                     }
                     recent_activity.append(activity)
             
-            return {
+            summary_data = {
                 'metrics': metrics,
                 'positions': positions,
                 'top_positions': top_positions,
@@ -423,6 +520,10 @@ class PortfolioManager:
                 'total_positions': len(positions),
                 'last_updated': datetime.now().isoformat()
             }
+            
+            # Cache the result
+            self._set_cached_data('portfolio_summary', summary_data)
+            return summary_data
             
         except Exception as e:
             logger.error(f"Error getting portfolio summary: {str(e)}")

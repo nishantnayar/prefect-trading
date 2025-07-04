@@ -24,6 +24,22 @@ load_dotenv('config/.env', override=True)
 from src.data.sources.portfolio_manager import PortfolioManager
 from src.ui.components.date_display import format_datetime_est_to_cst
 
+# Shared portfolio manager instance
+_portfolio_manager = None
+
+def get_portfolio_manager():
+    """Get or create a shared portfolio manager instance."""
+    global _portfolio_manager
+    if _portfolio_manager is None:
+        _portfolio_manager = PortfolioManager()
+    return _portfolio_manager
+
+def clear_portfolio_manager():
+    """Clear the shared portfolio manager instance (useful for refresh)."""
+    global _portfolio_manager
+    if _portfolio_manager is not None:
+        _portfolio_manager.clear_cache()
+    _portfolio_manager = None
 
 def display_account_overview(account_info: Dict):
     """Display comprehensive account overview.
@@ -372,17 +388,9 @@ def render_portfolio():
     """Main function to render the comprehensive portfolio page."""
     st.title("💼 Portfolio Management")
     
-    # Add refresh button
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        st.write("")  # Spacer
-    with col2:
-        if st.button("🔄 Refresh Data", help="Refresh all portfolio data"):
-            st.rerun()
-    
     try:
-        # Initialize portfolio manager
-        portfolio_manager = PortfolioManager()
+        # Get portfolio manager
+        portfolio_manager = get_portfolio_manager()
         
         # Get portfolio data
         portfolio_summary = portfolio_manager.get_portfolio_summary()

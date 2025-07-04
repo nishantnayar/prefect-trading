@@ -11,6 +11,7 @@ The Portfolio Management system provides comprehensive portfolio tracking and an
 - **Current Positions**: All open positions with real-time pricing and P&L
 - **Trading History**: Recent orders and performance metrics
 - **Risk Analysis**: Margin utilization, position concentration, and risk warnings
+- **Intelligent Caching**: Multi-tier caching system for optimal performance
 
 ### 2. Portfolio Dashboard (Home Page)
 The home page now displays:
@@ -19,6 +20,7 @@ The home page now displays:
 - Calculated win rate from trading history
 - Recent trading activity from your account
 - Additional metrics like margin usage and buying power
+- Shared PortfolioManager instance for efficient data access
 
 ### 3. Comprehensive Portfolio Page
 A dedicated portfolio page provides:
@@ -27,6 +29,7 @@ A dedicated portfolio page provides:
 - **Portfolio Allocation**: Pie chart showing position distribution
 - **Trading History**: Detailed order history and performance metrics
 - **Risk Analysis**: Comprehensive risk metrics and warnings
+- **Shared PortfolioManager**: Uses singleton instance for data access
 
 ## Setup
 
@@ -94,9 +97,14 @@ The portfolio system integrates with Alpaca's API to fetch:
 - Real-time market data for calculations
 
 ### Data Refresh
-- Home page refreshes every 10 seconds
-- Portfolio page loads fresh data on each visit
-- All data is fetched directly from Alpaca API
+- **Intelligent Caching**: Multi-tier caching system with different durations
+  - Orders: 10 seconds (frequently changing data)
+  - Account Info: 30 seconds (relatively stable)
+  - Positions: 30 seconds (moderately stable)
+  - Portfolio Summary: 30 seconds (computed from other data)
+- **Centralized Refresh**: Single refresh button in sidebar for all data
+- **Cache Invalidation**: Automatic cache clearing on manual refresh
+- **Performance Optimized**: No automatic page refreshes causing excessive API calls
 
 ## Error Handling
 
@@ -116,15 +124,18 @@ If the Alpaca API is unavailable or credentials are invalid:
 
 ### PortfolioManager Class
 Located in `src/data/sources/portfolio_manager.py`:
-- Manages Alpaca API connections
-- Fetches account and position data
-- Calculates portfolio metrics
-- Provides data for UI components
+- **Singleton Pattern**: Single instance across all UI components
+- **Intelligent Caching**: Multi-tier caching system with different durations
+- **API Management**: Manages Alpaca API connections efficiently
+- **Data Fetching**: Fetches account and position data with caching
+- **Metrics Calculation**: Calculates portfolio metrics from cached data
+- **Cache Management**: Provides cache invalidation and refresh capabilities
 
 ### UI Components
-- **Home Page**: `src/ui/home.py` - Updated to use real data
-- **Portfolio Page**: `src/ui/portfolio.py` - New comprehensive portfolio view
-- **Main App**: `src/ui/streamlit_app.py` - Updated navigation
+- **Home Page**: `src/ui/home.py` - Updated to use shared PortfolioManager instance
+- **Portfolio Page**: `src/ui/portfolio.py` - Uses singleton instance for data access
+- **Main App**: `src/ui/streamlit_app.py` - Centralized refresh functionality
+- **Shared Instance Management**: Global instance management with get_portfolio_manager() and clear_portfolio_manager()
 
 ### Dependencies
 - `alpaca-py`: Alpaca API client

@@ -22,6 +22,22 @@ from src.data.sources.portfolio_manager import PortfolioManager
 # Load environment variables
 load_dotenv('config/.env', override=True)
 
+# Shared portfolio manager instance
+_portfolio_manager = None
+
+def get_portfolio_manager():
+    """Get or create a shared portfolio manager instance."""
+    global _portfolio_manager
+    if _portfolio_manager is None:
+        _portfolio_manager = PortfolioManager()
+    return _portfolio_manager
+
+def clear_portfolio_manager():
+    """Clear the shared portfolio manager instance (useful for refresh)."""
+    global _portfolio_manager
+    if _portfolio_manager is not None:
+        _portfolio_manager.clear_cache()
+    _portfolio_manager = None
 
 def get_greeting() -> str:
     """Get appropriate greeting based on time of day.
@@ -75,18 +91,9 @@ def display_portfolio_summary():
     """
     st.subheader("📊 Portfolio Overview")
     
-    # Add refresh button
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        st.write("")  # Spacer
-    with col2:
-        if st.button("🔄 Refresh", help="Refresh portfolio data"):
-            # Clear any cached data by forcing a new PortfolioManager instance
-            st.rerun()
-    
     try:
         # Get real portfolio data
-        portfolio_manager = PortfolioManager()
+        portfolio_manager = get_portfolio_manager()
         portfolio_summary = portfolio_manager.get_portfolio_summary()
         
         if not portfolio_summary:
@@ -230,7 +237,7 @@ def display_recent_activity():
     
     try:
         # Get real trading activity
-        portfolio_manager = PortfolioManager()
+        portfolio_manager = get_portfolio_manager()
         recent_orders = portfolio_manager.get_orders("closed")[:5]  # Last 5 orders
         
         if not recent_orders:
@@ -356,7 +363,7 @@ def display_open_orders():
     """Display open (accepted) orders in a structured format."""
     st.subheader("🟢 Open Orders")
     try:
-        portfolio_manager = PortfolioManager()
+        portfolio_manager = get_portfolio_manager()
         open_orders = portfolio_manager.get_orders("open")
         if not open_orders:
             st.info("No open orders found.")

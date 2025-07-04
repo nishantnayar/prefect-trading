@@ -11,6 +11,7 @@ sys.path.append(str(project_root))
 from src.ui.home import render_home
 from src.ui.portfolio import render_portfolio
 from src.ui.components.testing_results import render_testing_results
+from src.ui.components.symbol_selector import display_symbol_selector_with_analysis
 
 # 2. Page config must be top-level
 st.set_page_config(
@@ -31,13 +32,27 @@ def load_css():
 
 load_css()
 
-# 4. Refresh page
-st_autorefresh(interval=10000)
+# 4. Auto-refresh disabled - using intelligent caching instead
+# st_autorefresh(interval=10000)  # Disabled to prevent excessive API calls
+
+# Smart auto-refresh option (uncomment to enable)
+# This will refresh every 30 seconds but respect cache timing
+# AUTO_REFRESH_ENABLED = True
+# if AUTO_REFRESH_ENABLED:
+#     st_autorefresh(interval=30000)  # 30 seconds to match cache duration
 
 # 4. Manual refresh button in sidebar
 with st.sidebar:
-    if st.button("🔄 Refresh Data", help="Force refresh all data on this page"):
+    if st.button("🔄 Refresh All Data", help="Force refresh all portfolio and market data"):
+        # Clear cache before rerun
+        from src.ui.home import clear_portfolio_manager
+        from src.ui.portfolio import clear_portfolio_manager as clear_portfolio_manager_alt
+        clear_portfolio_manager()
+        clear_portfolio_manager_alt()
         st.rerun()
+    
+    # Note about refresh functionality
+    st.caption("💡 Use the refresh button above to update all data across the app")
 
 
 def main():
@@ -59,8 +74,7 @@ def main():
     elif selected == "Portfolio":
         render_portfolio()
     elif selected == "Analysis":
-        st.title("📊 Analysis")
-        st.write("Explore data analysis and trading signals.")
+        display_symbol_selector_with_analysis()
     elif selected == "Testing":
         render_testing_results()
     elif selected == "Settings":

@@ -48,6 +48,12 @@ class WebSocketConfig:
         logger.info(f"WebSocket mode: {mode}")
         return mode
     
+    def get_websocket_symbols(self) -> list:
+        """Get the symbols for websocket data collection"""
+        symbols = self._config.get('websocket', {}).get('symbols', ['AAPL'])
+        logger.info(f"WebSocket symbols: {symbols}")
+        return symbols
+    
     def is_recycler_mode(self) -> bool:
         """Check if the system is in recycler mode"""
         return self.get_websocket_mode() == 'recycler'
@@ -176,6 +182,11 @@ def is_alpaca_mode() -> bool:
 def get_websocket_mode() -> str:
     """Get current WebSocket mode"""
     return get_websocket_config().get_websocket_mode()
+
+
+def get_websocket_symbols() -> list:
+    """Get websocket symbols from configuration"""
+    return get_websocket_config().get_websocket_symbols()
 
 
 if __name__ == "__main__":

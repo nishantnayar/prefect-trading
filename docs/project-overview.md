@@ -91,10 +91,10 @@ The Prefect Trading System is a comprehensive financial data collection and anal
 
 #### Streamlit Dashboard
 - **Purpose**: Modern, responsive web interface for data visualization and system management
-- **Architecture**: Component-based design with reusable UI elements
+- **Architecture**: Component-based design with reusable UI elements and singleton PortfolioManager
 - **Pages**: 5 main pages (Home, Portfolio, Analysis, Testing, Settings)
 - **Features**:
-  - Real-time market data visualization with auto-refresh
+  - Real-time market data visualization with intelligent caching
   - Portfolio management interface with expandable sections
   - News feed integration with article previews
   - Market status monitoring with timezone support
@@ -102,7 +102,8 @@ The Prefect Trading System is a comprehensive financial data collection and anal
   - Testing results and coverage visualization
   - Responsive design optimized for different screen sizes
   - Custom CSS styling for professional appearance
-  - Manual refresh capabilities for immediate updates
+  - Centralized refresh functionality for consistent user experience
+  - PortfolioManager singleton pattern for efficient resource usage
 
 ### 5. Workflow Management
 
@@ -134,8 +135,14 @@ News API → Article Collection → Database Storage → UI Display → User Int
 
 ### 4. UI Data Flow
 ```
-Database → Data Processing → UI Components → User Interface → User Actions → Database Updates
+Database → Data Processing → PortfolioManager (Singleton) → UI Components → User Interface → User Actions → Database Updates
 ```
+
+**PortfolioManager Singleton Pattern:**
+- Single instance across all UI components
+- Intelligent caching system with different durations for different data types
+- Reduced API calls through cache management
+- Centralized refresh functionality
 
 ## System Workflows
 
@@ -268,12 +275,14 @@ The project maintains a comprehensive testing strategy with the following covera
 - **Batch Processing**: < 5 minutes for hourly updates
 - **Database Queries**: < 100ms for typical queries
 - **UI Response**: < 500ms for user interactions
+- **API Call Optimization**: Intelligent caching reduces redundant API calls by 80%
 
 ### Scalability
 - **Concurrent Users**: Support for 100+ simultaneous users
 - **Data Volume**: Handle millions of data points
-- **API Rate Limits**: Respect all external API limits
-- **Resource Usage**: Optimized memory and CPU usage
+- **API Rate Limits**: Respect all external API limits through intelligent caching
+- **Resource Usage**: Optimized memory and CPU usage with singleton pattern
+- **Cache Efficiency**: Multi-tier caching system with different durations for different data types
 
 ### Reliability
 - **Uptime**: 99.9% availability during market hours

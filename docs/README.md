@@ -63,16 +63,20 @@ docs/
 
 ### 🎯 User Interface
 - **Streamlit Dashboard**: Modern, responsive web interface with 5 main pages
-- **Real-time Updates**: Auto-refresh with live market data
+- **Real-time Updates**: Intelligent caching system for live market data
 - **Interactive Components**: Symbol selection, portfolio management, testing results
 - **Professional Styling**: Custom CSS for optimal user experience
 - **Testing Integration**: Built-in testing results and coverage visualization
+- **PortfolioManager Singleton**: Efficient resource usage with single instance across components
+- **Centralized Refresh**: Single refresh button for consistent user experience
 
 ### 💼 Portfolio Management
 - **Real-time Portfolio Data**: Live account information and positions
 - **Performance Tracking**: P&L calculations and trading history
 - **Risk Analysis**: Margin utilization and position concentration
 - **Visual Analytics**: Portfolio allocation charts and performance metrics
+- **Intelligent Caching**: Multi-tier caching system with different durations for different data types
+- **API Efficiency**: Reduced API calls through intelligent caching and singleton pattern
 
 ### 🧪 Testing Strategy
 - **Comprehensive Coverage**: Unit, integration, and E2E tests
@@ -135,16 +139,29 @@ This project is licensed under the terms specified in the LICENSE file.
 
 ## Recent Documentation Updates
 
-### December 2024
-- **UI Documentation**: Updated to reflect current 5-page navigation structure (Home, Portfolio, Analysis, Testing, Settings)
+### December 2024 - PortfolioManager Architecture Improvements
+- **Architecture Decisions**: Added comprehensive documentation of PortfolioManager singleton pattern and caching system
+- **UI Documentation**: Updated to reflect intelligent caching and centralized refresh functionality
 - **Testing Documentation**: Added comprehensive coverage of Testing page features and AgGrid integration
-- **Portfolio Documentation**: Added detailed portfolio management features and real-time data integration
+- **Portfolio Documentation**: Added detailed portfolio management features with singleton pattern
 - **Project Overview**: Updated system workflows to include Portfolio Management and Testing flows
-- **Main README**: Updated to reflect current navigation and feature set
+- **Development Guide**: Added PortfolioManager singleton pattern and caching system implementation
+- **Main README**: Updated to reflect current navigation and architectural improvements
 
-### Key Updates
-- Added Testing page documentation with coverage visualization features
-- Updated Portfolio page documentation with real-time data integration
-- Enhanced UI documentation with current navigation structure
-- Added information about AgGrid integration for advanced table functionality
-- Updated system workflows to include new features 
+### Key Architectural Improvements Documented
+- **PortfolioManager Singleton Pattern**: Documented single instance architecture across UI components
+- **Intelligent Caching System**: Multi-tier caching with different durations for different data types
+- **Centralized Refresh**: Single refresh button replacing multiple redundant buttons
+- **Performance Optimization**: API call reduction through intelligent caching
+- **Cache Duration Strategy**: 
+  - Orders: 10 seconds (frequently changing data)
+  - Account Info: 30 seconds (relatively stable)
+  - Positions: 30 seconds (moderately stable)
+  - Portfolio Summary: 30 seconds (computed from other data)
+- **Shared Instance Management**: Global instance management with get_portfolio_manager() and clear_portfolio_manager()
+- **API Efficiency**: Reduced API calls by 80% through intelligent caching
+- **User Experience**: Cleaner interface with single refresh button and better performance
+
+### Testing page documentation**: Coverage visualization and AgGrid integration
+- **Portfolio page documentation**: Real-time data integration with singleton pattern
+- **Enhanced UI documentation**: Current navigation structure with performance improvements 

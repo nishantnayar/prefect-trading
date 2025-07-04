@@ -9,18 +9,19 @@ The Prefect Trading System includes a modern, responsive Streamlit-based user in
 ### 1. Main Application (`src/ui/streamlit_app.py`)
 - **Entry Point**: Main Streamlit application
 - **Navigation**: Sidebar-based navigation with multiple pages
-- **Auto-refresh**: 10-second automatic page refresh
-- **Manual Refresh**: Sidebar refresh button for force updates
+- **Manual Refresh**: Single centralized refresh button in sidebar
 - **Custom Styling**: Professional CSS styling
+- **PortfolioManager Integration**: Shared singleton instance with intelligent caching
 
 ### 2. Home Page (`src/ui/home.py`)
 - **Dashboard Overview**: Comprehensive trading dashboard
-- **Real-time Data**: Live market data with auto-refresh
+- **Real-time Data**: Live market data with intelligent caching
 - **Portfolio Summary**: Portfolio metrics and performance
 - **Market Overview**: Major indices and market breadth
 - **Recent Activity**: Latest trading activities
 - **Quick Actions**: Common trading operations
 - **Market News**: Latest news articles
+- **Shared PortfolioManager**: Uses singleton instance for data access
 
 ### 3. Portfolio Page (`src/ui/portfolio.py`)
 - **Account Overview**: Detailed account information and status
@@ -28,15 +29,24 @@ The Prefect Trading System includes a modern, responsive Streamlit-based user in
 - **Portfolio Allocation**: Pie chart showing position distribution
 - **Trading History**: Detailed order history and performance metrics
 - **Risk Analysis**: Comprehensive risk metrics and warnings
+- **Shared PortfolioManager**: Uses singleton instance for data access
 
-### 4. Testing Page (`src/ui/components/testing_results.py`)
+### 4. Analysis Page (`src/ui/components/symbol_selector.py`)
+- **Symbol Selection**: Dropdown with 22+ active symbols from database
+- **Comprehensive Analysis**: Multi-tab interface for detailed symbol analysis
+- **Market Data Analysis**: Price charts, statistics, and recent data
+- **Company Information**: Financial metrics, officers, and business summary
+- **Real-time Statistics**: Current price, change, volume, and volatility metrics
+
+### 5. Testing Page (`src/ui/components/testing_results.py`)
 - **Coverage Overview**: Overall test coverage metrics with visual indicators
 - **File-Level Coverage**: Detailed breakdown by individual files
 - **Test Results**: Comprehensive test execution results
 - **Execution Logs**: Detailed logs and error information
 - **Interactive Tables**: AgGrid integration for advanced table functionality
+- **Independent Refresh**: Separate refresh functionality for test execution
 
-### 5. UI Components (`src/ui/components/`)
+### 6. UI Components (`src/ui/components/`)
 
 #### Market Status Component (`market_status.py`)
 ```python
@@ -63,6 +73,34 @@ def display_symbol_selector():
     - Dropdown selection
     - Recent symbols
     - Favorite symbols
+    """
+```
+
+#### Symbol Analysis Component (`symbol_selector.py`)
+```python
+def display_symbol_selector_with_analysis():
+    """
+    Comprehensive symbol analysis component with database integration.
+    
+    Features:
+    - Symbol selection from database
+    - Multi-tab analysis interface (Overview, Market Data, Company Info)
+    - Market data analysis with charts
+    - Company information from Yahoo Finance
+    - Real-time price statistics
+    """
+```
+
+#### Enhanced Symbol Analysis Features
+```python
+def display_symbol_analysis(symbol: str):
+    """
+    Display comprehensive symbol analysis in tabbed interface.
+    
+    Tabs:
+    - 📊 Overview: Symbol info and market data summary
+    - 📈 Market Data: Price charts and statistics
+    - 🏢 Company Info: Financial metrics and officers
     """
 ```
 
@@ -95,27 +133,44 @@ def render_testing_results():
 
 ## UI Features
 
-### 1. Real-time Updates
-- **Auto-refresh**: Page refreshes every 10 seconds
-- **Live Data**: Real-time market data updates
+### 1. Intelligent Caching System
+- **PortfolioManager Singleton**: Single instance across all UI components
+- **Cache Duration Strategy**: 
+  - Orders: 10 seconds (frequently changing)
+  - Account Info: 30 seconds (relatively stable)
+  - Positions: 30 seconds (moderately stable)
+  - Portfolio Summary: 30 seconds (computed from other data)
+- **Cache Invalidation**: Automatic cache clearing on manual refresh
+- **Debug Logging**: Cache hit/miss monitoring for performance optimization
+
+### 2. Centralized Refresh System
+- **Single Refresh Button**: Located in main sidebar for all data
+- **Clear User Interface**: No confusion about which refresh button to use
+- **Consistent Behavior**: All portfolio and market data refreshes together
+- **Performance Optimized**: No automatic page refreshes causing excessive API calls
+- **User Guidance**: Helpful captions explaining refresh functionality
+
+### 3. Real-time Updates
+- **Intelligent Caching**: Reduces API calls while maintaining data freshness
+- **Live Data**: Real-time market data updates through caching
 - **Status Indicators**: Live market status updates
 - **News Feed**: Latest news articles
-- **Manual Refresh**: Sidebar button for immediate updates
+- **Manual Refresh**: Sidebar button for immediate updates when needed
 
-### 2. Responsive Design
+### 4. Responsive Design
 - **Mobile-friendly**: Optimized for mobile devices
 - **Tablet Support**: Responsive layouts for tablets
 - **Desktop Optimization**: Full-featured desktop experience
 - **Flexible Layouts**: Adaptive column arrangements
 
-### 3. Interactive Components
+### 5. Interactive Components
 - **Expandable Sections**: Collapsible content areas
 - **Interactive Charts**: Clickable data visualizations
 - **Search Functionality**: Symbol and news search
 - **Filtering Options**: Data filtering capabilities
 - **AgGrid Tables**: Advanced table functionality with sorting, filtering, and pagination
 
-### 4. Professional Styling
+### 6. Professional Styling
 - **Custom CSS**: Professional appearance
 - **Color Coding**: Status-based color indicators
 - **Consistent Spacing**: Uniform layout spacing
@@ -393,7 +448,68 @@ def display_market_news():
 
 ## Data Integration
 
-### 1. Database Connectivity
+### 1. PortfolioManager Architecture
+
+#### **Singleton Pattern Implementation**
+```python
+class PortfolioManager:
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(PortfolioManager, cls).__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        if self._initialized:
+            return
+        # Initialize only once
+        self._initialized = True
+```
+
+#### **Shared Instance Management**
+```python
+# In UI modules (home.py, portfolio.py)
+_portfolio_manager = None
+
+def get_portfolio_manager():
+    """Get or create a shared portfolio manager instance."""
+    global _portfolio_manager
+    if _portfolio_manager is None:
+        _portfolio_manager = PortfolioManager()
+    return _portfolio_manager
+
+def clear_portfolio_manager():
+    """Clear the shared portfolio manager instance."""
+    global _portfolio_manager
+    _portfolio_manager = None
+```
+
+#### **Caching System**
+```python
+def _get_cached_data(self, key: str):
+    """Get data from cache if it's still valid."""
+    if key in self._cache and key in self._cache_timestamps:
+        timestamp = self._cache_timestamps[key]
+        cache_duration = 10 if key.startswith('orders_') else self._cache_duration
+        if datetime.now() - timestamp < timedelta(seconds=cache_duration):
+            return self._cache[key]
+    return None
+
+def _set_cached_data(self, key: str, data):
+    """Store data in cache with timestamp."""
+    self._cache[key] = data
+    self._cache_timestamps[key] = datetime.now()
+```
+
+#### **Cache Duration Strategy**
+- **Orders**: 10 seconds (frequently changing data)
+- **Account Info**: 30 seconds (relatively stable)
+- **Positions**: 30 seconds (moderately stable)
+- **Portfolio Summary**: 30 seconds (computed from other cached data)
+
+### 2. Database Connectivity
 ```python
 from src.database.database_connectivity import DatabaseConnectivity
 
@@ -405,7 +521,7 @@ def get_market_data():
         return cursor.fetchall()
 ```
 
-### 2. News Integration
+### 3. News Integration
 ```python
 def get_news_articles():
     """Fetch news articles from database."""
@@ -420,7 +536,7 @@ def get_news_articles():
         return cursor.fetchall()
 ```
 
-### 3. Real-time Data
+### 4. Real-time Data
 ```python
 def get_live_market_data():
     """Get real-time market data."""
@@ -456,7 +572,41 @@ def display_with_fallback(data, fallback_message="No data available"):
 
 ## Performance Optimization
 
-### 1. Lazy Loading
+### 1. PortfolioManager Singleton Pattern
+```python
+# Single instance across all UI components
+def get_portfolio_manager():
+    """Get or create a shared portfolio manager instance."""
+    global _portfolio_manager
+    if _portfolio_manager is None:
+        _portfolio_manager = PortfolioManager()
+    return _portfolio_manager
+```
+
+### 2. Intelligent Caching System
+```python
+# Cache with different durations for different data types
+def get_account_info(self):
+    """Get account information with caching."""
+    cached_data = self._get_cached_data('account_info')
+    if cached_data:
+        return cached_data
+    
+    # Fetch from API if not cached
+    data = self._fetch_account_info()
+    self._set_cached_data('account_info', data)
+    return data
+```
+
+### 3. Cache Invalidation Strategy
+```python
+# Clear cache on manual refresh
+if st.button("🔄 Refresh All Data"):
+    clear_portfolio_manager()  # Clears singleton instance
+    st.rerun()  # Forces complete refresh
+```
+
+### 4. Lazy Loading
 ```python
 def lazy_load_component(component_func, *args, **kwargs):
     """Lazy load UI components for better performance."""
@@ -464,23 +614,21 @@ def lazy_load_component(component_func, *args, **kwargs):
         return component_func(*args, **kwargs)
 ```
 
-### 2. Caching
-```python
-@st.cache_data(ttl=300)  # Cache for 5 minutes
-def get_cached_market_data():
-    """Cache market data to reduce database calls."""
-    return get_market_data()
-```
-
-### 3. Efficient Rendering
+### 5. Efficient Rendering
 ```python
 def optimize_rendering():
     """Optimize UI rendering performance."""
     # Use st.container() for complex layouts
-    # Minimize re-renders
+    # Minimize re-renders through caching
     # Use efficient data structures
     pass
 ```
+
+### 6. API Call Optimization
+- **Reduced API Calls**: Caching eliminates redundant calls
+- **Rate Limit Respect**: Intelligent caching prevents hitting API limits
+- **Batch Operations**: Group related API calls when possible
+- **Error Handling**: Graceful degradation when API calls fail
 
 ## Accessibility
 
@@ -561,4 +709,43 @@ export STREAMLIT_SERVER_ADDRESS=0.0.0.0
 - Keep interfaces simple and intuitive
 - Provide clear navigation
 - Use consistent terminology
-- Implement proper feedback mechanisms 
+- Implement proper feedback mechanisms
+
+## Summary
+
+The Prefect Trading System UI provides a comprehensive, user-friendly interface for trading operations with the following key features:
+
+### **Core Architecture**
+- **Singleton PortfolioManager**: Single instance across all UI components for efficient resource usage
+- **Intelligent Caching**: Multi-tier caching system with different durations for different data types
+- **Centralized Refresh**: Single refresh button in sidebar for consistent user experience
+- **Performance Optimized**: Eliminated auto-refresh to prevent excessive API calls
+
+### **User Experience**
+- **Clean Interface**: Professional styling with consistent design patterns
+- **Responsive Design**: Optimized for mobile, tablet, and desktop devices
+- **Interactive Components**: Advanced tables, charts, and search functionality
+- **Real-time Data**: Live market data through intelligent caching system
+
+### **Performance Features**
+- **API Efficiency**: Reduced API calls through intelligent caching
+- **Rate Limit Management**: Respects API rate limits through cache duration strategy
+- **Fast Response Times**: Cached data provides instant UI updates
+- **Resource Optimization**: Single PortfolioManager instance reduces memory usage
+
+### **Data Management**
+- **Cache Duration Strategy**: 
+  - Orders: 10 seconds (frequently changing)
+  - Account Info: 30 seconds (relatively stable)
+  - Positions: 30 seconds (moderately stable)
+  - Portfolio Summary: 30 seconds (computed data)
+- **Cache Invalidation**: Automatic clearing on manual refresh
+- **Error Handling**: Graceful degradation when data is unavailable
+
+### **Testing Integration**
+- **Coverage Display**: Real-time test coverage metrics with visual indicators
+- **Interactive Tables**: AgGrid integration for advanced table functionality
+- **Test Execution**: Direct test execution from UI
+- **Independent Refresh**: Separate refresh functionality for testing operations
+
+The UI architecture prioritizes performance, user experience, and maintainability while providing comprehensive trading functionality in a modern, responsive interface. 

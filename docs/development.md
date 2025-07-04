@@ -373,6 +373,61 @@ class MarketDataDisplay:
 
 ## Performance Optimization
 
+### PortfolioManager Singleton Pattern
+```python
+# Single instance across all UI components
+class PortfolioManager:
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(PortfolioManager, cls).__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        if self._initialized:
+            return
+        self._initialized = True
+        # Initialize only once
+```
+
+### Intelligent Caching System
+```python
+# Cache with different durations for different data types
+def _get_cached_data(self, key: str):
+    """Get data from cache if it's still valid."""
+    if key in self._cache and key in self._cache_timestamps:
+        timestamp = self._cache_timestamps[key]
+        cache_duration = 10 if key.startswith('orders_') else self._cache_duration
+        if datetime.now() - timestamp < timedelta(seconds=cache_duration):
+            return self._cache[key]
+    return None
+
+def _set_cached_data(self, key: str, data):
+    """Store data in cache with timestamp."""
+    self._cache[key] = data
+    self._cache_timestamps[key] = datetime.now()
+```
+
+### Shared Instance Management
+```python
+# In UI modules (home.py, portfolio.py)
+_portfolio_manager = None
+
+def get_portfolio_manager():
+    """Get or create a shared portfolio manager instance."""
+    global _portfolio_manager
+    if _portfolio_manager is None:
+        _portfolio_manager = PortfolioManager()
+    return _portfolio_manager
+
+def clear_portfolio_manager():
+    """Clear the shared portfolio manager instance."""
+    global _portfolio_manager
+    _portfolio_manager = None
+```
+
 ### Database Optimization
 1. **Use appropriate indexes**
 2. **Optimize queries**

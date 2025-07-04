@@ -1,7 +1,11 @@
 import streamlit as st
+import pandas as pd
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Tuple
 from loguru import logger
 
 from src.data.sources.symbol_manager import SymbolManager
+from src.database.database_connectivity import DatabaseConnectivity
 
 
 def display_symbol_selector() -> str:
@@ -31,4 +35,319 @@ def display_symbol_selector() -> str:
     except Exception as e:
         logger.error(f"Error in symbol selector: {e}")
         st.error("Error loading symbols. Please try again later.")
-        return None 
+        return None
+
+
+def display_symbol_analysis(symbol: str) -> None:
+    """Display comprehensive symbol analysis.
+    
+    Args:
+        symbol: Stock symbol to analyze
+    """
+    if not symbol:
+        st.warning("Please select a symbol to analyze")
+        return
+    
+    try:
+        # Create tabs for different analysis sections (News tab removed)
+        tab1, tab2, tab3 = st.tabs(["📊 Overview", "📈 Market Data", "🏢 Company Info"])
+        
+        with tab1:
+            display_symbol_overview(symbol)
+        
+        with tab2:
+            display_market_data_analysis(symbol)
+        
+        with tab3:
+            display_company_info(symbol)
+        
+    except Exception as e:
+        logger.error(f"Error in symbol analysis: {e}")
+        st.error("Error loading symbol analysis. Please try again later.")
+
+
+def display_symbol_overview(symbol: str) -> None:
+    """Display symbol overview information.
+    
+    Args:
+        symbol: Stock symbol
+    """
+    st.subheader(f"📊 {symbol} Overview")
+    
+    try:
+        db = DatabaseConnectivity()
+        
+        # Get symbol basic info
+        symbol_manager = SymbolManager()
+        symbol_info = symbol_manager.get_symbol_info(symbol)
+        
+        if symbol_info:
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.metric("Symbol", symbol_info['symbol'])
+                st.metric("Status", "🟢 Active" if symbol_info['is_active'] else "🔴 Inactive")
+            
+            with col2:
+                st.metric("Name", symbol_info['name'] or "N/A")
+                st.metric("Added", symbol_info['start_date'].strftime('%Y-%m-%d'))
+            
+            with col3:
+                st.metric("Last Updated", symbol_info['updated_at'].strftime('%Y-%m-%d'))
+                if symbol_info['end_date']:
+                    st.metric("End Date", symbol_info['end_date'].strftime('%Y-%m-%d'))
+        
+        # Get recent market data summary
+        with db.get_session() as cursor:
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as data_points,
+                    MIN(timestamp) as first_data,
+                    MAX(timestamp) as last_data,
+                    AVG(close) as avg_price,
+                    MAX(close) as max_price,
+                    MIN(close) as min_price,
+                    AVG(volume) as avg_volume
+                FROM market_data 
+                WHERE symbol = %s
+            """, (symbol,))
+            
+            market_summary = cursor.fetchone()
+            
+            if market_summary:
+                st.subheader("📈 Market Data Summary")
+                
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric("Data Points", f"{market_summary[0]:,}")
+                    st.metric("First Data", market_summary[1].strftime('%Y-%m-%d') if market_summary[1] else "N/A")
+                
+                with col2:
+                    st.metric("Last Data", market_summary[2].strftime('%Y-%m-%d') if market_summary[2] else "N/A")
+                    st.metric("Avg Price", f"${market_summary[3]:.2f}" if market_summary[3] else "N/A")
+                
+                with col3:
+                    st.metric("Max Price", f"${market_summary[4]:.2f}" if market_summary[4] else "N/A")
+                    st.metric("Min Price", f"${market_summary[5]:.2f}" if market_summary[5] else "N/A")
+                
+                with col4:
+                    st.metric("Avg Volume", f"{market_summary[6]:,.0f}" if market_summary[6] else "N/A")
+                    
+    except Exception as e:
+        logger.error(f"Error in symbol overview: {e}")
+        st.error("Error loading symbol overview")
+
+
+def display_market_data_analysis(symbol: str) -> None:
+    """Display market data analysis for the symbol.
+    
+    Args:
+        symbol: Stock symbol
+    """
+    st.subheader(f"📈 {symbol} Market Data Analysis")
+    
+    try:
+        db = DatabaseConnectivity()
+        
+        # Get recent market data
+        with db.get_session() as cursor:
+            cursor.execute("""
+                SELECT 
+                    timestamp,
+                    open,
+                    high,
+                    low,
+                    close,
+                    volume
+                FROM market_data 
+                WHERE symbol = %s
+                ORDER BY timestamp DESC
+                LIMIT 100
+            """, (symbol,))
+            
+            data = cursor.fetchall()
+            
+            if data:
+                # Convert to DataFrame
+                df = pd.DataFrame(data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+                df['timestamp'] = pd.to_datetime(df['timestamp'])
+                
+                # Display recent data
+                st.subheader("Recent Market Data")
+                st.dataframe(df.head(10), use_container_width=True)
+                
+                # Calculate and display statistics
+                st.subheader("Price Statistics")
+                
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    current_price = df['close'].iloc[0]
+                    prev_price = df['close'].iloc[1] if len(df) > 1 else current_price
+                    change = current_price - prev_price
+                    change_pct = (change / prev_price * 100) if prev_price != 0 else 0
+                    
+                    st.metric(
+                        "Current Price", 
+                        f"${current_price:.2f}",
+                        delta=f"{change:+.2f} ({change_pct:+.2f}%)"
+                    )
+                
+                with col2:
+                    st.metric("52-Week High", f"${df['high'].max():.2f}")
+                    st.metric("52-Week Low", f"${df['low'].min():.2f}")
+                
+                with col3:
+                    st.metric("Average Price", f"${df['close'].mean():.2f}")
+                    st.metric("Price Volatility", f"{df['close'].std():.2f}")
+                
+                with col4:
+                    st.metric("Average Volume", f"{df['volume'].mean():,.0f}")
+                    st.metric("Max Volume", f"{df['volume'].max():,.0f}")
+                
+                # Price chart
+                st.subheader("Price Chart")
+                chart_data = df[['timestamp', 'close']].set_index('timestamp')
+                st.line_chart(chart_data)
+                
+            else:
+                st.warning("No market data available for this symbol")
+                
+    except Exception as e:
+        logger.error(f"Error in market data analysis: {e}")
+        st.error("Error loading market data analysis")
+
+
+def display_company_info(symbol: str) -> None:
+    """Display company information for the symbol.
+    
+    Args:
+        symbol: Stock symbol
+    """
+    st.subheader(f"🏢 {symbol} Company Information")
+    
+    try:
+        db = DatabaseConnectivity()
+        
+        # Get company info from yahoo_company_info table
+        with db.get_session() as cursor:
+            cursor.execute("""
+                SELECT 
+                    "longName",
+                    sector,
+                    industry,
+                    "marketCap",
+                    "currentPrice",
+                    "fiftyTwoWeekHigh",
+                    "fiftyTwoWeekLow",
+                    "averageVolume",
+                    "trailingPE",
+                    "forwardPE",
+                    "dividendYield",
+                    beta,
+                    website,
+                    "longBusinessSummary"
+                FROM yahoo_company_info 
+                WHERE symbol = %s
+            """, (symbol,))
+            
+            company_info = cursor.fetchone()
+            
+            if company_info:
+                col1, col2 = st.columns([1, 2])
+                
+                with col1:
+                    st.subheader("Company Details")
+                    
+                    # Basic info
+                    if company_info[0]:  # longName
+                        st.write(f"**Company:** {company_info[0]}")
+                    if company_info[1]:  # sector
+                        st.write(f"**Sector:** {company_info[1]}")
+                    if company_info[2]:  # industry
+                        st.write(f"**Industry:** {company_info[2]}")
+                    if company_info[12]:  # website
+                        st.write(f"**Website:** [{company_info[12]}]({company_info[12]})")
+                    
+                    # Financial metrics
+                    st.subheader("Financial Metrics")
+                    
+                    if company_info[3]:  # marketCap
+                        market_cap = company_info[3]
+                        if market_cap >= 1e12:
+                            st.write(f"**Market Cap:** ${market_cap/1e12:.2f}T")
+                        elif market_cap >= 1e9:
+                            st.write(f"**Market Cap:** ${market_cap/1e9:.2f}B")
+                        elif market_cap >= 1e6:
+                            st.write(f"**Market Cap:** ${market_cap/1e6:.2f}M")
+                        else:
+                            st.write(f"**Market Cap:** ${market_cap:,.0f}")
+                    
+                    if company_info[4]:  # currentPrice
+                        st.write(f"**Current Price:** ${company_info[4]:.2f}")
+                    if company_info[5]:  # fiftyTwoWeekHigh
+                        st.write(f"**52-Week High:** ${company_info[5]:.2f}")
+                    if company_info[6]:  # fiftyTwoWeekLow
+                        st.write(f"**52-Week Low:** ${company_info[6]:.2f}")
+                    if company_info[7]:  # averageVolume
+                        st.write(f"**Avg Volume:** {company_info[7]:,.0f}")
+                    if company_info[8]:  # trailingPE
+                        st.write(f"**Trailing P/E:** {company_info[8]:.2f}")
+                    if company_info[9]:  # forwardPE
+                        st.write(f"**Forward P/E:** {company_info[9]:.2f}")
+                    if company_info[10]:  # dividendYield
+                        st.write(f"**Dividend Yield:** {company_info[10]:.2%}")
+                    if company_info[11]:  # beta
+                        st.write(f"**Beta:** {company_info[11]:.2f}")
+                
+                with col2:
+                    st.subheader("Business Summary")
+                    if company_info[13]:  # longBusinessSummary
+                        st.write(company_info[13])
+                    else:
+                        st.info("No business summary available")
+                
+                # Get company officers
+                cursor.execute("""
+                    SELECT name, title, age, total_pay
+                    FROM yahoo_company_officers 
+                    WHERE symbol = %s
+                    ORDER BY total_pay DESC NULLS LAST
+                    LIMIT 10
+                """, (symbol,))
+                
+                officers = cursor.fetchall()
+                
+                if officers:
+                    st.subheader("Key Officers")
+                    officers_df = pd.DataFrame(officers, columns=['Name', 'Title', 'Age', 'Total Pay'])
+                    officers_df['Total Pay'] = officers_df['Total Pay'].apply(
+                        lambda x: f"${x:,.0f}" if pd.notna(x) and x is not None else "Not Available"
+                    )
+                    st.dataframe(officers_df, use_container_width=True)
+                
+            else:
+                st.warning("No company information available for this symbol")
+                
+    except Exception as e:
+        logger.error(f"Error in company info: {e}")
+        st.error("Error loading company information")
+
+
+def display_symbol_selector_with_analysis() -> Optional[str]:
+    """Display symbol selector with comprehensive analysis.
+    
+    Returns:
+        Optional[str]: Selected symbol or None
+    """
+    st.header("🔍 Symbol Analysis")
+    
+    # Get selected symbol
+    selected_symbol = display_symbol_selector()
+    
+    if selected_symbol:
+        # Display analysis
+        display_symbol_analysis(selected_symbol)
+    
+    return selected_symbol 
