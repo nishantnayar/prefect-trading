@@ -246,6 +246,55 @@ This document records the key architectural decisions made during the developmen
 
 ---
 
+## 6. WebSocket Symbol Configuration for Pairs Trading
+
+### **Decision: Add PDFS and ROG to WebSocket Data Collection**
+
+### **Context:**
+- Current WebSocket implementation only collects data for AAPL
+- Need multiple symbols for pairs trading implementation
+- System needs to support real-time data collection for multiple symbols
+
+### **Options Considered:**
+
+#### **Option A: Keep Single Symbol (AAPL)**
+**Pros:**
+- Simple implementation
+- No changes needed to existing code
+- Lower data volume
+
+**Cons:**
+- Cannot implement pairs trading
+- Limited to single stock analysis
+- Not scalable for multi-symbol strategies
+
+#### **Option B: Add Multiple Symbols for Pairs Trading**
+**Pros:**
+- Enables pairs trading implementation
+- More sophisticated trading strategies
+- Scalable for future symbol additions
+- Real-world trading scenario
+
+**Cons:**
+- More complex data processing
+- Higher data volume
+- Need to update multiple files
+
+### **Decision Rationale:**
+- **Primary Factor**: Enable pairs trading functionality
+- **Secondary Factor**: Real-world trading scenario with multiple symbols
+- **Tertiary Factor**: Foundation for future strategy expansion
+
+### **Implementation:**
+- Updated both `alpaca_websocket.py` and `configurable_websocket.py`
+- Configured symbol lists: `['AAPL', 'PDFS', 'ROG']` (AAPL for testing, PDFS-ROG for pairs trading)
+- Updated Redis key patterns to handle multiple symbols
+- Updated data processing logic to handle all three symbols
+- Primary trading pair: (PDFS, ROG)
+- Testing symbol: AAPL (highly liquid for testing)
+
+---
+
 ## Summary of Key Decisions
 
 1. **PyTorch over TensorFlow**: Better Windows compatibility
@@ -253,6 +302,7 @@ This document records the key architectural decisions made during the developmen
 3. **Multi-sector ready**: Future-proof design starting with technology only
 4. **MLflow built-in tables only**: Start simple, add custom tables later
 5. **MLflow server with PostgreSQL**: Production-ready with web UI
+6. **WebSocket symbols with testing**: AAPL for testing, PDFS-ROG for pairs trading
 
 ## Future Enhancements
 
@@ -261,6 +311,7 @@ This document records the key architectural decisions made during the developmen
 - Expand to additional sectors (healthcare, financial)
 - Implement automated rebaselining workflows
 - Add model serving infrastructure
+- Add more symbol pairs for diversified trading
 
 ## Configuration Files Updated
 
@@ -268,6 +319,8 @@ This document records the key architectural decisions made during the developmen
 - `config/config.yaml`: Simplified MLflow configuration
 - `config/env.example`: MLflow environment variables
 - `docs/garch-pairs-trading.md`: Updated architecture documentation
+- `src/data/sources/alpaca_websocket.py`: Added PDFS and ROG symbols
+- `src/data/sources/configurable_websocket.py`: Added PDFS and ROG symbols
 
 ---
 

@@ -54,17 +54,21 @@ def save_redis_data_to_postgres():
         db = DatabaseConnectivity()
         logger.info("Connected to PostgreSQL database")
         
-        # Get all keys from Redis that match the pattern "AAPL:*"
-        keys = redis_client.keys("AAPL:*")
-        logger.info(f"Found {len(keys)} AAPL records in Redis")
+        # Get all keys from Redis that match the pattern for our symbols
+        symbols = ['AAPL', 'PDFS', 'ROG']  # AAPL for testing, PDFS-ROG for pairs trading
+        all_keys = []
+        for symbol in symbols:
+            symbol_keys = redis_client.keys(f"{symbol}:*")
+            all_keys.extend(symbol_keys)
+            logger.info(f"Found {len(symbol_keys)} {symbol} records in Redis")
         
-        if not keys:
-            logger.info("No AAPL data found in Redis to save")
+        if not all_keys:
+            logger.info("No data found in Redis to save")
             return
         
         # Prepare data for batch insertion
         data_to_insert = []
-        for key in keys:
+        for key in all_keys:
             try:
                 # Get data from Redis
                 ohlc_data = redis_client.hgetall(key)
@@ -80,9 +84,12 @@ def save_redis_data_to_postgres():
                             # If ISO format fails, try parsing as Unix timestamp
                             timestamp = datetime.fromtimestamp(float(timestamp_str) / 1000)
                         
+                        # Extract symbol from Redis key (format: "SYMBOL:timestamp")
+                        symbol = key.split(':')[0]
+                        
                         # Prepare data for insertion
                         data_to_insert.append((
-                            'AAPL',  # symbol
+                            symbol,  # symbol
                             timestamp,  # timestamp
                             float(ohlc_data['open']),  # open
                             float(ohlc_data['high']),  # high
@@ -114,7 +121,7 @@ def save_redis_data_to_postgres():
             with db.get_session() as cursor:
                 cursor.executemany(insert_query, data_to_insert)
             
-            logger.info(f"Successfully saved {len(data_to_insert)} AAPL records to PostgreSQL")
+            logger.info(f"Successfully saved {len(data_to_insert)} records to PostgreSQL")
         else:
             logger.info("No valid data found to save to PostgreSQL")
             
@@ -171,7 +178,7 @@ async def websocket_connection():
                 return
 
             # Subscribe to real-time data for the stock symbols
-            symbols = ['AAPL']
+            symbols = ['AAPL', 'PDFS', 'ROG']  # AAPL for testing, PDFS-ROG for pairs trading
             subscribe_message = {
                 "action": "subscribe",
                 "bars": symbols,
@@ -181,7 +188,7 @@ async def websocket_connection():
                 "dailyBars": []  # Don't subscribe to daily bars
             }
             await websocket.send(json.dumps(subscribe_message))
-            logger.info(f"Subscribed to AAPL bars data")
+            logger.info(f"Subscribed to {', '.join(symbols)} bars data")
 
             # Wait for subscription response
             subscribe_response = await websocket.recv()
@@ -223,8 +230,8 @@ async def websocket_connection():
                         for ohlc in data:
                             symbol = ohlc.get('S')
                             logger.info(f"Processing symbol: {symbol}")
-                            # Only process AAPL data
-                            if symbol == 'AAPL':
+                            # Process AAPL (for testing), PDFS and ROG (for pairs trading)
+                            if symbol in ['AAPL', 'PDFS', 'ROG']:
                                 ohlc_data = {
                                     "open": str(ohlc['o']),
                                     "high": str(ohlc['h']),
@@ -234,11 +241,10 @@ async def websocket_connection():
                                     "timestamp": str(ohlc['t'])
                                 }
                                 redis_key = f"{symbol}:{ohlc_data['timestamp']}"
-                                logger.info(f"Storing AAPL data: {ohlc_data}")
-                                assert symbol == 'AAPL', f"Attempting to store non-AAPL symbol: {symbol}"
+                                logger.info(f"Storing {symbol} data: {ohlc_data}")
                                 redis_client.hset(name=redis_key, mapping=ohlc_data)
                             else:
-                                logger.info(f"Skipping non-AAPL symbol: {symbol}")
+                                logger.info(f"Skipping symbol: {symbol}")
                                 
                 except asyncio.TimeoutError:
                     # Timeout is expected, continue the loop
