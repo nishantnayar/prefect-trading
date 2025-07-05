@@ -37,7 +37,7 @@ setup: install-dev
 
 # Testing
 test:
-	pytest tests/ -v --cov=src --cov-report=term-missing
+	PYTHONDONTWRITEBYTECODE=1 pytest tests/ -v --cov=src --cov-report=term-missing
 
 test-unit:
 	pytest tests/unit/ -v
@@ -92,7 +92,7 @@ docs:
 
 # Development
 run-ui:
-	streamlit run src/ui/streamlit_app.py
+	PYTHONDONTWRITEBYTECODE=1 streamlit run src/ui/streamlit_app.py
 
 run-prefect:
 	prefect server start
