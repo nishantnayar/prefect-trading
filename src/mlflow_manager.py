@@ -46,10 +46,15 @@ class MLflowManager:
         self._setup_mlflow()
         
     def _load_config(self) -> Dict[str, Any]:
-        """Load configuration from YAML file."""
+        """Load configuration from YAML file with environment variable substitution."""
         try:
             with open(self.config_path, 'r') as file:
-                config = yaml.safe_load(file)
+                content = file.read()
+            
+            # Handle environment variable substitution
+            content = self._substitute_env_vars(content)
+            
+            config = yaml.safe_load(content)
             return config.get('mlflow', {})
         except FileNotFoundError:
             logger.warning(f"Config file {self.config_path} not found. Using defaults.")
@@ -57,6 +62,26 @@ class MLflowManager:
         except Exception as e:
             logger.error(f"Error loading config: {e}")
             return self._get_default_config()
+    
+    def _substitute_env_vars(self, content: str) -> str:
+        """Substitute environment variables in YAML content."""
+        import re
+        import os
+        
+        def replace_env_var(match):
+            var_name = match.group(1)
+            default_value = match.group(2) if match.group(2) else ""
+            
+            # Check if environment variable exists
+            env_value = os.environ.get(var_name)
+            if env_value is not None:
+                return env_value
+            else:
+                return default_value
+        
+        # Pattern to match ${VAR:-default} or ${VAR}
+        pattern = r'\$\{([^:}]+)(?::-([^}]*))?\}'
+        return re.sub(pattern, replace_env_var, content)
     
     def _get_default_config(self) -> Dict[str, Any]:
         """Get default MLflow configuration."""

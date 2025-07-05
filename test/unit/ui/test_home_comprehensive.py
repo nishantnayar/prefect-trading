@@ -178,16 +178,20 @@ class TestHomePageComprehensive:
         # Verify market data was displayed
         assert mock_st.metric.call_count >= 9  # 9 metrics total (3 per column)
 
+    @patch('src.ui.home.get_portfolio_manager')
     @patch('src.ui.home.PortfolioManager')
     @patch('src.ui.home.st')
-    def test_display_recent_activity(self, mock_st, mock_portfolio_manager_class):
+    def test_display_recent_activity(self, mock_st, mock_portfolio_manager_class, mock_get_portfolio_manager):
         """Test recent activity display."""
         from src.ui.home import display_recent_activity
+        from datetime import datetime
+        from unittest.mock import MagicMock
 
         # Mock PortfolioManager to return dummy orders
         mock_portfolio_manager = MagicMock()
         mock_portfolio_manager_class.return_value = mock_portfolio_manager
-        
+        mock_get_portfolio_manager.return_value = mock_portfolio_manager
+
         # Mock dummy orders
         mock_orders = [
             {
@@ -214,19 +218,25 @@ class TestHomePageComprehensive:
         ]
         mock_portfolio_manager.get_orders.return_value = mock_orders
 
-        # Mock streamlit columns for each activity with context manager support
-        mock_cols = [create_mock_column() for _ in range(4)]
+        # Mock streamlit columns (should be called once with [1, 2, 2, 1] column widths)
+        mock_cols = [MagicMock() for _ in range(4)]
         mock_st.columns.return_value = mock_cols
-        
+
+        # Reset st.write mock to ensure clean call count for this test
+        mock_st.write.reset_mock()
+
         # Call the function
         display_recent_activity()
-        
+
         # Verify subheader was displayed
         mock_st.subheader.assert_called_with("📝 Recent Activity")
-        
-        # Verify activities were displayed (3 activities * 4 columns each)
-        # The function calls st.columns for each activity, so we expect multiple calls
-        assert mock_st.columns.call_count >= 3
+
+        # Verify st.columns was called 3 times (once for each order) with [1, 2, 2, 1] column widths
+        assert mock_st.columns.call_count == 3
+        mock_st.columns.assert_any_call([1, 2, 2, 1])
+
+        # Check that st.write was called exactly 12 times (3 orders x 4 writes per order)
+        assert mock_st.write.call_count == 12
 
     @patch('src.ui.home.st')
     def test_display_quick_actions(self, mock_st):
@@ -254,85 +264,108 @@ class TestHomePageComprehensive:
     @patch('src.ui.home.DatabaseConnectivity')
     @patch('src.ui.home.st')
     def test_display_market_news_success(self, mock_st, mock_db_class, mock_format_datetime):
-        """Test successful market news display."""
+        """Test display of market news with articles present."""
         from src.ui.home import display_market_news
-        
-        # Mock database and cursor
-        mock_db = Mock()
+
+        # Setup DB and cursor mocks
+        mock_db = MagicMock()
+        mock_cursor = MagicMock()
+        mock_session = MagicMock()
+        mock_session.__enter__.return_value = mock_cursor
+        mock_session.__exit__.return_value = None
+        mock_db.get_session.return_value = mock_session
         mock_db_class.return_value = mock_db
-        
-        mock_cursor = Mock()
-        mock_db.get_session.return_value.__enter__ = Mock(return_value=mock_cursor)
-        mock_db.get_session.return_value.__exit__ = Mock(return_value=None)
-        
-        # Mock news data
-        mock_articles = [
-            ("Test Article 1", "Reuters", "http://example.com/1", "2024-01-01 10:00:00", "Test description 1"),
-            ("Test Article 2", "Bloomberg", "http://example.com/2", "2024-01-01 09:00:00", "Test description 2")
+
+        # Mock news articles (published_at as string)
+        mock_cursor.fetchall.return_value = [
+            ('Big News', 'Reuters', 'https://example.com', '2024-01-01 10:00:00', 'Some news...'),
+            ('Another News', 'Bloomberg', 'https://example.com/2', '2024-01-02 11:00:00', 'More news...')
         ]
-        mock_cursor.fetchall.return_value = mock_articles
-        
-        # Mock datetime formatting
-        mock_format_datetime.return_value = "10:00 AM CST"
-        
-        # Mock expander
-        mock_expander = Mock()
-        mock_st.expander.return_value.__enter__ = Mock(return_value=mock_expander)
-        mock_st.expander.return_value.__exit__ = Mock(return_value=None)
-        
+        mock_format_datetime.return_value = 'Jan 1, 2024 10:00 AM'
+
         # Call the function
         display_market_news()
-        
-        # Verify subheader was displayed
+
+        # Assertions
         mock_st.subheader.assert_called_with("📰 Market News")
-        
-        # Verify database was queried
-        mock_cursor.execute.assert_called_once()
+        assert mock_st.expander.call_count == 2
+        assert mock_st.markdown.call_count >= 4  # At least 2 per article
         mock_cursor.fetchall.assert_called_once()
-        
-        # Verify articles were displayed
-        assert mock_st.expander.call_count == 2  # 2 articles
 
     @patch('src.ui.home.DatabaseConnectivity')
     @patch('src.ui.home.st')
     def test_display_market_news_no_articles(self, mock_st, mock_db_class):
-        """Test market news display when no articles are available."""
+        """Test display of market news when no articles are present."""
         from src.ui.home import display_market_news
-        
-        # Mock database and cursor
-        mock_db = Mock()
+
+        # Setup DB and cursor mocks
+        mock_db = MagicMock()
+        mock_cursor = MagicMock()
+        mock_session = MagicMock()
+        mock_session.__enter__.return_value = mock_cursor
+        mock_session.__exit__.return_value = None
+        mock_db.get_session.return_value = mock_session
         mock_db_class.return_value = mock_db
-        
-        mock_cursor = Mock()
-        mock_db.get_session.return_value.__enter__ = Mock(return_value=mock_cursor)
-        mock_db.get_session.return_value.__exit__ = Mock(return_value=None)
-        
-        # Mock empty news data
+
+        # Mock no news articles
         mock_cursor.fetchall.return_value = []
-        
+
         # Call the function
         display_market_news()
-        
-        # Verify info message was displayed
+
+        # Assertions
         mock_st.info.assert_called_with("No recent news articles available.")
+        mock_cursor.fetchall.assert_called_once()
 
     @patch('src.ui.home.DatabaseConnectivity')
     @patch('src.ui.home.st')
     def test_display_market_news_database_error(self, mock_st, mock_db_class):
-        """Test market news display when database error occurs."""
+        """Test display of market news when a database error occurs."""
         from src.ui.home import display_market_news
-        
-        # Mock database to raise exception
-        mock_db = Mock()
+
+        # Setup DB and cursor mocks
+        mock_db = MagicMock()
+        mock_session = MagicMock()
+        mock_session.__enter__.side_effect = Exception("DB error")
+        mock_session.__exit__.return_value = None
+        mock_db.get_session.return_value = mock_session
         mock_db_class.return_value = mock_db
-        mock_db.get_session.side_effect = Exception("Database connection failed")
-        
+
         # Call the function
         display_market_news()
-        
-        # Verify error messages were displayed
+
+        # Assertions
         mock_st.error.assert_called()
-        assert mock_st.error.call_count >= 1
+
+    @patch('src.ui.home.format_datetime_est_to_cst')
+    @patch('src.ui.home.DatabaseConnectivity')
+    @patch('src.ui.home.st')
+    def test_display_market_news_with_none_published_at(self, mock_st, mock_db_class, mock_format_datetime):
+        """Test display of market news with None published_at value."""
+        from src.ui.home import display_market_news
+
+        # Setup DB and cursor mocks
+        mock_db = MagicMock()
+        mock_cursor = MagicMock()
+        mock_session = MagicMock()
+        mock_session.__enter__.return_value = mock_cursor
+        mock_session.__exit__.return_value = None
+        mock_db.get_session.return_value = mock_session
+        mock_db_class.return_value = mock_db
+
+        # Mock news articles with None published_at
+        mock_cursor.fetchall.return_value = [
+            ('News with None', 'Reuters', 'https://example.com', None, 'Some news...')
+        ]
+        mock_format_datetime.return_value = 'N/A'
+
+        # Call the function
+        display_market_news()
+
+        # Assertions
+        mock_st.subheader.assert_called_with("📰 Market News")
+        assert mock_st.write.call_count > 0
+        mock_cursor.fetchall.assert_called_once()
 
     @patch('src.ui.home.display_symbol_selector')
     @patch('src.ui.home.display_market_news')

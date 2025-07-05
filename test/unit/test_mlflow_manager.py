@@ -104,11 +104,11 @@ def test_mlflow_manager():
         print(f"✅ Retrieved {len(runs)} runs from experiment")
         
         print("\n🎉 All tests passed!")
-        return True
+        assert True
         
     except Exception as e:
         print(f"❌ Test failed: {e}")
-        return False
+        assert False
 
 def test_convenience_function():
     """Test the convenience function for logging training runs."""
@@ -150,11 +150,11 @@ def test_convenience_function():
         )
         
         print(f"✅ Convenience function test completed: {run_id}")
-        return True
+        assert True
         
     except Exception as e:
         print(f"❌ Convenience function test failed: {e}")
-        return False
+        assert False
 
 if __name__ == "__main__":
     print("🚀 Starting MLflow Manager Tests...\n")

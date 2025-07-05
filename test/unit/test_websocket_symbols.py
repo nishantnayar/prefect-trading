@@ -20,35 +20,35 @@ def test_alpaca_websocket_symbols():
             print("✅ Configuration import correctly configured")
         else:
             print("❌ Configuration import not found")
-            return False
+            assert False
         
         # Check for configuration usage instead of hardcoded symbols
         if "symbols = get_websocket_symbols()" in content:
             print("✅ Configuration-based symbols correctly configured")
         else:
             print("❌ Configuration-based symbols not found")
-            return False
+            assert False
         
         # Check for symbol processing using configuration
         if "symbols = get_websocket_symbols()" in content and "if symbol in symbols:" in content:
             print("✅ Symbol processing correctly uses configuration")
         else:
             print("❌ Symbol processing not using configuration")
-            return False
+            assert False
         
         # Check for Redis key pattern
         if "symbol_keys = redis_client.keys(f\"{symbol}:*\")" in content:
             print("✅ Redis key pattern correctly configured")
         else:
             print("❌ Redis key pattern not found or incorrect")
-            return False
+            assert False
         
         print("✅ alpaca_websocket.py symbol configuration is correct")
-        return True
+        assert True
         
     except Exception as e:
         print(f"❌ Error testing alpaca_websocket.py: {e}")
-        return False
+        assert False
 
 def test_configurable_websocket_symbols():
     """Test that configurable_websocket.py uses configuration for symbols."""
@@ -63,7 +63,7 @@ def test_configurable_websocket_symbols():
             print("✅ Configuration import correctly configured")
         else:
             print("❌ Configuration import not found")
-            return False
+            assert False
         
         # Check for configuration usage instead of hardcoded symbols
         symbol_count = content.count("symbols = get_websocket_symbols()")
@@ -71,28 +71,28 @@ def test_configurable_websocket_symbols():
             print(f"✅ Configuration-based symbols correctly configured ({symbol_count} occurrences)")
         else:
             print(f"❌ Configuration-based symbols not found or incorrect (found {symbol_count} occurrences)")
-            return False
+            assert False
         
         # Check for symbol processing using configuration
         if "symbols = get_websocket_symbols()" in content and "if symbol in symbols:" in content:
             print("✅ Symbol processing correctly uses configuration")
         else:
             print("❌ Symbol processing not using configuration")
-            return False
+            assert False
         
         # Check for data source handling
         if "data_source" in content:
             print("✅ Data source handling correctly configured")
         else:
             print("❌ Data source handling not found")
-            return False
+            assert False
         
         print("✅ configurable_websocket.py symbol configuration is correct")
-        return True
+        assert True
         
     except Exception as e:
         print(f"❌ Error testing configurable_websocket.py: {e}")
-        return False
+        assert False
 
 def test_config_file_symbols():
     """Test that config.yaml has the correct symbols configured."""
@@ -107,14 +107,14 @@ def test_config_file_symbols():
             print("✅ WebSocket symbols correctly configured in config.yaml")
         else:
             print("❌ WebSocket symbols not found or incorrect in config.yaml")
-            return False
+            assert False
         
         print("✅ config.yaml symbol configuration is correct")
-        return True
+        assert True
         
     except Exception as e:
         print(f"❌ Error testing config.yaml: {e}")
-        return False
+        assert False
 
 def test_symbol_pairs():
     """Test that we have valid pairs for trading."""
@@ -127,14 +127,14 @@ def test_symbol_pairs():
         print("✅ All symbols are unique")
     else:
         print("❌ Duplicate symbols found")
-        return False
+        assert False
     
     # Check if we have enough symbols for pairs trading
     if len(symbols) >= 2:
         print(f"✅ Sufficient symbols for pairs trading ({len(symbols)} symbols)")
     else:
         print("❌ Insufficient symbols for pairs trading")
-        return False
+        assert False
     
     # Suggest pairs
     pairs = []
@@ -145,7 +145,7 @@ def test_symbol_pairs():
     print(f"✅ Available pairs: {pairs}")
     print(f"✅ Primary trading pair: PDFS-ROG")
     print(f"✅ Testing symbol: AAPL")
-    return True
+    assert True
 
 if __name__ == "__main__":
     print("🚀 Testing WebSocket Symbol Configuration for Pairs Trading...\n")

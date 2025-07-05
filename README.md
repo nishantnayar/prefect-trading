@@ -252,24 +252,31 @@ The system uses Prefect for workflow orchestration with three main deployments:
 
 ### Current Testing Status
 
+#### Test Suite Status
+- ✅ **All Tests Passing**: 309 passed, 7 skipped, 0 failed
+- ✅ **Test Categories**: Unit, Integration, E2E, UI, Database, MLflow
+- ✅ **Async Support**: Proper pytest-asyncio configuration
+- ✅ **Mock Isolation**: Fixed test isolation issues with proper mocking
+
 #### Coverage Overview
-- **Overall Project Coverage**: 77%
+- **Overall Project Coverage**: 78%
 - **High Coverage Modules (100%)**:
   - Database connectivity (`src/database/database_connectivity.py`)
-  - UI components (`src/ui/home.py`, `src/ui/components/date_display.py`, `src/ui/components/market_status.py`)
-  - Testing results component with AgGrid integration
-
-#### Modules Needing Coverage Improvement
-- **Data Sources**: `symbol_manager.py` (24%), `yahoo_finance_loader.py` (13%)
-- **UI Components**: `symbol_selector.py` (25%)
-- **Utilities**: `market_hours.py` (30%)
+  - Symbol manager (`src/data/sources/symbol_manager.py`)
+  - UI components (`src/ui/components/date_display.py`, `src/ui/components/market_status.py`)
+- **Good Coverage Modules (85%+)**:
+  - Portfolio management (`src/ui/portfolio.py` - 94%)
+  - Home dashboard (`src/ui/home.py` - 85%)
+  - Symbol selector (`src/ui/components/symbol_selector.py` - 87%)
 
 #### Recent Testing Improvements
-- ✅ **Comprehensive Test Suites**: Added detailed test files for complex modules
+- ✅ **MLflow Manager**: Fixed environment variable substitution in YAML config
+- ✅ **UI Component Tests**: Resolved mock isolation issues with `st.columns` and `st.write`
+- ✅ **Database Tests**: All database connectivity tests passing with comprehensive mocking
+- ✅ **Async Tests**: Proper async test configuration and execution
+- ✅ **Test Isolation**: Fixed mock leakage between tests with proper reset mechanisms
 - ✅ **AgGrid Integration**: Enhanced testing results display with advanced table functionality
 - ✅ **Path Normalization**: Fixed coverage display issues across different operating systems
-- ✅ **Deprecation Fixes**: Removed deprecated parameters and updated dependencies
-- ✅ **Mock Improvements**: Enhanced mocking strategies for Streamlit components
 
 ### Test Environment Setup
 
@@ -407,24 +414,51 @@ test/
 ```
 ======================================== test session starts ========================================
 platform win32 -- Python 3.10.6, pytest-8.4.1, pluggy-1.6.0
-collected 89 items
+collected 317 items
 
-test/unit/test_basic_functionality.py ............... [ 15%]
-test/unit/database/test_database_connectivity_comprehensive.py ........................ [ 47%]
-test/unit/ui/test_date_display_comprehensive.py .............................. [ 80%]
-test/unit/ui/test_market_status_comprehensive.py ............................. [100%]
+test/unit/test_basic_functionality.py ................ [  5%]
+test/unit/test_mlflow_manager.py .. [  6%]
+test/unit/test_websocket_symbols.py .... [  7%]
+test/unit/ui/test_date_display_comprehensive.py .............................. [ 16%]
+test/unit/ui/test_debug_ui.py ................ [ 21%]
+test/unit/ui/test_home_comprehensive.py ........................ [ 30%]
+test/unit/ui/test_market_status_comprehensive.py ............................. [ 39%]
+test/unit/ui/test_portfolio_comprehensive.py ........................ [ 48%]
+test/unit/ui/test_portfolio_direct.py ........ [ 51%]
+test/unit/ui/test_portfolio_simple.py .... [ 52%]
+test/unit/ui/test_simple_streamlit.py ...... [ 54%]
+test/unit/ui/test_symbol_selector_comprehensive.py ................ [ 59%]
+test/unit/ui/test_testing_results.py ................ [ 64%]
+test/unit/data/test_portfolio_manager.py ........ [ 67%]
+test/unit/data/test_portfolio_optimization.py .......... [ 71%]
+test/unit/data/test_symbol_analysis.py .......... [ 76%]
+test/unit/data/test_symbol_manager_comprehensive.py ................ [ 81%]
+test/unit/database/test_database_comprehensive.py ........................ [ 89%]
+test/unit/database/test_database_connectivity.py ........ [ 92%]
+test/unit/database/test_database_connectivity_comprehensive.py ........................ [100%]
+test/integration/test_multi_symbol_recycler.py ......... [103%]
+test/integration/test_streamlit_integration.py .. [104%]
 
-======================================== 89 passed in 12.3s =========================================
+======================================== 309 passed, 7 skipped in 46.76s =========================================
 
----------- coverage: platform win32, python 3.10.6-final-0 -----------
-Name                                                    Stmts   Miss  Cover
--------------------------------------------------------------------------
-src/database/database_connectivity.py                     45      0   100%
-src/ui/components/date_display.py                         35      0   100%
-src/ui/components/market_status.py                        42      0   100%
-src/ui/home.py                                            89      0   100%
--------------------------------------------------------------------------
-TOTAL                                                    211     49    77%
+---------- coverage: platform win32, python 3.10.16-final-0 -----------
+Name                                    Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------
+src/data/sources/portfolio_manager.py     249     90    64%   76-78, 105-107, 111, 131-132, 171-172, 176-177, 185-187, 225-227, 259-260, 285-287, 295-300, 311-312, 319, 342, 353, 377-379, 391-461, 498-499, 528-530, 535-559
+src/data/sources/symbol_manager.py         54      0   100%
+src/database/database_connectivity.py      83      0   100%
+src/mlflow_manager.py                     205     88    57%   59-64, 88, 116-118, 133-134, 142-144, 174-176, 188-190, 203-205, 220, 223-225, 235-240, 253-255, 277-279, 292-299, 315-317, 328-337, 353, 373-375, 385-391, 403-422, 484-501
+src/ui/components/date_display.py          39      0   100%
+src/ui/components/market_status.py         52      0   100%
+src/ui/components/symbol_selector.py      210     27    87%   115, 119-129, 216-218, 279-284, 308, 332-334, 382-384
+src/ui/components/testing_results.py      421    107    75%   69-72, 82-86, 95-104, 113-159, 214, 216, 220, 244-246, 265-266, 300, 302, 306, 388-389, 394-395, 474, 479, 492, 494, 498, 508-509, 513, 563-564, 581, 590-592, 603-604, 628-654, 672-674, 678-680, 684-686, 730-733, 744-745, 752-753, 769, 774-784, 824-825
+src/ui/home.py                            228     35    85%   38-40, 100-101, 180-192, 244-245, 261-279, 369-370, 384-385
+src/ui/portfolio.py                       216     14    94%   40-42, 157-162, 202-203, 255-256, 444
+src/ui/streamlit_app.py                    41      9    78%   48-52, 73, 75, 79, 86
+src/utils/market_hours.py                  63     33    48%   26-27, 41-43, 49, 53, 59, 63-64, 68-69, 76-78, 82-90, 94-99, 103-108
+src/utils/websocket_config.py             106     29    73%   41-43, 59, 63, 85, 96, 100, 110-111, 117-118, 122-123, 127-128, 133-135, 167-168, 174, 179, 184, 189, 194-197
+---------------------------------------------------------------------
+TOTAL                                    1967    432    78%
 ```
 
 ### Code Quality

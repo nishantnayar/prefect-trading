@@ -49,8 +49,8 @@ def display_symbol_analysis(symbol: str) -> None:
         return
     
     try:
-        # Create tabs for different analysis sections (News tab removed)
-        tab1, tab2, tab3 = st.tabs(["📊 Overview", "📈 Market Data", "🏢 Company Info"])
+        # Create tabs for different analysis sections
+        tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview", "📈 Market Data", "🏢 Company Info", "📰 News"])
         
         with tab1:
             display_symbol_overview(symbol)
@@ -61,43 +61,20 @@ def display_symbol_analysis(symbol: str) -> None:
         with tab3:
             display_company_info(symbol)
         
+        with tab4:
+            display_symbol_news(symbol)
+        
     except Exception as e:
         logger.error(f"Error in symbol analysis: {e}")
         st.error("Error loading symbol analysis. Please try again later.")
 
 
-def display_symbol_overview(symbol: str) -> None:
-    """Display symbol overview information.
-    
-    Args:
-        symbol: Stock symbol
-    """
-    st.subheader(f"📊 {symbol} Overview")
-    
-    try:
-        db = DatabaseConnectivity()
-        
-        # Get symbol basic info
-        symbol_manager = SymbolManager()
-        symbol_info = symbol_manager.get_symbol_info(symbol)
-        
-        if symbol_info:
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                st.metric("Symbol", symbol_info['symbol'])
-                st.metric("Status", "🟢 Active" if symbol_info['is_active'] else "🔴 Inactive")
-            
-            with col2:
-                st.metric("Name", symbol_info['name'] or "N/A")
-                st.metric("Added", symbol_info['start_date'].strftime('%Y-%m-%d'))
-            
-            with col3:
-                st.metric("Last Updated", symbol_info['updated_at'].strftime('%Y-%m-%d'))
-                if symbol_info['end_date']:
-                    st.metric("End Date", symbol_info['end_date'].strftime('%Y-%m-%d'))
-        
-        # Get recent market data summary
+def get_symbol_overview_data(symbol: str, db) -> dict:
+    """Fetch symbol overview and market summary from the database."""
+    symbol_manager = SymbolManager()
+    symbol_info = symbol_manager.get_symbol_info(symbol)
+    market_summary = None
+    if symbol_info:
         with db.get_session() as cursor:
             cursor.execute("""
                 SELECT 
@@ -111,32 +88,54 @@ def display_symbol_overview(symbol: str) -> None:
                 FROM market_data 
                 WHERE symbol = %s
             """, (symbol,))
-            
             market_summary = cursor.fetchone()
-            
-            if market_summary:
-                st.subheader("📈 Market Data Summary")
-                
-                col1, col2, col3, col4 = st.columns(4)
-                
-                with col1:
-                    st.metric("Data Points", f"{market_summary[0]:,}")
-                    st.metric("First Data", market_summary[1].strftime('%Y-%m-%d') if market_summary[1] else "N/A")
-                
-                with col2:
-                    st.metric("Last Data", market_summary[2].strftime('%Y-%m-%d') if market_summary[2] else "N/A")
-                    st.metric("Avg Price", f"${market_summary[3]:.2f}" if market_summary[3] else "N/A")
-                
-                with col3:
-                    st.metric("Max Price", f"${market_summary[4]:.2f}" if market_summary[4] else "N/A")
-                    st.metric("Min Price", f"${market_summary[5]:.2f}" if market_summary[5] else "N/A")
-                
-                with col4:
-                    st.metric("Avg Volume", f"{market_summary[6]:,.0f}" if market_summary[6] else "N/A")
-                    
+    return {
+        'symbol_info': symbol_info,
+        'market_summary': market_summary
+    }
+
+
+def display_symbol_overview(symbol: str, data: dict) -> None:
+    """Display symbol overview information using provided data."""
+    st.subheader(f"📊 {symbol} Overview")
+    try:
+        symbol_info = data.get('symbol_info')
+        market_summary = data.get('market_summary')
+        if symbol_info:
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Symbol", symbol_info['symbol'])
+                st.metric("Status", "🟢 Active" if symbol_info['is_active'] else "🔴 Inactive")
+            with col2:
+                st.metric("Name", symbol_info['name'] or "N/A")
+                st.metric("Added", symbol_info['start_date'].strftime('%Y-%m-%d'))
+            with col3:
+                st.metric("Last Updated", symbol_info['updated_at'].strftime('%Y-%m-%d'))
+                if symbol_info['end_date']:
+                    st.metric("End Date", symbol_info['end_date'].strftime('%Y-%m-%d'))
+        if market_summary:
+            st.subheader("📈 Market Data Summary")
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Data Points", f"{market_summary[0]:,}")
+                st.metric("First Data", market_summary[1].strftime('%Y-%m-%d') if market_summary[1] else "N/A")
+            with col2:
+                st.metric("Last Data", market_summary[2].strftime('%Y-%m-%d') if market_summary[2] else "N/A")
+                st.metric("Avg Price", f"${market_summary[3]:.2f}" if market_summary[3] else "N/A")
+            with col3:
+                st.metric("Max Price", f"${market_summary[4]:.2f}" if market_summary[4] else "N/A")
+                st.metric("Min Price", f"${market_summary[5]:.2f}" if market_summary[5] else "N/A")
+            with col4:
+                st.metric("Avg Volume", f"{market_summary[6]:,.0f}" if market_summary[6] else "N/A")
     except Exception as e:
         logger.error(f"Error in symbol overview: {e}")
         st.error("Error loading symbol overview")
+
+
+def display_symbol_overview_with_db(symbol: str) -> None:
+    db = DatabaseConnectivity()
+    data = get_symbol_overview_data(symbol, db)
+    display_symbol_overview(symbol, data)
 
 
 def display_market_data_analysis(symbol: str) -> None:
@@ -335,12 +334,64 @@ def display_company_info(symbol: str) -> None:
         st.error("Error loading company information")
 
 
+def display_symbol_news(symbol: str) -> None:
+    """Display news articles related to the symbol.
+    
+    Args:
+        symbol: Stock symbol
+    """
+    st.subheader(f"📰 {symbol} News")
+    
+    try:
+        db = DatabaseConnectivity()
+        
+        # Get recent news articles for the symbol
+        with db.get_session() as cursor:
+            cursor.execute("""
+                SELECT 
+                    title,
+                    source_name,
+                    url,
+                    published_at,
+                    description
+                FROM news_articles 
+                WHERE title ILIKE %s OR description ILIKE %s
+                ORDER BY published_at DESC
+                LIMIT 10
+            """, (f'%{symbol}%', f'%{symbol}%'))
+            
+            news_articles = cursor.fetchall()
+            
+            if news_articles:
+                for i, article in enumerate(news_articles):
+                    title, source, url, published_at, description = article
+                    
+                    # Create expander for each article
+                    with st.expander(f"{title} - {source}"):
+                        if published_at:
+                            st.write(f"**Published:** {published_at.strftime('%Y-%m-%d %H:%M')}")
+                        
+                        if description:
+                            st.write(description)
+                        
+                        if url:
+                            st.write(f"**Source:** [{url}]({url})")
+            else:
+                st.info("No recent news found for this symbol")
+                
+    except Exception as e:
+        logger.error(f"Error in symbol news: {e}")
+        st.error("Error loading news articles")
+
+
 def display_symbol_selector_with_analysis() -> Optional[str]:
     """Display symbol selector with comprehensive analysis.
     
     Returns:
         Optional[str]: Selected symbol or None
     """
+    st.title("📊 Analysis")
+    st.write("Explore data analysis and trading signals.")
     st.header("🔍 Symbol Analysis")
     
     # Get selected symbol

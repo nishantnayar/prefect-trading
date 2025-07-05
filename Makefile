@@ -50,19 +50,19 @@ test-e2e:
 
 # Streamlit-specific tests
 test-streamlit:
-	python scripts/test_streamlit.py --all --verbose
+	pytest test/unit/ui/ test/integration/test_streamlit_integration.py test/e2e/test_streamlit_e2e.py -v
 
 test-streamlit-unit:
-	python scripts/test_streamlit.py --unit --verbose
+	pytest test/unit/ui/ -v
 
 test-streamlit-integration:
-	python scripts/test_streamlit.py --integration --verbose
+	pytest test/integration/test_streamlit_integration.py -v
 
 test-streamlit-e2e:
-	python scripts/test_streamlit.py --e2e --verbose
+	pytest test/e2e/test_streamlit_e2e.py -v
 
 test-streamlit-check:
-	python scripts/test_streamlit.py --check
+	pytest test/unit/ui/ --collect-only
 
 test-coverage:
 	pytest tests/ -v --cov=src --cov-report=html:build/htmlcov --cov-report=term-missing
