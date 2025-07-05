@@ -4,6 +4,8 @@
 
 The Prefect Trading System includes a comprehensive testing strategy with automated test execution, coverage analysis, and a dedicated Testing page in the Streamlit UI for real-time test results visualization.
 
+> **📋 Quick Links**: [Architecture Decisions](architecture-decisions.md) | [Setup Guide](setup.md) | [Development Guide](development.md) | [UI Documentation](ui.md) | [API Documentation](api.md)
+
 ## Testing Strategy
 
 ### 1. Test Types
@@ -448,9 +450,35 @@ def test_user_dashboard(sample_user_data):
 3. Review console logs for parsing errors
 4. Validate JSON structure manually if needed
 
+## MLflow Integration Testing
+
+### Testing MLflow Components
+To test MLflow integration and model management:
+
+```bash
+# Ensure MLflow server is running
+mlflow server --backend-store-uri postgresql://postgres:nishant@localhost/mlflow_db --default-artifact-root file:./mlruns --host 0.0.0.0 --port 5000
+
+# Set environment variable
+export MLFLOW_TRACKING_URI=http://localhost:5000
+
+# Run MLflow-specific tests
+pytest test/unit/test_mlflow_manager.py -v
+
+# Test MLflow integration with coverage
+pytest test/unit/test_mlflow_manager.py --cov=src.mlflow_manager --cov-report=term-missing
+```
+
+### MLflow Test Coverage
+- **Current Coverage**: 57% (205 statements, 88 missing)
+- **Test Focus**: Environment variable substitution, YAML config handling, experiment management
+- **Future Improvements**: Model training workflows, artifact management, model serving
+
+For more details on MLflow architecture and testing strategy, see [Architecture Decisions](architecture-decisions.md).
+
 ## Future Enhancements
 
-> **📋 Centralized Registry**: All future enhancements are now tracked in the [Future Enhancements Registry](docs/architecture-decisions.md#future-enhancements-registry) for better project management and planning.
+> **📋 Centralized Registry**: All future enhancements are now tracked in the [Architecture Decisions](architecture-decisions.md#future-enhancements) for better project management and planning.
 
 ### Testing-Specific Enhancements
 
@@ -484,4 +512,11 @@ def test_user_dashboard(sample_user_data):
 - **Branch Coverage**: Support for branch coverage metrics
 - **Function Coverage**: Detailed function-level analysis
 - **Test Impact**: Identify which tests affect which lines
-- **Coverage Maps**: Visual file coverage highlighting 
+- **Coverage Maps**: Visual file coverage highlighting
+
+### Related Documentation
+
+- **[Architecture Decisions](architecture-decisions.md)**: Design rationale and testing strategy decisions
+- **[Development Guide](development.md)**: Development practices and testing workflows
+- **[Setup Guide](setup.md)**: Test environment setup and configuration
+- **[UI Documentation](ui.md)**: UI testing and component testing strategies 

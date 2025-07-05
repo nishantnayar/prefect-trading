@@ -4,6 +4,8 @@
 
 The Prefect Trading System includes a modern, responsive Streamlit-based user interface that provides real-time market data visualization, portfolio management, and news integration. The UI is designed to be user-friendly, efficient, and accessible across different devices.
 
+> **📋 Quick Links**: [Architecture Decisions](architecture-decisions.md) | [Setup Guide](setup.md) | [Development Guide](development.md) | [Testing Guide](testing.md) | [API Documentation](api.md)
+
 ## UI Architecture
 
 ### 1. Main Application (`src/ui/streamlit_app.py`)
@@ -130,6 +132,8 @@ def render_testing_results():
     - Manual refresh and test execution capabilities
     """
 ```
+
+For detailed rationale behind UI architecture decisions, see [Architecture Decisions](architecture-decisions.md).
 
 ## UI Features
 
@@ -748,4 +752,12 @@ The Prefect Trading System UI provides a comprehensive, user-friendly interface 
 - **Test Execution**: Direct test execution from UI
 - **Independent Refresh**: Separate refresh functionality for testing operations
 
-The UI architecture prioritizes performance, user experience, and maintainability while providing comprehensive trading functionality in a modern, responsive interface. 
+The UI architecture prioritizes performance, user experience, and maintainability while providing comprehensive trading functionality in a modern, responsive interface.
+
+### Related Documentation
+
+- **[Architecture Decisions](architecture-decisions.md)**: UI/UX design rationale and decisions
+- **[Development Guide](development.md)**: UI development practices and workflows
+- **[Testing Guide](testing.md)**: UI testing strategies and implementation
+- **[Setup Guide](setup.md)**: UI setup and configuration
+- **[API Documentation](api.md)**: Backend API integration 

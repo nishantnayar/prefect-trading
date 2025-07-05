@@ -4,6 +4,8 @@
 
 This guide provides comprehensive information for developers working on the Prefect Trading System. It covers coding standards, development workflows, testing practices, and deployment procedures.
 
+> **📋 Quick Links**: [Architecture Decisions](architecture-decisions.md) | [Setup Guide](setup.md) | [Testing Guide](testing.md) | [UI Documentation](ui.md) | [API Documentation](api.md)
+
 ## Development Environment Setup
 
 ### Prerequisites
@@ -230,16 +232,18 @@ class TestYahooFinanceDataLoader:
 ### Running Tests
 ```bash
 # Run all tests
-make test
+python scripts/run_tests.py
 
 # Run specific test categories
-make test-unit
-make test-integration
-make test-e2e
+python scripts/run_tests.py basic
+python scripts/run_tests.py database
+python scripts/run_tests.py quick
 
 # Run with coverage
-make test-coverage
+pytest --cov=src test/
 ```
+
+For comprehensive testing information, see [Testing Guide](testing.md).
 
 ## Database Development
 
@@ -428,184 +432,61 @@ def clear_portfolio_manager():
     _portfolio_manager = None
 ```
 
-### Database Optimization
-1. **Use appropriate indexes**
-2. **Optimize queries**
-3. **Connection pooling**
-4. **Query caching**
+For more details on performance optimizations, see [Architecture Decisions](architecture-decisions.md).
 
-### Code Optimization
+## MLflow Development Workflow
+
+### Experiment Management
 ```python
-# Use async/await for I/O operations
-async def fetch_multiple_symbols(symbols: List[str]) -> List[Dict]:
-    """Fetch data for multiple symbols concurrently."""
-    tasks = [fetch_symbol_data(symbol) for symbol in symbols]
-    return await asyncio.gather(*tasks)
+import mlflow
+from src.mlflow_manager import MLflowManager
 
-# Use generators for large datasets
-def process_large_dataset(data: List[Dict]) -> Generator[Dict, None, None]:
-    """Process large dataset using generator."""
-    for item in data:
-        processed_item = process_item(item)
-        yield processed_item
+# Initialize MLflow manager
+mlflow_manager = MLflowManager()
+
+# Create or get experiment
+experiment_name = "pairs_trading/technology"
+mlflow.set_experiment(experiment_name)
+
+# Start a run
+with mlflow.start_run():
+    # Log parameters
+    mlflow.log_param("learning_rate", 0.001)
+    mlflow.log_param("epochs", 100)
+    
+    # Train model
+    model = train_model()
+    
+    # Log metrics
+    mlflow.log_metric("accuracy", 0.95)
+    mlflow.log_metric("loss", 0.05)
+    
+    # Log model
+    mlflow.pytorch.log_model(model, "model")
 ```
 
-## Security
-
-### Security Best Practices
-1. **Input validation**
-2. **SQL injection prevention**
-3. **API key management**
-4. **Error message sanitization**
-
-### Example Security Implementation
+### Periodic Rebaselining
 ```python
-import re
-from typing import Optional
+from prefect import flow, task
+from src.mlflow_manager import MLflowManager
 
-def validate_symbol(symbol: str) -> bool:
-    """Validate stock symbol format."""
-    pattern = r'^[A-Z]{1,5}$'
-    return bool(re.match(pattern, symbol))
+@task
+def retrain_model():
+    """Retrain model with latest data."""
+    mlflow_manager = MLflowManager()
+    return mlflow_manager.retrain_model()
 
-def sanitize_input(input_str: str) -> str:
-    """Sanitize user input."""
-    return re.sub(r'[<>"\']', '', input_str)
-
-def secure_api_call(api_key: str, endpoint: str) -> Optional[Dict]:
-    """Make secure API call."""
-    if not api_key:
-        raise ValueError("API key is required")
-    
-    headers = {
-        'Authorization': f'Bearer {api_key}',
-        'Content-Type': 'application/json'
-    }
-    
-    # Make API call with proper error handling
+@flow
+def rebaseline_workflow():
+    """Periodic model rebaselining workflow."""
+    # Collect latest data
+    # Retrain model
+    # Evaluate performance
+    # Register new model version
     pass
 ```
 
-## Monitoring and Logging
-
-### Logging Configuration
-```python
-import logging
-import sys
-from loguru import logger
-
-# Configure logging
-logger.remove()
-logger.add(
-    sys.stdout,
-    format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function}:{line} | {message}",
-    level="INFO"
-)
-logger.add(
-    "logs/trading_system.log",
-    rotation="1 day",
-    retention="30 days",
-    level="DEBUG"
-)
-```
-
-### Performance Monitoring
-```python
-import time
-from functools import wraps
-
-def monitor_performance(func):
-    """Decorator to monitor function performance."""
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        end_time = time.time()
-        
-        logger.info(f"{func.__name__} took {end_time - start_time:.2f} seconds")
-        return result
-    return wrapper
-```
-
-## Deployment
-
-### Production Deployment
-1. **Environment configuration**
-2. **Database setup**
-3. **Service configuration**
-4. **Monitoring setup**
-
-### Docker Deployment
-```dockerfile
-FROM python:3.9-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY . .
-
-EXPOSE 8501 4200
-
-CMD ["streamlit", "run", "src/ui/streamlit_app.py"]
-```
-
-### CI/CD Pipeline
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-    
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
-    
-    - name: Run tests
-      run: make test
-    
-    - name: Deploy
-      run: make deploy
-```
-
-## Troubleshooting
-
-### Common Issues
-1. **Database connection errors**
-2. **API rate limiting**
-3. **Memory leaks**
-4. **Performance issues**
-
-### Debugging Tools
-```python
-import pdb
-import traceback
-
-def debug_function():
-    """Example debugging function."""
-    try:
-        # Your code here
-        pass
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        logger.error(traceback.format_exc())
-        pdb.set_trace()  # Interactive debugger
-```
+For more details on MLflow integration, see [Architecture Decisions](architecture-decisions.md).
 
 ## Resources
 
@@ -613,4 +494,9 @@ def debug_function():
 - [Prefect Documentation](https://docs.prefect.io/)
 - [Streamlit Documentation](https://docs.streamlit.io/)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [Pytest Documentation](https://docs.pytest.org/) 
+- [Pytest Documentation](https://docs.pytest.org/)
+- [MLflow Documentation](https://mlflow.org/docs/latest/index.html)
+- [Architecture Decisions](architecture-decisions.md) - Design rationale and decisions
+- [Setup Guide](setup.md) - Installation and configuration
+- [Testing Guide](testing.md) - Testing strategies and implementation
+- [UI Documentation](ui.md) - User interface components and features 
