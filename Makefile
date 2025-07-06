@@ -37,16 +37,16 @@ setup: install-dev
 
 # Testing
 test:
-	pytest tests/ -v --cov=src --cov-report=term-missing
+	PYTHONDONTWRITEBYTECODE=1 pytest tests/ -v --cov=src --cov-report=term-missing --cache-clear
 
 test-unit:
-	pytest tests/unit/ -v
+	pytest tests/unit/ -v --cache-clear
 
 test-integration:
-	pytest tests/integration/ -v
+	pytest tests/integration/ -v --cache-clear
 
 test-e2e:
-	pytest tests/e2e/ -v
+	pytest tests/e2e/ -v --cache-clear
 
 # Streamlit-specific tests
 test-streamlit:
@@ -92,7 +92,7 @@ docs:
 
 # Development
 run-ui:
-	streamlit run src/ui/streamlit_app.py
+	PYTHONDONTWRITEBYTECODE=1 streamlit run src/ui/streamlit_app.py
 
 run-prefect:
 	prefect server start

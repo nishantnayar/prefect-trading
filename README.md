@@ -5,6 +5,19 @@
 [![PostgreSQL](https://img.shields.io/badge/postgresql-12+-blue.svg)](https://www.postgresql.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+---
+
+## 📎 Quick Links
+- [Project Overview](docs/project-overview.md)
+- [Setup Guide](docs/setup.md)
+- [Development Guide](docs/development.md)
+- [Testing Guide](docs/testing.md)
+- [UI Documentation](docs/ui.md)
+- [Architecture Decisions](docs/architecture-decisions.md)
+- [API Documentation](docs/api.md)
+
+---
+
 A comprehensive trading system built with **Prefect** for automated market data collection, processing, and analysis, featuring a modern **Streamlit**-based user interface for real-time monitoring and portfolio management.
 
 ## 🚀 Features
@@ -53,7 +66,7 @@ A comprehensive trading system built with **Prefect** for automated market data 
 
 ## 📁 Project Structure
 
-The project follows a clean, organized structure with configuration files centralized and build artifacts contained:
+The project follows a clean, organized structure with configuration files centralized and build artifacts contained. For rationale behind major architectural choices, see [Architecture Decisions](docs/architecture-decisions.md).
 
 ```
 prefect-trading/
@@ -126,6 +139,15 @@ prefect-trading/
 - **Better Organization**: Related files are grouped together logically
 - **Standard Practice**: Follows common Python project conventions
 - **Easier Maintenance**: Configuration and build artifacts are clearly separated
+
+## 📦 MLflow Integration & Model Management
+
+This project uses **MLflow** for enterprise-level model management, experiment tracking, and periodic rebaselining of trading models. MLflow is integrated with a dedicated PostgreSQL backend for robust, production-grade tracking and model registry. Rebaselining workflows are scheduled and managed via Prefect, ensuring models remain up-to-date with the latest data and performance metrics.
+
+- MLflow server runs with PostgreSQL backend for persistence
+- Model experiments and artifacts are tracked and versioned
+- Periodic rebaselining is orchestrated as part of Prefect flows
+- See [Architecture Decisions](docs/architecture-decisions.md) for rationale and future plans
 
 ## 🛠️ Prerequisites
 
@@ -277,6 +299,16 @@ The system uses Prefect for workflow orchestration with three main deployments:
 - ✅ **Test Isolation**: Fixed mock leakage between tests with proper reset mechanisms
 - ✅ **AgGrid Integration**: Enhanced testing results display with advanced table functionality
 - ✅ **Path Normalization**: Fixed coverage display issues across different operating systems
+
+### MLflow Integration Testing
+To test MLflow integration:
+- Ensure the MLflow server is running (`mlflow server ...`)
+- Set the `MLFLOW_TRACKING_URI` environment variable to your server (e.g., `export MLFLOW_TRACKING_URI=http://localhost:5000`)
+- Run the MLflow-related tests:
+  ```bash
+  pytest test/unit/test_mlflow_manager.py -v
+  ```
+- For more, see [Testing Guide](docs/testing.md) and [Architecture Decisions](docs/architecture-decisions.md)
 
 ### Test Environment Setup
 
@@ -486,7 +518,7 @@ pre-commit run --all-files
 ## 📚 Documentation
 
 - **[API Documentation](docs/api.md)**: External and internal API usage
-- **[Architecture](docs/architecture.md)**: System design and components
+- **[Architecture Decisions](docs/architecture-decisions.md)**: System design and components
 - **[Development Guide](docs/development.md)**: Development practices and workflows
 - **[Setup Guide](docs/setup.md)**: Installation and configuration
 - **[Testing Guide](docs/testing.md)**: Testing strategies and implementation
@@ -506,6 +538,7 @@ pre-commit run --all-files
 - Update documentation for API changes
 - Ensure UI components are responsive and accessible
 - Implement proper error handling
+- Reference [Architecture Decisions](docs/architecture-decisions.md) for rationale behind major design and workflow choices.
 
 ## 🐛 Troubleshooting
 
@@ -559,7 +592,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Version**: 1.0.0
 - **Status**: Active Development
-- **Last Updated**: December 2024
+- **Last Updated**: June 2025
 - **Python Support**: 3.9+
 - **Database**: PostgreSQL 12+
 - **Test Coverage**: Minimum 20% (basic functionality) 

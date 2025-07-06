@@ -3,6 +3,8 @@
 ## Overview
 This document records the key architectural decisions made during the development of the GARCH-GRU Pairs Trading System. It serves as a decision log for future reference and team alignment.
 
+> **📋 Quick Links**: [Setup Guide](setup.md) | [Development Guide](development.md) | [Testing Guide](testing.md) | [UI Documentation](ui.md) | [API Documentation](api.md)
+
 ## 1. PyTorch vs TensorFlow Decision
 
 ### **Decision: Switch to PyTorch**
@@ -727,15 +729,85 @@ Result:    All symbols use AAPL data with correct symbol names
 
 ## Future Enhancements
 
-- Convert GRU model from TensorFlow to PyTorch
-- Add custom database tables for advanced analytics
-- Expand to additional sectors (healthcare, financial)
-- Implement automated rebaselining workflows
-- Add model serving infrastructure
-- Add more symbol pairs for diversified trading
-- Transition from proxy data to real PDFS/ROG data when available
+> **📋 Centralized Registry**: All future enhancements are now tracked in this section for better project management and planning.
 
-## Configuration Files Updated
+### High Priority Enhancements
+
+#### 1. MLflow Model Management
+- **Convert GRU model from TensorFlow to PyTorch**: Complete the migration started in Decision #1
+- **Update MLflow integration for PyTorch**: Implement `mlflow.pytorch` integration
+- **Automated rebaselining workflows**: Implement periodic model retraining via Prefect
+- **Model serving infrastructure**: Add model deployment and serving capabilities
+- **Custom database tables for advanced analytics**: Implement trading signal attribution and performance tracking
+
+#### 2. Data Source Expansion
+- **Add more symbol pairs for diversified trading**: Expand beyond PDFS-ROG pair
+- **Transition from proxy data to real PDFS/ROG data**: Complete the transition when real data becomes available
+- **Additional data sources**: Integrate more market data providers
+- **Real-time data quality monitoring**: Implement data validation and quality checks
+
+#### 3. System Architecture
+- **Expand to additional sectors**: Healthcare, financial sectors beyond technology
+- **Microservices architecture**: Consider breaking down monolithic components
+- **Containerization**: Docker support for easier deployment
+- **CI/CD pipeline**: Automated testing and deployment
+
+### Medium Priority Enhancements
+
+#### 1. Performance Optimization
+- **Database query optimization**: Implement advanced indexing and query optimization
+- **Caching improvements**: Redis integration for better performance
+- **API rate limiting**: Implement intelligent rate limiting strategies
+- **Memory optimization**: Reduce memory usage in data processing
+
+#### 2. Security Enhancements
+- **API key rotation**: Automated key management
+- **Data encryption**: Encrypt sensitive data at rest and in transit
+- **Access control**: Role-based access control system
+- **Audit logging**: Comprehensive audit trail
+
+#### 3. User Experience
+- **Advanced UI components**: More interactive charts and visualizations
+- **Mobile app**: Native mobile application
+- **Real-time notifications**: Push notifications for important events
+- **Customizable dashboards**: User-configurable dashboard layouts
+
+### Low Priority Enhancements
+
+#### 1. Analytics and Reporting
+- **Advanced analytics**: Machine learning-based insights
+- **Custom reports**: User-defined report generation
+- **Data export**: Multiple format support (CSV, Excel, PDF)
+- **Historical analysis**: Long-term trend analysis
+
+#### 2. Integration
+- **Third-party integrations**: Slack, email, SMS notifications
+- **API marketplace**: Public API for external integrations
+- **Webhook support**: Real-time event notifications
+- **Data warehouse integration**: BigQuery, Snowflake support
+
+### Testing Enhancements
+
+#### Critical Testing Gaps to Address
+
+##### High Priority (Critical Gaps)
+- **Data Source Unit Tests**: Complete unit tests for `alpaca_websocket.py`, `alpaca_historical_loader.py`, `alpaca_daily_loader.py`, `yahoo_finance_loader.py`, `news.py`, `data_recycler_server.py`, `configurable_websocket.py`, `hourly_persistence.py`
+- **Utility Module Tests**: Unit tests for `websocket_config.py`, `data_recycler_utils.py`, `market_hours.py`
+- **Database Integration Tests**: Real database operation tests, migration script tests, schema validation tests
+- **Error Handling Tests**: Network failures, API failures, database failures, data corruption scenarios
+
+##### Medium Priority (Important Gaps)
+- **Script Unit Tests**: Unit tests for `manage_symbols.py`, `setup_test_env.py`, `manual_save.py`
+- **Performance Tests**: Load testing, memory usage, API rate limiting, database performance
+- **Security Tests**: API key validation, input validation, data sanitization, authentication flows
+- **Data Quality Tests**: Data validation, data completeness, data consistency, data transformation accuracy
+
+##### Low Priority (Nice to Have)
+- **Documentation Tests**: API documentation accuracy, code examples validation, README validation
+- **UI Edge Case Tests**: Complex user interactions, large datasets, market holidays, responsive design
+- **Cross-Platform Tests**: Different operating systems compatibility
+
+### Configuration Files Updated
 
 - `config/requirements.txt`: PyTorch instead of TensorFlow
 - `config/config.yaml`: Simplified MLflow configuration
@@ -746,6 +818,14 @@ Result:    All symbols use AAPL data with correct symbol names
 - `src/data/sources/data_recycler_server.py`: Refactored for multi-symbol support with proxy fallback
 - `scripts/manage_symbols.py`: New utility for symbol configuration management
 - `scripts/test_multi_symbol_recycler.py`: Test script for verification
+
+### Related Documentation
+
+- **[Setup Guide](setup.md)**: Installation and configuration instructions
+- **[Development Guide](development.md)**: Development practices and workflows
+- **[Testing Guide](testing.md)**: Testing strategies and implementation
+- **[UI Documentation](ui.md)**: User interface components and features
+- **[API Documentation](api.md)**: External and internal API usage
 
 ---
 

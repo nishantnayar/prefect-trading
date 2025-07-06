@@ -4,6 +4,8 @@
 
 This guide provides comprehensive setup instructions for the Prefect Trading System, from quick start for new developers to detailed configuration for production environments.
 
+> **📋 Quick Links**: [Architecture Decisions](architecture-decisions.md) | [Development Guide](development.md) | [Testing Guide](testing.md) | [UI Documentation](ui.md) | [API Documentation](api.md)
+
 ## Quick Start (30 minutes)
 
 ### Prerequisites Check
@@ -122,7 +124,24 @@ streamlit run src/ui/streamlit_app.py
 
 1. **Check Prefect UI**: Open [http://localhost:4200](http://localhost:4200)
 2. **Check Streamlit UI**: Open [http://localhost:8501](http://localhost:8501)
-3. **Run Tests**: `make test`
+3. **Run Tests**: `make test` or `python scripts/run_tests.py`
+
+## MLflow Setup (Optional but Recommended)
+
+For enterprise-level model management and periodic rebaselining:
+
+```bash
+# Create MLflow database
+createdb mlflow_db
+
+# Start MLflow server
+mlflow server --backend-store-uri postgresql://postgres:nishant@localhost/mlflow_db --default-artifact-root file:./mlruns --host 0.0.0.0 --port 5000
+
+# Set environment variable
+export MLFLOW_TRACKING_URI=http://localhost:5000
+```
+
+For more details on MLflow integration, see [Architecture Decisions](architecture-decisions.md).
 
 ## Detailed Setup
 
@@ -314,6 +333,12 @@ alpaca:
   base_url: https://paper-api.alpaca.markets
   data_url: "https://data.alpaca.markets"
 
+# MLflow Configuration
+mlflow:
+  tracking_uri: ${MLFLOW_TRACKING_URI:http://localhost:5000}
+  experiment_name: "pairs_trading"
+  model_name: "pairs_trading_gru_garch_technology_v1"
+
 # Application Settings
 app:
   environment: ${ENVIRONMENT}
@@ -378,7 +403,7 @@ The UI will be available at `http://localhost:8501`
 
 ### 1. Install Development Dependencies
 ```bash
-pip install -r requirements-dev.txt
+pip install -r config/requirements-dev.txt
 ```
 
 ### 2. Set Up Pre-commit Hooks
@@ -389,13 +414,13 @@ pre-commit install
 ### 3. Run Tests
 ```bash
 # Run all tests
-pytest
+python scripts/run_tests.py
 
 # Run with coverage
-pytest --cov=src tests/
+pytest --cov=src test/
 
 # Run specific test file
-pytest tests/test_market_data.py
+pytest test/unit/test_market_data.py
 ```
 
 ### 4. Code Quality Checks
@@ -423,7 +448,12 @@ mypy src/
 - Monitor portfolio status
 - Read market news
 
-### 3. View Logs
+### 3. Access MLflow UI (if configured)
+- Open `http://localhost:5000` in your browser
+- View experiments and model runs
+- Track model performance and artifacts
+
+### 4. View Logs
 ```bash
 # Prefect logs
 prefect logs
@@ -453,6 +483,7 @@ psql -h localhost -U your_username -d trading_db
 # Check what's using the port
 lsof -i :8501
 lsof -i :4200
+lsof -i :5000  # MLflow
 
 # Kill the process
 kill -9 <PID>
@@ -484,6 +515,12 @@ pip install --upgrade -r config/requirements-dev.txt
 - Ensure database connectivity
 - Check auto-refresh settings
 
+### MLflow Issues
+- Ensure MLflow server is running
+- Check MLFLOW_TRACKING_URI environment variable
+- Verify database connectivity for MLflow
+- Check artifact storage permissions
+
 ### News API Issues
 - Verify NewsAPI key is valid
 - Check rate limits (1,000 requests/day free tier)
@@ -504,7 +541,7 @@ git checkout -b feature/your-feature
 make format
 
 # Run tests
-make test
+python scripts/run_tests.py
 ```
 
 ### 2. Commit Changes
@@ -532,12 +569,12 @@ git push origin feature/your-feature
 
 ```bash
 # Run all tests
-make test
+python scripts/run_tests.py
 
 # Run specific test categories
-make test-unit
-make test-integration
-make test-e2e
+python scripts/run_tests.py basic
+python scripts/run_tests.py database
+python scripts/run_tests.py quick
 
 # Format code
 make format
@@ -585,6 +622,9 @@ prefect deployment ls
 
 For additional support:
 1. Check the [GitHub Issues](https://github.com/your-repo/issues)
-2. Review the [Prefect Documentation](https://docs.prefect.io/)
-3. Check the [Streamlit Documentation](https://docs.streamlit.io/)
-4. Contact the development team 
+2. Review the [Architecture Decisions](architecture-decisions.md) for design rationale
+3. Check the [Development Guide](development.md) for coding standards
+4. Review the [Testing Guide](testing.md) for testing strategies
+5. Check the [Prefect Documentation](https://docs.prefect.io/)
+6. Check the [Streamlit Documentation](https://docs.streamlit.io/)
+7. Contact the development team 
