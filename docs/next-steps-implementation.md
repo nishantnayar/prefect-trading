@@ -444,3 +444,26 @@ garch_gru_pairs:
 - Maintain backward compatibility with existing trading system
 - **REDUCED IMPLEMENTATION TIME**: From 8 weeks to 4-5 weeks due to existing code
 - **PYTORCH NATIVE**: All components will be PyTorch-native for better integration 
+
+## Immediate Issues to Fix
+
+### 🔴 High Priority: Decouple Library Error
+- **Issue**: Stack overflow error in decouple library during test execution
+- **Error**: `Windows fatal exception: stack overflow` in `decouple.py` line 223
+- **Location**: `C:\Users\nisha\anaconda3\envs\trading_env\lib\site-packages\decouple.py`
+- **Impact**: Tests fail with stack overflow when decouple tries to find configuration files
+- **Status**: BLOCKING - Needs immediate fix before proceeding with implementation
+
+**Potential Solutions:**
+1. Update decouple library to latest version
+2. Check for circular imports or infinite recursion in environment loading
+3. Verify `.env` file structure and location
+4. Consider using python-dotenv instead of decouple if issue persists
+5. Add proper error handling around decouple calls
+
+### Test Organization Status
+- [x] Move non-UI tests from archive to test directory
+- [x] Fix import errors in database tests
+- [x] Disable UI tests temporarily for clean test runs
+- [ ] Re-enable and fix UI tests after core functionality is stable
+- [ ] Fix decouple library error for clean test execution 

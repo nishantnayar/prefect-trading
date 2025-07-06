@@ -1,11 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
-import sys
-from pathlib import Path
 
-sys.path.append(str(Path(__file__).parent.parent))
-
-from src.database.database_connectivity import DatabaseConnectivity
+from database.database_connectivity import DatabaseConnectivity
 
 
 class SymbolManager:
