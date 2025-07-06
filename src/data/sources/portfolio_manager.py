@@ -183,7 +183,19 @@ class PortfolioManager:
             return account_info
             
         except Exception as e:
-            logger.error(f"Error fetching account info: {str(e)}")
+            error_msg = str(e)
+            logger.error(f"Error fetching account info: {error_msg}")
+            
+            # Check if it's an authentication error
+            if "forbidden" in error_msg.lower() or "403" in error_msg:
+                logger.error("🔐 Authentication Error: Your Alpaca API credentials appear to be invalid or expired.")
+                logger.error("   Please regenerate your API keys in the Alpaca dashboard and update your credentials.")
+                logger.error("   Visit: https://app.alpaca.markets/ -> Account -> API Keys")
+            elif "unauthorized" in error_msg.lower() or "401" in error_msg:
+                logger.error("🔐 Unauthorized Error: Check your API key and secret key.")
+            elif "rate limit" in error_msg.lower():
+                logger.error("⏱️  Rate limit exceeded. Please wait before making more requests.")
+            
             return {}
     
     def get_positions(self) -> List[Dict]:
@@ -223,7 +235,19 @@ class PortfolioManager:
             return position_list
             
         except Exception as e:
-            logger.error(f"Error fetching positions: {str(e)}")
+            error_msg = str(e)
+            logger.error(f"Error fetching positions: {error_msg}")
+            
+            # Check if it's an authentication error
+            if "forbidden" in error_msg.lower() or "403" in error_msg:
+                logger.error("🔐 Authentication Error: Your Alpaca API credentials appear to be invalid or expired.")
+                logger.error("   Please regenerate your API keys in the Alpaca dashboard and update your credentials.")
+                logger.error("   Visit: https://app.alpaca.markets/ -> Account -> API Keys")
+            elif "unauthorized" in error_msg.lower() or "401" in error_msg:
+                logger.error("🔐 Unauthorized Error: Check your API key and secret key.")
+            elif "rate limit" in error_msg.lower():
+                logger.error("⏱️  Rate limit exceeded. Please wait before making more requests.")
+            
             return []
     
     def get_orders(self, status: str = "all") -> List[Dict]:
@@ -293,10 +317,23 @@ class PortfolioManager:
             return order_list
             
         except Exception as e:
-            logger.error(f"Error fetching orders: {str(e)}")
+            error_msg = str(e)
+            logger.error(f"Error fetching orders: {error_msg}")
             logger.error(f"Exception type: {type(e).__name__}")
-            logger.error(f"Full traceback:")
-            logger.error(traceback.format_exc())
+            
+            # Check if it's an authentication error
+            if "forbidden" in error_msg.lower() or "403" in error_msg:
+                logger.error("🔐 Authentication Error: Your Alpaca API credentials appear to be invalid or expired.")
+                logger.error("   Please regenerate your API keys in the Alpaca dashboard and update your credentials.")
+                logger.error("   Visit: https://app.alpaca.markets/ -> Account -> API Keys")
+            elif "unauthorized" in error_msg.lower() or "401" in error_msg:
+                logger.error("🔐 Unauthorized Error: Check your API key and secret key.")
+            elif "rate limit" in error_msg.lower():
+                logger.error("⏱️  Rate limit exceeded. Please wait before making more requests.")
+            else:
+                logger.error("Full traceback:")
+                logger.error(traceback.format_exc())
+            
             return []
     
     def calculate_portfolio_metrics(self) -> Dict:

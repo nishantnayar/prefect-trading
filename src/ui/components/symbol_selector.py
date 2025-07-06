@@ -53,7 +53,7 @@ def display_symbol_analysis(symbol: str) -> None:
         tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview", "📈 Market Data", "🏢 Company Info", "📰 News"])
         
         with tab1:
-            display_symbol_overview(symbol)
+            display_symbol_overview_with_db(symbol)
         
         with tab2:
             display_market_data_analysis(symbol)
