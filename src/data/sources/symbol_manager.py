@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from database.database_connectivity import DatabaseConnectivity
+from src.database.database_connectivity import DatabaseConnectivity
 
 
 class SymbolManager:

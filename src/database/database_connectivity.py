@@ -5,22 +5,11 @@ from typing import Optional
 import os
 from contextlib import contextmanager
 from pathlib import Path
+from ..utils.env_loader import load_env_file_with_decouple
 
 # Load environment variables from .env file if it exists
-def load_env_file():
-    """Load environment variables from .env file"""
-    # Look for .env file in config directory
-    env_file = Path(__file__).parent.parent.parent / "config" / ".env"
-    if env_file.exists():
-        with open(env_file, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    key, value = line.split('=', 1)
-                    os.environ[key] = value
-
-# Load .env file on module import
-load_env_file()
+# Use decouple-safe loading to avoid stack overflow issues
+load_env_file_with_decouple()
 
 
 class DatabaseConnectivity:
