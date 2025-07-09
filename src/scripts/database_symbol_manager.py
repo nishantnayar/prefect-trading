@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+"""
+Database Symbol Manager
+
+This script provides direct database operations for managing trading symbols
+using the SymbolManager class. It's focused on CRUD operations for symbols
+in the database, separate from the high-level configuration management.
+"""
+
 import sys
 from pathlib import Path
 
@@ -39,7 +48,7 @@ def deactivate_symbol(symbol_manager, symbol):
 
 
 def main():
-    """Main flow to demonstrate SymbolManager functionality."""
+    """Main flow to demonstrate SymbolManager database operations."""
     symbol_manager = SymbolManager()
 
     # Add sample symbols

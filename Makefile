@@ -37,35 +37,35 @@ setup: install-dev
 
 # Testing
 test:
-	PYTHONDONTWRITEBYTECODE=1 pytest tests/ -v --cov=src --cov-report=term-missing --cache-clear
+	python scripts/run_tests_silent.py
 
 test-unit:
-	pytest tests/unit/ -v --cache-clear
+	python scripts/run_tests_silent.py test/ -m "not integration and not e2e"
 
 test-integration:
-	pytest tests/integration/ -v --cache-clear
+	python scripts/run_tests_silent.py test/ -m "integration"
 
 test-e2e:
-	pytest tests/e2e/ -v --cache-clear
+	python scripts/run_tests_silent.py test/ -m "e2e"
 
 # Streamlit-specific tests
 test-streamlit:
-	pytest test/unit/ui/ test/integration/test_streamlit_integration.py test/e2e/test_streamlit_e2e.py -v
+	python scripts/run_tests_silent.py test/ -m "ui"
 
 test-streamlit-unit:
-	pytest test/unit/ui/ -v
+	python scripts/run_tests_silent.py test/ -m "ui and not integration and not e2e"
 
 test-streamlit-integration:
-	pytest test/integration/test_streamlit_integration.py -v
+	python scripts/run_tests_silent.py test/ -m "ui and integration"
 
 test-streamlit-e2e:
-	pytest test/e2e/test_streamlit_e2e.py -v
+	python scripts/run_tests_silent.py test/ -m "ui and e2e"
 
 test-streamlit-check:
-	pytest test/unit/ui/ --collect-only
+	python scripts/run_tests_silent.py test/ --collect-only
 
 test-coverage:
-	pytest tests/ -v --cov=src --cov-report=html:build/htmlcov --cov-report=term-missing
+	python scripts/run_tests_silent.py test/ --cov=src --cov-report=html:build/htmlcov --cov-report=term-missing
 
 # Code Quality
 lint:
@@ -92,7 +92,7 @@ docs:
 
 # Development
 run-ui:
-	PYTHONDONTWRITEBYTECODE=1 streamlit run src/ui/streamlit_app.py
+	streamlit run src/ui/streamlit_app.py
 
 run-prefect:
 	prefect server start
