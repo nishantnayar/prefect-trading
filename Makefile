@@ -21,6 +21,11 @@ help:
 	@echo "  run-ui         - Start the Streamlit UI"
 	@echo "  run-prefect    - Start Prefect server"
 	@echo "  deploy         - Deploy Prefect workflows"
+	@echo "  db-migrate     - Run original database migrations"
+	@echo "  db-migrate-consolidated - Run consolidated database migrations"
+	@echo "  db-verify      - Verify schema against consolidated migrations"
+	@echo "  db-check       - Check current database schema"
+	@echo "  db-reset       - Reset database with consolidated migrations"
 
 # Installation
 install:
@@ -108,11 +113,28 @@ db-migrate:
 		psql -d trading_db -f $$file; \
 	done
 
+db-migrate-consolidated:
+	@echo "Running consolidated database migrations..."
+	@echo "Running 001_initial_schema_consolidated.sql..."
+	@psql -d trading_db -f src/database/migrations/001_initial_schema_consolidated.sql
+	@echo "Running 002_data_source_enhancement_consolidated.sql..."
+	@psql -d trading_db -f src/database/migrations/002_data_source_enhancement_consolidated.sql
+	@echo "Running 003_historical_data_consolidated.sql..."
+	@psql -d trading_db -f src/database/migrations/003_historical_data_consolidated.sql
+
+db-verify:
+	@echo "Verifying database schema against consolidated migrations..."
+	@python scripts/verify_migrations.py
+
+db-check:
+	@echo "Checking current database schema..."
+	@python scripts/check_db_direct.py
+
 db-reset:
 	@echo "Resetting database..."
 	dropdb trading_db || true
 	createdb trading_db
-	$(MAKE) db-migrate
+	$(MAKE) db-migrate-consolidated
 
 # Cleanup
 clean:

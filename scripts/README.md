@@ -1,254 +1,202 @@
 # Scripts Directory
 
-This directory contains utility scripts for the Prefect Trading System.
+This directory contains utility scripts for the Prefect Trading project.
 
-> **📋 Quick Links**: [Main README](../README.md) | [Architecture Decisions](../docs/architecture-decisions.md) | [Setup Guide](../docs/setup.md) | [Development Guide](../docs/development.md) | [Testing Guide](../docs/testing.md)
+## Database Scripts
 
-## Directory Structure
+### Migration Verification
 
-```
-scripts/
-├── README.md              # This file
-├── run_tests.py           # Test runner
-├── setup_test_env.py      # Test environment setup
-├── create_mlflow_db.sql   # MLflow database setup
-├── manage_symbols.py      # Symbol management utility
-└── manual_save.py         # Manual data saving utility
+#### `verify_migrations.py`
+**Purpose**: Comprehensive verification of database schema against consolidated migration scripts.
 
-src/scripts/               # Application-specific scripts
-├── check_delisted_symbols.py
-├── check_postgres_data.py
-└── manage_symbols.py
-```
+**Features**:
+- Connects to database using existing configuration
+- Extracts current schema (tables, columns, indexes, constraints, triggers)
+- Compares with expected schema from consolidated migrations
+- Generates detailed JSON report with discrepancies
+- Provides clear pass/fail status
 
-## Scripts Overview
-
-### Root Scripts (`scripts/`)
-
-#### `run_tests.py` - Test Runner
-Comprehensive test runner with multiple test suites and coverage reporting.
-
-**Usage:**
+**Usage**:
 ```bash
-python scripts/run_tests.py [test_type]
+# Run verification
+python scripts/verify_migrations.py
+
+# Or use Makefile
+make db-verify
 ```
 
-**Available test types:**
-- `basic` - Basic functionality tests only
-- `unit` - All unit tests
-- `database` - Database tests only
-- `integration` - Integration tests only
-- `e2e` - End-to-end tests only
-- `coverage` - All tests with coverage report
-- `quick` - Quick test suite (basic + database)
-- `all` - Complete test suite with coverage (default)
+**Output**:
+- Console report showing table comparisons
+- JSON report saved to `scripts/schema_verification_report_YYYYMMDD_HHMMSS.json`
 
-**Examples:**
+#### `check_db_direct.py`
+**Purpose**: Quick database schema inspection and connectivity test.
+
+**Features**:
+- Sets database credentials directly (no .env file needed)
+- Simple database connection test
+- Lists all tables with row counts
+- Shows detailed column information
+- Displays indexes, constraints, and triggers
+- Useful for understanding current database state
+
+**Usage**:
 ```bash
-python scripts/run_tests.py          # Run all tests with coverage
-python scripts/run_tests.py quick    # Run quick test suite (basic + database)
-python scripts/run_tests.py basic    # Run basic tests only
-python scripts/run_tests.py database # Run database tests only
-python scripts/run_tests.py --help   # Show help message
+# Quick schema check
+python scripts/check_db_direct.py
+
+# Or use Makefile
+make db-check
 ```
 
-#### `setup_test_env.py` - Test Environment Setup
-Sets up the test environment including dependencies and directory structure.
+### Database Management
 
-**Usage:**
+#### `create_mlflow_db.sql`
+**Purpose**: Creates the MLflow database for model tracking.
+
+**Usage**:
 ```bash
-python scripts/setup_test_env.py
+psql -U postgres -f scripts/create_mlflow_db.sql
 ```
 
-**What it does:**
-- Installs production and development dependencies
-- Sets up test directory structure (with `__init__.py`)
-- Configures environment variables
-- Makes scripts executable (Unix-like systems)
+#### `check_env_file.py`
+**Purpose**: Validates environment file configuration.
 
-#### `create_mlflow_db.sql` - MLflow Database Setup
-SQL script to create and configure the MLflow database.
-
-**Usage:**
+**Usage**:
 ```bash
-psql -f scripts/create_mlflow_db.sql
+python scripts/check_env_file.py
 ```
 
-#### `manage_symbols.py` - Symbol Management Utility
-Utility for managing trading symbols and checking data availability.
+#### `load_historical_data.py`
+**Purpose**: Loads historical market data into the database.
 
-**Usage:**
+**Usage**:
 ```bash
-python scripts/manage_symbols.py [command]
+python scripts/load_historical_data.py
 ```
 
-**Commands:**
-- `status` - Check symbol data availability
-- `add` - Add new symbols
-- `remove` - Remove symbols
-- `list` - List all symbols
+#### `manage_symbols.py`
+**Purpose**: Manages stock symbols in the database.
 
-#### `manual_save.py` - Manual Data Saving
-Utility for manually saving data to the database.
+**Usage**:
+```bash
+python scripts/manage_symbols.py
+```
 
-**Usage:**
+#### `manual_save.py`
+**Purpose**: Manual data persistence utilities.
+
+**Usage**:
 ```bash
 python scripts/manual_save.py
 ```
 
-### Application Scripts (`src/scripts/`)
+### Testing Scripts
 
-These scripts are part of the application and handle specific functionality.
+#### `run_tests.py`
+**Purpose**: Runs the complete test suite.
 
-#### `check_delisted_symbols.py`
-Checks for delisted symbols and updates the database accordingly.
+**Usage**:
+```bash
+python scripts/run_tests.py
+```
 
-#### `check_postgres_data.py`
-Verifies PostgreSQL data integrity and structure.
+#### `setup_test_env.py`
+**Purpose**: Sets up test environment and database.
 
-#### `manage_symbols.py`
-Application-specific symbol management functionality.
-
-## Quick Start
-
-### 1. Set up test environment
+**Usage**:
 ```bash
 python scripts/setup_test_env.py
 ```
 
-### 2. Run tests
-```bash
-# Run all tests
-python scripts/run_tests.py
+## Makefile Integration
 
-# Run quick test suite (basic + database)
-python scripts/run_tests.py quick
-
-# Run only basic tests
-python scripts/run_tests.py basic
-
-# Run only database tests
-python scripts/run_tests.py database
-```
-
-### 3. Set up MLflow database
-```bash
-psql -f scripts/create_mlflow_db.sql
-```
-
-### 4. Manage symbols
-```bash
-python scripts/manage_symbols.py status
-```
-
-### 5. Get help
-```bash
-python scripts/run_tests.py --help
-python scripts/manage_symbols.py --help
-```
-
-## Script Organization
-
-- **Root scripts** (`scripts/`) - Development and testing utilities
-- **Application scripts** (`src/scripts/`) - Application-specific functionality
-
-This separation keeps development tools separate from application code while maintaining clear organization.
-
-## Cross-Platform Compatibility
-
-The Python scripts work on all platforms:
-- **Windows**: `python scripts/run_tests.py`
-- **macOS/Linux**: `python scripts/run_tests.py` or `python3 scripts/run_tests.py`
-
-No need to worry about shell script permissions or different shell environments.
-
-## Environment Variables
-
-The test scripts automatically set these environment variables:
+The following database-related commands are available in the main Makefile:
 
 ```bash
-export TESTING=true
-export DB_HOST=localhost
-export DB_PORT=5432
-export DB_NAME=test_trading_db
-export DB_USER=test_user
-export DB_PASSWORD=test_password
-export MLFLOW_TRACKING_URI=http://localhost:5000
+# Run original migrations (legacy)
+make db-migrate
+
+# Run consolidated migrations (recommended)
+make db-migrate-consolidated
+
+# Verify schema against consolidated migrations
+make db-verify
+
+# Quick schema check
+make db-check
+
+# Reset database with consolidated migrations
+make db-reset
 ```
 
-## Integration with Main Documentation
+## Migration Files
 
-These scripts are referenced in the main documentation:
+### Consolidated Migrations (Recommended)
+- `001_initial_schema_consolidated.sql` - Complete initial schema
+- `002_data_source_enhancement_consolidated.sql` - Data source tracking
+- `003_historical_data_consolidated.sql` - Historical data storage
 
-- **[Setup Guide](../docs/setup.md)**: Test environment setup and MLflow configuration
-- **[Development Guide](../docs/development.md)**: Development workflows and testing practices
-- **[Testing Guide](../docs/testing.md)**: Comprehensive testing strategies
-- **[Architecture Decisions](../docs/architecture-decisions.md)**: Design rationale for script organization
+### Original Migrations (Legacy)
+- `001_initial_schema/` - Multiple small migration files
+- `008_add_data_source.sql` - Data source enhancement
+- `010_create_market_data_historical.sql` - Historical data table
+
+## Usage Examples
+
+### 1. Verify Current Database Against Migrations
+```bash
+# Check if current database matches consolidated migrations
+make db-verify
+```
+
+### 2. Quick Database Health Check
+```bash
+# See current database structure and row counts
+make db-check
+```
+
+### 3. Reset Database with Consolidated Migrations
+```bash
+# Drop and recreate database with consolidated migrations
+make db-reset
+```
+
+### 4. Manual Migration Verification
+```bash
+# Run verification script directly
+python scripts/verify_migrations.py
+
+# Check specific database schema
+python scripts/check_db_direct.py
+```
 
 ## Troubleshooting
 
-### Script not found
-Make sure you're in the project root directory when running scripts.
+### Database Connection Issues
+1. Ensure PostgreSQL is running
+2. Check database credentials are correct
+3. Verify database exists and is accessible
+4. Check network connectivity
 
-### Python not found
-Make sure Python is installed and in your PATH:
-```bash
-python --version
-# or
-python3 --version
-```
+### Migration Verification Failures
+1. Run `make db-check` to see current schema
+2. Compare with expected schema in consolidated migrations
+3. Check if any manual schema changes were made
+4. Consider running `make db-reset` to start fresh
 
-### Import errors in tests
-Make sure the virtual environment is activated (if using venv):
-```bash
-# Windows
-venv\Scripts\activate
+### Permission Issues
+1. Ensure database user has appropriate permissions
+2. Check PostgreSQL authentication configuration
+3. Verify connection string format
 
-# macOS/Linux
-source venv/bin/activate
-```
+## Output Files
 
-### Permission errors (Unix-like systems)
-If you get permission errors, make the scripts executable:
-```bash
-chmod +x scripts/*.py
-```
+### Verification Reports
+- `schema_verification_report_YYYYMMDD_HHMMSS.json` - Detailed verification results
+- Console output with summary and recommendations
 
-### MLflow database issues
-If MLflow database setup fails:
-```bash
-# Check if PostgreSQL is running
-sudo systemctl status postgresql
-
-# Create database manually
-createdb mlflow_db
-
-# Run the setup script
-psql -d mlflow_db -f scripts/create_mlflow_db.sql
-```
-
-## Advantages of Python Scripts
-
-1. **Cross-platform**: Works on Windows, macOS, and Linux
-2. **No shell dependencies**: No need for bash, zsh, or other shells
-3. **Better error handling**: More robust error handling and reporting
-4. **Easier maintenance**: Python code is easier to maintain and debug
-5. **Consistent behavior**: Same behavior across different platforms
-6. **Better integration**: Seamless integration with Python testing tools
-7. **MLflow integration**: Native support for MLflow operations
-
-## Testing Philosophy
-
-- Only basic and database tests are included in the quick suite
-- No external API, Yahoo, or Alpaca tests
-- No real database required; all database tests use simple mocks or check method existence
-- No complex patching or integration tests by default
-- MLflow tests require server setup but use mocked operations where possible
-
-## Related Documentation
-
-- **[Main README](../README.md)**: Project overview and quick start
-- **[Architecture Decisions](../docs/architecture-decisions.md)**: Design rationale and decisions
-- **[Setup Guide](../docs/setup.md)**: Installation and configuration
-- **[Development Guide](../docs/development.md)**: Development practices and workflows
-- **[Testing Guide](../docs/testing.md)**: Testing strategies and implementation 
+### Logs
+- Database connection logs
+- Migration execution logs
+- Error details for troubleshooting 

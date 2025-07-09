@@ -248,14 +248,16 @@ For more details on MLflow integration, see [Architecture Decisions](architectur
 
 2. **Initialize Schema**
    ```bash
-   # Run all migration files in order
-   psql -d trading_db -f src/database/migrations/001_initial_schema/001_create_tables.sql
-   psql -d trading_db -f src/database/migrations/001_initial_schema/002_create_market_data.sql
-   psql -d trading_db -f src/database/migrations/001_initial_schema/003_create_symbols.sql
-   psql -d trading_db -f src/database/migrations/001_initial_schema/004_add_constraints.sql
-   psql -d trading_db -f src/database/migrations/001_initial_schema/005_create_yahoo_company_info.sql
-   psql -d trading_db -f src/database/migrations/001_initial_schema/006_create_yahoo_company_officers.sql
-   psql -d trading_db -f src/database/migrations/001_initial_schema/007_create_news_articles.sql
+   # Run consolidated migrations (recommended)
+   make db-migrate-consolidated
+   
+   # Or run migrations manually
+   psql -d trading_db -f src/database/migrations/001_initial_schema_consolidated.sql
+   psql -d trading_db -f src/database/migrations/002_data_source_enhancement_consolidated.sql
+   psql -d trading_db -f src/database/migrations/003_historical_data_consolidated.sql
+   
+   # Verify schema matches migrations
+   make db-verify
    ```
 
 ## Configuration Files

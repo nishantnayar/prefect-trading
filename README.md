@@ -195,9 +195,16 @@ String(value='your_news_api_key').save(name='newsapi')
 # Create database
 createdb trading_db
 
-# Run migrations
-psql -d trading_db -f src/database/migrations/001_initial_schema/001_create_tables.sql
-# ... (run all migration files in order)
+# Run consolidated migrations (recommended)
+make db-migrate-consolidated
+
+# Or run migrations manually
+psql -d trading_db -f src/database/migrations/001_initial_schema_consolidated.sql
+psql -d trading_db -f src/database/migrations/002_data_source_enhancement_consolidated.sql
+psql -d trading_db -f src/database/migrations/003_historical_data_consolidated.sql
+
+# Verify schema matches migrations
+make db-verify
 ```
 
 ### 4. Start the System
