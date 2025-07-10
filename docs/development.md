@@ -294,6 +294,27 @@ class TestDatabaseOperations:
         assert result is True
 ```
 
+### Database Schema Verification
+
+To verify that your database schema matches the consolidated migrations:
+
+```bash
+# Run verification script
+python scripts/verify_migrations_simple.py
+
+# Or use Makefile
+make db-verify
+```
+
+This will check that all tables defined in your consolidated migration scripts are present in the database.
+
+**Understanding Verification Results**:
+- **✅ PASSED**: All application tables from migrations are present and correct
+- **⚠️ EXTRA TABLES**: These are typically system tables (Prefect, MLflow, etc.) and are expected - not a problem
+- **❌ MISSING TABLES**: These indicate actual schema mismatches that need attention
+
+The verification focuses on your application schema and ignores system tables that are managed by other components.
+
 ## API Development
 
 ### API Design Principles

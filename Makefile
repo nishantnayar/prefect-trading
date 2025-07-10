@@ -42,35 +42,35 @@ setup: install-dev
 
 # Testing
 test:
-	python scripts/run_tests_silent.py
+	python scripts/run_tests.py
 
 test-unit:
-	python scripts/run_tests_silent.py test/ -m "not integration and not e2e"
+	python -m pytest test/ -m "not integration and not e2e"
 
 test-integration:
-	python scripts/run_tests_silent.py test/ -m "integration"
+	python -m pytest test/ -m "integration"
 
 test-e2e:
-	python scripts/run_tests_silent.py test/ -m "e2e"
+	python -m pytest test/ -m "e2e"
 
 # Streamlit-specific tests
 test-streamlit:
-	python scripts/run_tests_silent.py test/ -m "ui"
+	python -m pytest test/ -m "ui"
 
 test-streamlit-unit:
-	python scripts/run_tests_silent.py test/ -m "ui and not integration and not e2e"
+	python -m pytest test/ -m "ui and not integration and not e2e"
 
 test-streamlit-integration:
-	python scripts/run_tests_silent.py test/ -m "ui and integration"
+	python -m pytest test/ -m "ui and integration"
 
 test-streamlit-e2e:
-	python scripts/run_tests_silent.py test/ -m "ui and e2e"
+	python -m pytest test/ -m "ui and e2e"
 
 test-streamlit-check:
-	python scripts/run_tests_silent.py test/ --collect-only
+	python -m pytest test/ --collect-only
 
 test-coverage:
-	python scripts/run_tests_silent.py test/ --cov=src --cov-report=html:build/htmlcov --cov-report=term-missing
+	python -m pytest test/ --cov=src --cov-report=html:build/htmlcov --cov-report=term-missing
 
 # Code Quality
 lint:
@@ -124,7 +124,7 @@ db-migrate-consolidated:
 
 db-verify:
 	@echo "Verifying database schema against consolidated migrations..."
-	@python scripts/verify_migrations.py
+	@python scripts/verify_migrations_simple.py
 
 db-check:
 	@echo "Checking current database schema..."

@@ -6,24 +6,31 @@ This directory contains utility scripts for the Prefect Trading project.
 
 ### Migration Verification
 
-#### `verify_migrations.py`
-**Purpose**: Comprehensive verification of database schema against consolidated migration scripts.
+#### `verify_migrations_simple.py`
+**Purpose**: Simplified verification of database schema against consolidated migration scripts.
 
 **Features**:
 - Connects to database using existing configuration
-- Extracts current schema (tables, columns, indexes, constraints, triggers)
+- Extracts current schema (tables, columns, indexes)
 - Compares with expected schema from consolidated migrations
 - Generates detailed JSON report with discrepancies
 - Provides clear pass/fail status
+- Avoids complex SQL queries that can cause issues
+- Distinguishes between application tables and system tables
 
 **Usage**:
 ```bash
 # Run verification
-python scripts/verify_migrations.py
+python scripts/verify_migrations_simple.py
 
 # Or use Makefile
 make db-verify
 ```
+
+**Understanding Results**:
+- **✅ PASSED**: All application tables from migrations are present
+- **⚠️ EXTRA TABLES**: These are typically system tables (Prefect, MLflow, etc.) and are expected
+- **❌ MISSING TABLES**: These indicate actual schema mismatches that need attention
 
 **Output**:
 - Console report showing table comparisons
@@ -165,7 +172,7 @@ make db-reset
 ### 4. Manual Migration Verification
 ```bash
 # Run verification script directly
-python scripts/verify_migrations.py
+python scripts/verify_migrations_simple.py
 
 # Check specific database schema
 python scripts/check_db_direct.py

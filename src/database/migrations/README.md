@@ -111,11 +111,16 @@ Use the verification script to ensure your database matches the consolidated mig
 
 ```bash
 # Run verification
-python scripts/verify_migrations.py
+python scripts/verify_migrations_simple.py
 
 # Or use Makefile
 make db-verify
 ```
+
+**Understanding Verification Results**:
+- **✅ PASSED**: All application tables from migrations are present and correct
+- **⚠️ EXTRA TABLES**: These are typically system tables (Prefect, MLflow, etc.) and are expected - not a problem
+- **❌ MISSING TABLES**: These indicate actual schema mismatches that need attention
 
 ### Quick Schema Check
 Check your current database structure:

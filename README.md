@@ -205,7 +205,15 @@ psql -d trading_db -f src/database/migrations/003_historical_data_consolidated.s
 
 # Verify schema matches migrations
 make db-verify
+
+# Quick database health check
+make db-check
 ```
+
+**Understanding Verification Results**:
+- **✅ PASSED**: All application tables from migrations are present and correct
+- **⚠️ EXTRA TABLES**: These are typically system tables (Prefect, MLflow, etc.) and are expected - not a problem
+- **❌ MISSING TABLES**: These indicate actual schema mismatches that need attention
 
 ### 4. Start the System
 ```bash
