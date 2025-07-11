@@ -726,6 +726,11 @@ Result:    All symbols use AAPL data with correct symbol names
 8. **Centralized refresh functionality**: Better user experience and interface clarity
 9. **Dual WebSocket Implementation**: Maintain both implementations until code stabilizes
 10. **Multi-Symbol Data Recycler with Proxy Support**: Configuration-driven symbol management with fallback to AAPL data
+11. **Two-Model Architecture**: Separate pair identification (daily) and signal generation (real-time)
+12. **Daily Pair Identification**: Prefect orchestration at 6:00 AM pre-market
+13. **MLflow Model Retention**: Indefinite storage for historical analysis and rollback capability
+14. **Model Comparison Metrics**: Composite score with weighted performance evaluation
+15. **Scaling Strategy**: Single industry (technology) first, then parallel expansion
 
 ## Future Enhancements
 
@@ -739,6 +744,9 @@ Result:    All symbols use AAPL data with correct symbol names
 - **Automated rebaselining workflows**: Implement periodic model retraining via Prefect
 - **Model serving infrastructure**: Add model deployment and serving capabilities
 - **Custom database tables for advanced analytics**: Implement trading signal attribution and performance tracking
+- **Daily pair identification implementation**: Prefect workflow for automated pair validation and GARCH model selection
+- **Real-time signal generation**: 5-minute interval signal generation using pre-selected models
+- **Model comparison and selection**: Automated model ranking with composite scoring system
 
 #### 2. Data Source Expansion
 - **Add more symbol pairs for diversified trading**: Expand beyond PDFS-ROG pair
@@ -829,6 +837,324 @@ Result:    All symbols use AAPL data with correct symbol names
 
 ---
 
+## 11. Two-Model Architecture for Pairs Trading
+
+### **Decision: Separate Pair Identification (Daily) and Signal Generation (Real-time)**
+
+### **Context:**
+- Existing GARCH-GRU implementation in `pairs_identification_GRU.ipynb` combines pair identification and signal generation
+- Need to optimize for production deployment with different performance requirements
+- Daily pair identification is computationally intensive (cointegration tests, GARCH fitting)
+- Real-time signal generation needs to be fast and efficient
+
+### **Problem:**
+- Single model approach mixes heavy computation (daily) with light computation (real-time)
+- No clear separation between pair validation and trading signals
+- Difficult to optimize for different performance requirements
+- Hard to debug and monitor different aspects of the system
+
+### **Options Considered:**
+
+#### **Option A: Single Model Approach**
+**Pros:**
+- Simpler implementation
+- No coordination between models
+- Single point of failure
+
+**Cons:**
+- Mixed performance requirements
+- Harder to optimize
+- Difficult debugging and monitoring
+- Not scalable for production
+
+#### **Option B: Two-Model Architecture**
+**Pros:**
+- Clear separation of concerns
+- Optimized for different performance requirements
+- Better debugging and monitoring
+- Scalable and maintainable
+- Daily heavy computation vs real-time light computation
+
+**Cons:**
+- More complex coordination
+- Two systems to maintain
+- Need to manage model selection and handoff
+
+### **Decision Rationale:**
+- **Primary Factor**: Performance optimization for different use cases
+- **Secondary Factor**: Scalability and maintainability
+- **Tertiary Factor**: Clear separation of concerns for debugging and monitoring
+
+### **Implementation:**
+
+#### **Model 1: Daily Pair Identification**
+- **Purpose**: Identify valid pairs for trading
+- **Frequency**: Daily pre-market (6:00 AM)
+- **Input**: Historical data (30-60 days)
+- **Output**: Valid pairs with GARCH models
+- **Criteria**: Cointegration, correlation, GARCH fit quality
+- **Orchestration**: Prefect workflows
+
+#### **Model 2: Real-time Signal Generation**
+- **Purpose**: Generate trading signals for valid pairs
+- **Frequency**: Every 5 minutes during trading hours
+- **Input**: Real-time websocket data + pre-selected GARCH models
+- **Output**: Entry/exit signals with confidence scores
+- **Criteria**: GARCH volatility + GRU predictions
+
+---
+
+## 12. Daily Pair Identification Timing and Orchestration
+
+### **Decision: Prefect Orchestration at 6:00 AM Pre-market**
+
+### **Context:**
+- Need to identify valid pairs before market opens
+- Computational requirements are heavy (cointegration tests, GARCH fitting)
+- Need reliable orchestration and error handling
+- Market opens at 9:30 AM ET
+
+### **Problem:**
+- When should pair identification run?
+- How to handle failures and retries?
+- What orchestration system to use?
+- How to ensure models are ready for trading?
+
+### **Options Considered:**
+
+#### **Option A: Market Open (9:30 AM)**
+**Pros:**
+- Latest data available
+- No pre-market data needed
+
+**Cons:**
+- No time for model validation
+- Trading starts without validated pairs
+- Rush to complete before trading begins
+- Risk of trading with invalid models
+
+#### **Option B: Pre-market (6:00 AM)**
+**Pros:**
+- Ample time for computation
+- Models ready before market opens
+- Time for validation and testing
+- Reliable orchestration with Prefect
+
+**Cons:**
+- Uses slightly older data
+- Need to handle pre-market data availability
+
+#### **Option C: End of Previous Day**
+**Pros:**
+- Maximum time for computation
+- Models ready overnight
+
+**Cons:**
+- Data may be stale
+- No overnight monitoring
+- Harder to handle failures
+
+### **Decision Rationale:**
+- **Primary Factor**: Ensure models are ready before market opens
+- **Secondary Factor**: Reliable orchestration with Prefect
+- **Tertiary Factor**: Time for validation and error handling
+
+### **Implementation:**
+- **Schedule**: 6:00 AM daily using Prefect workflows
+- **Orchestration**: Prefect for reliability and monitoring
+- **Error Handling**: Automatic retries and alerts
+- **Validation**: Model quality checks before trading begins
+
+---
+
+## 13. MLflow Model Retention Policy
+
+### **Decision: Indefinite Model Retention**
+
+### **Context:**
+- MLflow stores model versions and artifacts
+- Need to decide how long to keep old model versions
+- Historical analysis and rollback capabilities needed
+- Storage costs vs analytical value
+
+### **Problem:**
+- How long should we keep old model versions?
+- Balance between storage costs and analytical value
+- Need for historical analysis and rollback
+- Performance impact of large model registry
+
+### **Options Considered:**
+
+#### **Option A: Limited Retention (30-90 days)**
+**Pros:**
+- Lower storage costs
+- Faster model registry queries
+- Simpler cleanup
+
+**Cons:**
+- No historical analysis
+- Cannot rollback to old models
+- Loss of model evolution insights
+- No long-term performance tracking
+
+#### **Option B: Indefinite Retention**
+**Pros:**
+- Complete historical analysis
+- Rollback capability to any previous model
+- Model evolution tracking
+- Long-term performance analysis
+- Research and development value
+
+**Cons:**
+- Higher storage costs
+- Slower queries with large registry
+- More complex management
+
+### **Decision Rationale:**
+- **Primary Factor**: Historical analysis and rollback capability
+- **Secondary Factor**: Research and development value
+- **Tertiary Factor**: MLflow handles storage efficiently
+
+### **Implementation:**
+- **Retention Policy**: Keep all model versions indefinitely
+- **Storage Optimization**: MLflow's built-in compression and optimization
+- **Cleanup Strategy**: Manual cleanup only when necessary
+- **Monitoring**: Track storage usage and performance
+
+---
+
+## 14. Model Comparison and Selection Metrics
+
+### **Decision: Composite Score with Weighted Performance Evaluation**
+
+### **Context:**
+- Need to compare GARCH models across different days
+- Multiple performance metrics available (AIC, BIC, volatility forecasting, trading performance)
+- Need objective criteria for model selection
+- Balance between model fit and trading performance
+
+### **Problem:**
+- How to compare models from different days?
+- What metrics to prioritize?
+- How to weight different performance aspects?
+- What threshold for model selection?
+
+### **Options Considered:**
+
+#### **Option A: Single Metric (AIC/BIC)**
+**Pros:**
+- Simple and objective
+- Standard statistical measure
+- Easy to implement
+
+**Cons:**
+- Doesn't consider trading performance
+- May not reflect real-world effectiveness
+- Ignores volatility forecasting accuracy
+
+#### **Option B: Multiple Metrics (Unweighted)**
+**Pros:**
+- Considers multiple aspects
+- More comprehensive evaluation
+
+**Cons:**
+- No prioritization
+- Hard to rank models
+- May not reflect business priorities
+
+#### **Option C: Composite Score with Weights**
+**Pros:**
+- Balanced evaluation
+- Configurable weights
+- Reflects business priorities
+- Objective ranking
+
+**Cons:**
+- More complex implementation
+- Need to tune weights
+
+### **Decision Rationale:**
+- **Primary Factor**: Balanced evaluation of model quality and trading performance
+- **Secondary Factor**: Configurable and objective ranking
+- **Tertiary Factor**: Reflects business priorities
+
+### **Implementation:**
+- **Composite Score Formula**:
+  - 40% AIC/BIC (model fit quality)
+  - 30% Volatility forecasting accuracy (1-step ahead)
+  - 20% Trading performance (recent backtest)
+  - 10% Statistical diagnostics (residual quality)
+- **Selection Criteria**: Composite score > 0.7
+- **Lookback Period**: 10 days with 3-day rolling average
+- **Quality Gates**: Correlation 0.8, cointegration p<0.05
+
+---
+
+## 15. Scaling Strategy for Multi-Sector Expansion
+
+### **Decision: Single Industry (Technology) First, Then Parallel Expansion**
+
+### **Context:**
+- System designed for multi-sector support (technology, healthcare, financial)
+- Currently only technology sector is active
+- Need to balance current needs with future scalability
+- Performance and complexity considerations
+
+### **Problem:**
+- How to scale from single sector to multiple sectors?
+- When to add parallel processing?
+- How to manage complexity and performance?
+- What's the optimal expansion strategy?
+
+### **Options Considered:**
+
+#### **Option A: Parallel Processing from Start**
+**Pros:**
+- Ready for multi-sector immediately
+- Maximum performance
+- Future-proof architecture
+
+**Cons:**
+- Unnecessary complexity
+- Higher resource usage
+- Harder to debug and maintain
+- Premature optimization
+
+#### **Option B: Sequential Processing**
+**Pros:**
+- Simple implementation
+- Lower resource usage
+- Easier to debug
+
+**Cons:**
+- Poor performance with multiple sectors
+- Not scalable
+- Will need major refactoring later
+
+#### **Option C: Single Industry First, Then Parallel**
+**Pros:**
+- Start simple and proven
+- Learn from real usage
+- Gradual complexity increase
+- Optimize based on actual needs
+
+**Cons:**
+- Need refactoring when scaling
+- Not immediately scalable
+
+### **Decision Rationale:**
+- **Primary Factor**: Start with proven, simple implementation
+- **Secondary Factor**: Learn from real usage before optimizing
+- **Tertiary Factor**: Gradual complexity increase
+
+### **Implementation:**
+- **Phase 1**: Technology sector only (current)
+- **Phase 2**: Evaluate performance and bottlenecks
+- **Phase 3**: Add parallel processing for multiple sectors
+- **Phase 4**: Optimize based on actual usage patterns
+
+---
+
 ## Decision Template for Future Use
 
 ### Decision: [Brief description]
@@ -862,4 +1188,312 @@ Result:    All symbols use AAPL data with correct symbol names
 ### **Implementation:**
 - [Specific implementation details]
 - [Configuration changes]
-- [Code changes] 
+- [Code changes]
+
+---
+
+## Implementation Planning
+
+### Overview
+This section tracks the implementation progress for the GARCH-GRU Pairs Trading System with MLflow integration. The system is designed for multi-sector support (technology, healthcare, financial), but currently only the technology sector is active.
+
+### Current Status Summary
+- **MLflow Foundation**: ✅ COMPLETED (Week 1)
+- **Existing GARCH-GRU Implementation**: ✅ DISCOVERED (Working with F1=0.7445)
+- **Daily Pair Identification Architecture**: ✅ DESIGNED (Current)
+- **Two-Model Architecture**: ✅ DESIGNED (Current)
+- **PyTorch Migration**: 🔄 IN PROGRESS (Week 2-3)
+- **MLflow Integration**: ⏳ PENDING (Week 4-5)
+- **Production Integration**: ⏳ PENDING (Week 6-7)
+- **Database Extensions**: ⏳ PENDING (Week 8)
+
+### Phase 1: MLflow Foundation ✅ COMPLETED
+
+#### ✅ Step 1: Dependencies Installation
+- **Date**: [Previous]
+- **Status**: COMPLETED
+- **Details**: 
+  - Updated `config/requirements.txt` to replace TensorFlow with PyTorch 2.1.0
+  - Added MLflow 2.8.1 and related dependencies
+  - All dependencies installed in existing conda environment
+
+#### ✅ Step 2: Configuration Setup
+- **Date**: [Previous]
+- **Status**: COMPLETED
+- **Details**:
+  - Updated `config/config.yaml` with MLflow configuration
+  - Updated `config/env.example` with MLflow environment variables
+  - MLflow artifacts directory created at `./mlruns`
+
+#### ✅ Step 3: Database Setup
+- **Date**: [Previous]
+- **Status**: COMPLETED
+- **Details**:
+  - Created `mlflow_db` database in PostgreSQL
+  - Used separate database approach for clean architecture
+  - Database connection: `postgresql://postgres:nishant@localhost/mlflow_db`
+
+#### ✅ Step 4: MLflow Server Launch
+- **Date**: [Previous]
+- **Status**: COMPLETED
+- **Details**:
+  - Started MLflow server with PostgreSQL backend
+  - Server running on: http://localhost:5000
+  - Web UI accessible and functional
+
+#### ✅ Step 5: MLflow Manager Implementation
+- **Date**: [Previous]
+- **Status**: COMPLETED
+- **Details**:
+  - Created `src/mlflow_manager.py` with comprehensive functionality
+  - Implemented experiment tracking and model registry management
+  - Added MLflow configuration manager in `src/ml/config.py`
+  - Basic MLflow integration tests implemented
+
+### Phase 2: PyTorch Migration and Refactoring 🔄 IN PROGRESS
+
+#### ✅ Step 1: Existing Implementation Analysis
+- **Date**: [Current]
+- **Status**: COMPLETED
+- **Priority**: HIGH
+- **File**: `src/scripts/pairs_identification_GRU.ipynb`
+- **Components**: 
+  - Complete GARCH-GRU pipeline already implemented
+  - GARCH(1,1) model with volatility forecasting
+  - GRU neural network for mean reversion prediction
+  - Feature engineering with technical indicators
+  - Hyperparameter optimization using Optuna
+  - Cointegration testing and spread calculation
+- **Key Findings**:
+  - Best F1 Score: 0.7445 (exceeds target of 0.70)
+  - Optimal hyperparameters identified
+  - Full pipeline tested on technology sector data
+  - TensorFlow/Keras implementation (needs PyTorch migration)
+- **Estimated Time**: 0 days (already implemented)
+
+#### ✅ Step 2: Two-Model Architecture Design
+- **Date**: [Current]
+- **Status**: COMPLETED
+- **Priority**: HIGH
+- **Design**: Two distinct models for different purposes
+- **Model 1: Daily Pair Identification**:
+  - Purpose: Identify valid pairs for trading
+  - Frequency: Daily pre-market (6:00 AM)
+  - Input: Historical data (30-60 days)
+  - Output: Valid pairs with GARCH models
+  - Criteria: Cointegration, correlation, GARCH fit quality
+- **Model 2: Real-time Signal Generation**:
+  - Purpose: Generate trading signals for valid pairs
+  - Frequency: Every 5 minutes during trading hours
+  - Input: Real-time websocket data + pre-selected GARCH models
+  - Output: Entry/exit signals with confidence scores
+  - Criteria: GARCH volatility + GRU predictions
+- **Benefits**:
+  - Separation of concerns
+  - Performance optimization (daily heavy computation vs real-time light)
+  - Reliability and scalability
+  - Clear debugging and monitoring
+- **Estimated Time**: 0 days (design completed)
+
+#### ✅ Step 3: Daily Pair Identification Architecture Design
+- **Date**: [Current]
+- **Status**: COMPLETED
+- **Priority**: HIGH
+- **Orchestration**: Prefect workflows for 6:00 AM pre-market execution
+- **Flow Design**:
+  1. Data Collection (Historical data)
+  2. Pair Validation & Screening (Correlation + Cointegration)
+  3. GARCH Model Fitting
+  4. Model Selection & Ranking
+  5. MLflow Storage & Registration
+  6. Trading Configuration Update
+- **Quality Gates**:
+  - Correlation threshold: 0.8 minimum
+  - Cointegration test: p-value < 0.05
+  - Model quality: Composite score > 0.7
+  - Statistical diagnostics: Ljung-Box and ARCH tests
+- **MLflow Integration**:
+  - Model versioning for each day
+  - Artifact storage for models and metadata
+  - Experiment tracking with full lineage
+  - Consistent naming with existing MLflow structure
+- **Performance Metrics**:
+  - 40% AIC/BIC (model fit quality)
+  - 30% Volatility forecasting accuracy (1-step ahead)
+  - 20% Trading performance (recent backtest)
+  - 10% Statistical diagnostics (residual quality)
+- **Estimated Time**: 0 days (design completed)
+
+#### 🔄 Step 4: PyTorch GRU Migration and Refactoring
+- **Date**: [Current]
+- **Status**: IN PROGRESS
+- **Priority**: HIGH
+- **File**: `src/ml/gru_model.py`
+- **Components**:
+  - Convert existing TensorFlow GRU to PyTorch
+  - Refactor monolithic pipeline into modular components
+  - Maintain exact same architecture and hyperparameters
+  - Preserve F1=0.7445 performance
+  - Add MLflow model logging capabilities
+  - Create clean, reusable PyTorch classes
+- **Dependencies**: `torch`, `numpy`, `pandas` (existing)
+- **Estimated Time**: 3-4 days
+- **Success Criteria**: F1 score ≥ 0.7445 after PyTorch migration
+- **Refactoring Goals**: Modular, maintainable, MLflow-ready code
+
+#### 🔄 Step 5: GARCH Model Refactoring and Modularization
+- **Date**: [Current]
+- **Status**: PLANNED
+- **Priority**: MEDIUM
+- **File**: `src/ml/garch_model.py`
+- **Components**:
+  - Extract GARCH functionality from existing pipeline
+  - Create modular `GARCHModel` and `PairsGARCHModel` classes
+  - Refactor into clean, reusable PyTorch-compatible components
+  - Maintain existing performance and diagnostics
+  - Add MLflow experiment tracking
+  - Ensure compatibility with PyTorch workflow
+- **Dependencies**: `arch`, `statsmodels`, `scipy` (existing)
+- **Estimated Time**: 2-3 days
+- **Success Criteria**: Same GARCH diagnostics as existing implementation
+- **Refactoring Goals**: Clean separation of concerns, PyTorch integration ready
+
+#### 🔄 Step 6: Feature Engineering Refactoring and Extraction
+- **Date**: [Current]
+- **Status**: PLANNED
+- **Priority**: MEDIUM
+- **File**: `src/ml/feature_engineering.py`
+- **Components**:
+  - Extract feature engineering from existing pipeline
+  - Refactor into PyTorch-compatible feature pipeline
+  - Technical indicators (MA, RSI) already implemented
+  - Lagged features (1-5 lags) already implemented
+  - GARCH residuals integration already implemented
+  - Feature scaling and normalization
+  - Create clean, modular feature engineering classes
+- **Dependencies**: `scikit-learn`, `torch` (existing)
+- **Estimated Time**: 2 days (refactoring + PyTorch integration)
+- **Success Criteria**: Same feature set as existing implementation
+- **Refactoring Goals**: PyTorch tensor compatibility, modular design
+
+### Phase 3: MLflow Integration and Strategy Refactoring ⏳ PENDING
+
+#### 🔄 Step 1: Daily Pair Identification Implementation
+- **Date**: [Week 4]
+- **Status**: PLANNED
+- **Priority**: HIGH
+- **File**: `src/ml/daily_pair_identifier.py`
+- **Components**:
+  - Implement Prefect workflow for daily pair identification
+  - Data collection and preprocessing tasks
+  - Pair validation with correlation and cointegration tests
+  - GARCH model fitting and evaluation
+  - Model selection and ranking logic
+  - MLflow integration for model storage
+  - Trading configuration updates
+- **Dependencies**: Previous phase components (PyTorch modules)
+- **Estimated Time**: 3-4 days
+- **Success Criteria**: Automated daily pair identification with MLflow tracking
+
+#### 🔄 Step 2: Real-time Signal Generation Implementation
+- **Date**: [Week 5]
+- **Status**: PLANNED
+- **Priority**: HIGH
+- **File**: `src/ml/signal_generator.py`
+- **Components**:
+  - Real-time data processing from WebSocket
+  - GARCH volatility forecasting
+  - GRU signal generation
+  - Signal confidence scoring
+  - MLflow model loading and inference
+  - Performance monitoring and logging
+- **Dependencies**: Previous phase components
+- **Estimated Time**: 3-4 days
+- **Success Criteria**: Real-time signal generation with MLflow model serving
+
+#### 🔄 Step 3: MLflow Model Serving Integration
+- **Date**: [Week 5]
+- **Status**: PLANNED
+- **Priority**: MEDIUM
+- **Components**:
+  - MLflow model serving setup
+  - Model versioning and staging
+  - A/B testing framework
+  - Model performance monitoring
+  - Automated model promotion/demotion
+- **Dependencies**: MLflow server, model registry
+- **Estimated Time**: 2-3 days
+- **Success Criteria**: Automated model serving with version control
+
+### Phase 4: Production Integration ⏳ PENDING
+
+#### 🔄 Step 1: Prefect Workflow Integration
+- **Date**: [Week 6]
+- **Status**: PLANNED
+- **Priority**: HIGH
+- **Components**:
+  - Daily pair identification workflow
+  - Real-time signal generation workflow
+  - Model training and validation workflow
+  - Performance monitoring workflow
+  - Error handling and alerting
+- **Dependencies**: All previous phases
+- **Estimated Time**: 3-4 days
+- **Success Criteria**: Production-ready workflows with monitoring
+
+#### 🔄 Step 2: Risk Management Integration
+- **Date**: [Week 7]
+- **Status**: PLANNED
+- **Priority**: HIGH
+- **Components**:
+  - Position sizing based on GARCH volatility
+  - Dynamic stop-loss implementation
+  - Correlation drift detection
+  - Risk limit enforcement
+  - Performance attribution
+- **Dependencies**: Signal generation, portfolio management
+- **Estimated Time**: 2-3 days
+- **Success Criteria**: Comprehensive risk management system
+
+#### 🔄 Step 3: Performance Monitoring and Alerting
+- **Date**: [Week 7]
+- **Status**: PLANNED
+- **Priority**: MEDIUM
+- **Components**:
+  - Real-time performance dashboards
+  - Model performance tracking
+  - Trading performance metrics
+  - Automated alerting system
+  - Performance reporting
+- **Dependencies**: All trading components
+- **Estimated Time**: 2-3 days
+- **Success Criteria**: Comprehensive monitoring and alerting
+
+### Phase 5: Database Extensions ⏳ PENDING
+
+#### 🔄 Step 1: Model Metadata Storage
+- **Date**: [Week 8]
+- **Status**: PLANNED
+- **Priority**: MEDIUM
+- **Components**:
+  - Model performance history
+  - Trading signal history
+  - Pair performance tracking
+  - Model version tracking
+  - Performance attribution data
+- **Dependencies**: Database schema design
+- **Estimated Time**: 2-3 days
+- **Success Criteria**: Complete model and trading history storage
+
+#### 🔄 Step 2: Historical Performance Analysis
+- **Date**: [Week 8]
+- **Status**: PLANNED
+- **Priority**: LOW
+- **Components**:
+  - Historical backtesting framework
+  - Performance comparison tools
+  - Model evolution tracking
+  - Strategy optimization tools
+- **Dependencies**: Historical data, model metadata
+- **Estimated Time**: 2-3 days
+- **Success Criteria**: Comprehensive historical analysis capabilities 

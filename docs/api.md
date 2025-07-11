@@ -51,6 +51,90 @@ import yfinance as yf
 ticker = yf.Ticker("AAPL")
 ```
 
+### Alpaca API Troubleshooting
+
+#### Common Issues
+
+##### 403 Forbidden Error
+
+**Issue Summary**: 403 Forbidden errors when accessing Alpaca API endpoints indicate that API credentials are not being accepted by Alpaca's servers.
+
+**Root Cause**: The 403 Forbidden error typically occurs when:
+- API keys have been revoked or expired
+- Secret key is incorrect
+- Account is not properly activated
+- Account has trading restrictions
+- API keys don't have the right permissions
+
+**Diagnosis Results**:
+- ✅ **API Key Format**: Correct (starts with "PK" for paper trading)
+- ❌ **Authentication**: Failing on all endpoints (account, orders, data)
+- 🔍 **Error Type**: 403 Forbidden across all Alpaca services
+
+**Solution Steps**:
+
+1. **Regenerate API Keys**
+   - Log into [Alpaca Dashboard](https://app.alpaca.markets/)
+   - Navigate to Account → API Keys
+   - Click "Regenerate" or "Create New Key"
+   - Copy both API Key and Secret Key immediately
+   - Verify key format (paper trading keys start with "PK")
+
+2. **Update Your Credentials**
+   ```bash
+   # Use the update script (recommended)
+   python scripts/update_alpaca_credentials.py
+   
+   # Or manually update .env file
+   ALPACA_API_KEY=your_new_api_key_here
+   ALPACA_SECRET_KEY=your_new_secret_key_here
+   ```
+
+3. **Test the Connection**
+   ```bash
+   python scripts/test_alpaca_credentials.py
+   ```
+
+4. **Restart Your Application**
+   - Stop current application
+   - Clear cached data
+   - Restart the application
+
+**Prevention**:
+- Keep API keys secure and don't share in repositories
+- Use environment variables or secure secret management
+- Regularly rotate API keys
+- Monitor account status regularly
+- Use paper trading for development
+
+**Error Handling Improvements**:
+The portfolio manager includes enhanced error handling:
+- Clear error messages with specific guidance
+- Automatic detection of 403/401 errors
+- Helpful instructions with direct links to Alpaca dashboard
+- Graceful degradation (returns empty data instead of crashing)
+
+**Common Issues and Solutions**:
+
+| Issue | Solution |
+|-------|----------|
+| "API key format is unexpected" | Ensure using paper trading keys (start with "PK") |
+| "Account not found" | Verify correct account type (paper vs live) |
+| "Trading blocked" | Check account status in Alpaca dashboard |
+| "Rate limit exceeded" | Wait before making more requests, implement rate limiting |
+
+**Support Resources**:
+- [Alpaca Documentation](https://alpaca.markets/docs/)
+- [Alpaca Support](https://alpaca.markets/support/)
+- [API Status](https://status.alpaca.markets/)
+- [Community Forum](https://forum.alpaca.markets/)
+
+**Scripts Available**:
+- `scripts/test_alpaca_credentials.py` - Test API connection
+- `scripts/diagnose_alpaca_issue.py` - Detailed diagnosis
+- `scripts/update_alpaca_credentials.py` - Update credentials
+- Enhanced error handling in `portfolio_manager.py`
+
 #### Available Methods
 
 1. **Historical Data**

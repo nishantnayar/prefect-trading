@@ -8,22 +8,74 @@ Prefect Trading System is a modern, modular platform for financial data collecti
 
 The Prefect Trading System is a comprehensive financial data collection and analysis platform built with modern technologies and best practices. This documentation provides complete guidance for setup, development, testing, and deployment.
 
+## System Architecture
+
+### High-Level Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Data Sources  │    │  Prefect Flows  │    │   PostgreSQL    │
+│                 │    │                 │    │   Database      │
+│ • Yahoo Finance │───▶│ • Hourly Flow   │───▶│ • Market Data   │
+│ • Alpaca API    │    │ • EOD Flow      │    │ • News Articles │
+│ • News API      │    │ • WebSocket Flow│    │ • Company Info  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                │
+                                ▼
+                       ┌─────────────────┐
+                       │  Streamlit UI   │
+                       │                 │
+                       │ • Dashboard     │
+                       │ • Real-time Data│
+                       │ • Portfolio Mgmt│
+                       └─────────────────┘
+```
+
+### Core Components
+
+#### 1. Data Collection Layer
+- **Yahoo Finance Integration**: Historical market data and company information
+- **Alpaca Integration**: Real-time market data and trading capabilities
+- **News API Integration**: Market news and sentiment analysis
+- **Data Recycler System**: Historical data replay for testing and development
+
+#### 2. Database Layer
+- **PostgreSQL Integration**: Primary data storage and management
+- **Connection Pooling**: Efficient database connection management
+- **Schema Management**: Automated migrations and version control
+- **Data Validation**: Comprehensive data quality checks
+
+#### 3. Processing Layer
+- **Hourly Processing**: Real-time data processing and analysis
+- **End-of-Day Processing**: Daily data aggregation and maintenance
+- **GARCH Pairs Trading**: Advanced algorithmic trading with MLflow integration
+- **Risk Management**: Comprehensive risk monitoring and control
+
+#### 4. User Interface
+- **Streamlit Dashboard**: Modern, responsive web interface with 5 main pages
+- **PortfolioManager Singleton**: Efficient resource usage with single instance across components
+- **Intelligent Caching**: Multi-tier caching system for optimal performance
+- **Real-time Updates**: Live market data through intelligent caching
+
+#### 5. Workflow Management
+- **Prefect Orchestration**: Workflow orchestration and task management
+- **MLflow Integration**: Model management and experiment tracking
+- **Error Handling**: Comprehensive error handling and recovery mechanisms
+- **Monitoring**: Real-time system monitoring and alerting
+
 ## Quick Navigation
 
 ### 🚀 Getting Started
 - **[Setup Guide](setup.md)** - Complete environment setup and configuration (includes quick start)
 
 ### 📚 Core Documentation
-- **[Project Overview](project-overview.md)** - System architecture and components
 - **[Development Guide](development.md)** - Coding standards, workflows, and best practices
 - **[API Documentation](api.md)** - External and internal API integrations
-- **[UI Documentation](ui.md)** - Streamlit interface and components
-- **[Portfolio Management](portfolio.md)** - Portfolio tracking and analysis features
+- **[UI Documentation](ui.md)** - Streamlit interface and components (includes portfolio management)
+- **[Data Systems](data-systems.md)** - Data recycler system and GARCH pairs trading
 
 ### 🧪 Testing
-- **[Testing Guide](testing.md)** - Comprehensive testing strategy and implementation
-- **[Testing UI](testing-ui.md)** - Testing results interface documentation
-- **[Coverage Display](coverage-display.md)** - Test coverage visualization and analysis
+- **[Testing Guide](testing.md)** - Comprehensive testing strategy, UI, and coverage analysis
 
 ## Community & Support
 - **GitHub Issues**: [Open an issue](https://github.com/your-repo/issues)
@@ -36,15 +88,13 @@ The Prefect Trading System is a comprehensive financial data collection and anal
 ```
 docs/
 ├── README.md                    # This file - Main documentation index
-├── setup.md                     # Environment setup and configuration (consolidated)
-├── project-overview.md          # System architecture and overview
+├── setup.md                     # Environment setup and configuration
 ├── development.md               # Development guidelines and workflows
 ├── api.md                       # API documentation and integrations
-├── ui.md                        # User interface documentation
-├── portfolio.md                 # Portfolio management features
-├── testing.md                   # Complete testing guide (consolidated)
-├── testing-ui.md                # Testing results UI documentation
-└── coverage-display.md          # Test coverage visualization guide
+├── ui.md                        # User interface documentation (includes portfolio management)
+├── data-systems.md              # Data recycler system and GARCH pairs trading
+├── testing.md                   # Comprehensive testing guide (includes UI and coverage)
+└── architecture-decisions.md    # Architecture decisions and implementation planning
 ```
 
 ## Key Features
@@ -115,7 +165,8 @@ docs/
 1. **Quick Setup**: Follow the [Setup Guide](setup.md) for immediate setup (30 minutes)
 2. **Development**: Review the [Development Guide](development.md) for coding standards
 3. **Testing**: Implement testing using the [Testing Guide](testing.md)
-4. **Portfolio**: Set up portfolio tracking with [Portfolio Management](portfolio.md)
+4. **UI & Portfolio**: Set up the interface and portfolio tracking with [UI Documentation](ui.md)
+5. **Data Systems**: Configure data collection and trading systems with [Data Systems](data-systems.md)
 
 ## Contributing
 

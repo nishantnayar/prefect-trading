@@ -232,6 +232,322 @@ pytest test/ -v --cov=src --cov-report=html
 pytest test/ -v --cov=src --cov-report=json:build/coverage.json
 ```
 
+## Testing Results UI
+
+### Overview
+
+The Testing Results page is a dedicated section in the Streamlit UI that allows users to:
+
+- Run tests directly from the UI
+- View test execution results and statistics
+- Analyze code coverage reports
+- Monitor test performance and trends
+- Access detailed execution logs
+
+### Features
+
+#### 🧪 Test Execution
+- **One-click test execution**: Run all tests with a single button click
+- **Real-time progress**: See test execution progress with spinner indicators
+- **Execution time tracking**: Monitor how long tests take to complete
+- **Status reporting**: Clear success/failure status indicators
+
+#### 📊 Coverage Analysis
+- **Overall coverage metrics**: View total lines covered, coverage percentage, and missing lines
+- **File-level coverage**: Detailed breakdown of coverage by individual files
+- **Visual indicators**: Color-coded coverage levels (green for ≥80%, yellow for ≥60%, red for <60%)
+- **Progress bars**: Visual representation of coverage ratios
+
+#### 📋 Test Results Details
+- **Test outcome summary**: Counts of passed, failed, skipped, and error tests
+- **Individual test results**: Detailed view of each test with status indicators
+- **Grouped results**: Tests organized by outcome for easy analysis
+- **Expandable sections**: Collapsible sections for different test categories
+
+#### 📝 Execution Logs
+- **Standard output**: View complete test execution output
+- **Error logs**: Access detailed error information
+- **Execution errors**: See any issues with test execution itself
+- **Raw data access**: JSON format of all test data for debugging
+
+### Navigation
+
+The Testing Results page is accessible through the main navigation sidebar:
+
+1. Open the Streamlit app
+2. Click on the "Testing" tab in the sidebar (flask icon)
+3. The Testing Results page will load
+
+### Usage
+
+#### Running Tests
+
+1. Navigate to the Testing Results page
+2. Click the "🔄 Run Tests & Refresh Results" button
+3. Wait for the tests to complete (this may take several minutes)
+4. View the results in the various tabs
+
+#### Viewing Results
+
+The results are displayed in four main sections:
+
+1. **📊 Coverage**: Code coverage statistics and file-level breakdown
+2. **🧪 Test Results**: Individual test outcomes and summary statistics
+3. **📝 Logs**: Execution logs and error information
+4. **📋 Raw Data**: Complete JSON data for advanced analysis
+
+#### Understanding the Metrics
+
+##### Test Execution Summary
+- **Status**: Overall test execution status (Success/Failed/Error/Timeout)
+- **Execution Time**: Total time taken to run all tests
+- **Total Tests**: Number of tests executed
+- **Coverage**: Overall code coverage percentage
+
+##### Coverage Details
+- **Lines Covered**: Number of code lines executed by tests
+- **Lines Total**: Total number of code lines in the project
+- **Coverage %**: Percentage of code covered by tests
+- **Missing Lines**: Number of lines not covered by tests
+
+##### Test Results
+- **Passed**: Tests that completed successfully
+- **Failed**: Tests that failed during execution
+- **Skipped**: Tests that were skipped (e.g., due to missing dependencies)
+- **Errors**: Tests that encountered errors during execution
+
+### Technical Implementation
+
+#### Components
+
+The Testing Results feature consists of several components:
+
+- **`testing_results.py`**: Main component for rendering the testing results page
+- **`test_testing_results.py`**: Unit tests for the testing results component
+- **Integration with `streamlit_app.py`**: Navigation and routing integration
+
+#### Dependencies
+
+The feature uses the following dependencies:
+- `pytest`: For test execution
+- `pytest-cov`: For coverage reporting
+- `pandas`: For data manipulation and display
+- `streamlit`: For UI components
+
+#### File Structure
+
+```
+src/ui/components/
+├── testing_results.py          # Main testing results component
+└── ...
+
+test/unit/ui/
+├── test_testing_results.py     # Unit tests for testing results
+└── ...
+```
+
+#### Configuration
+
+##### Test Execution
+
+The test execution is configured through the `pytest.ini` file and uses the following command:
+
+```bash
+python -m pytest test/ --cov=src --cov-report=json:coverage.json --cov-report=term-missing -v
+```
+
+##### Coverage Reporting
+
+Coverage reports are generated in JSON format and stored in the project root as `coverage.json`.
+
+##### Timeout Settings
+
+Test execution has a 5-minute timeout to prevent hanging processes.
+
+## Coverage Display System
+
+### Overview
+
+The coverage display system provides a unified, robust way to visualize code coverage data across multiple dimensions:
+
+- **Overall Coverage Metrics**: High-level coverage statistics
+- **Coverage Distribution**: Breakdown by coverage levels (Excellent, Good, Fair, Poor)
+- **Module-Level Analysis**: Coverage grouped by project modules
+- **File-Level Details**: Individual file coverage with missing line information
+- **Insights & Recommendations**: AI-powered analysis and improvement suggestions
+
+### Key Features
+
+#### 1. Unified Data Format
+- **Normalized Coverage Data**: Consistent JSON structure regardless of source
+- **Path Normalization**: Cross-platform file path handling
+- **Error Handling**: Graceful degradation when data is missing or malformed
+
+#### 2. Multi-Dimensional Visualization
+- **Coverage Overview**: High-level metrics with color-coded progress bars
+- **Distribution Analysis**: Files categorized by coverage levels
+- **Module Breakdown**: Coverage aggregated by project modules
+- **Detailed File View**: Individual file coverage with missing line numbers
+
+#### 3. Intelligent Insights
+- **Coverage Level Assessment**: Automatic categorization (Excellent ≥90%, Good 80-89%, Fair 60-79%, Poor <60%)
+- **Improvement Recommendations**: Actionable suggestions based on coverage patterns
+- **Priority Identification**: Files and modules needing immediate attention
+
+### Architecture
+
+#### Data Flow
+```
+pytest-cov → coverage.json → normalize_coverage_data() → parse_coverage_data() → UI Components
+```
+
+#### Key Functions
+
+##### `normalize_coverage_data(coverage_data)`
+- Normalizes file paths (Windows/Unix compatibility)
+- Ensures consistent data structure
+- Handles missing or malformed data gracefully
+
+##### `parse_coverage_data(coverage_data)`
+- Extracts summary statistics
+- Categorizes files by coverage level
+- Groups files by module
+- Calculates module-level coverage percentages
+
+##### `display_coverage_overview(coverage_data)`
+- Shows overall coverage metrics
+- Displays coverage distribution
+- Presents module-level breakdown
+- Uses color-coded progress indicators
+
+##### `display_coverage_details(coverage_data)`
+- File-level coverage table
+- Missing line information
+- Sortable and filterable data grid
+- Files needing improvement highlight
+
+##### `display_coverage_insights(coverage_data)`
+- Analyzes coverage patterns
+- Provides improvement recommendations
+- Identifies priority areas
+- Offers general testing tips
+
+### Coverage Levels
+
+| Level | Range | Color | Description |
+|-------|-------|-------|-------------|
+| Excellent | ≥90% | 🟢 Green | Well-tested code |
+| Good | 80-89% | 🔵 Blue | Adequate coverage |
+| Fair | 60-79% | 🟡 Yellow | Needs improvement |
+| Poor | <60% | 🔴 Red | Critical attention needed |
+
+### UI Components
+
+#### Coverage Overview Tab
+- **Overall Coverage Metric**: Percentage with line count delta
+- **Key Metrics**: Lines covered, total lines, missing lines
+- **Progress Bar**: Color-coded based on coverage level
+- **Distribution Metrics**: Files by coverage level
+- **Module Coverage Table**: Sortable grid with coverage percentages
+
+#### Coverage Details Tab
+- **File-Level Table**: Comprehensive coverage data
+- **Coverage Level Indicators**: Visual status indicators
+- **Missing Line Numbers**: Specific lines needing tests
+- **Low Coverage Alert**: Files below 80% coverage
+
+#### Insights Tab
+- **Key Insights**: Automated analysis of coverage patterns
+- **Recommendations**: Actionable improvement suggestions
+- **Priority Areas**: Modules and files needing attention
+- **General Tips**: Best practices for improving coverage
+
+### Data Structure
+
+#### Normalized Coverage Format
+```json
+{
+  "meta": {
+    "format": 3,
+    "version": "7.9.1",
+    "timestamp": "2025-06-22T09:13:29.841736"
+  },
+  "totals": {
+    "covered_lines": 380,
+    "num_statements": 424,
+    "percent_covered": 89.62,
+    "percent_covered_display": "90",
+    "missing_lines": 44
+  },
+  "files": {
+    "src/ui/components/testing_results.py": {
+      "executed_lines": [1, 2, 3, ...],
+      "summary": {
+        "covered_lines": 598,
+        "num_statements": 598,
+        "percent_covered": 100.0,
+        "percent_covered_display": "100",
+        "missing_lines": 0
+      },
+      "missing_lines": [],
+      "functions": {...},
+      "classes": {...}
+    }
+  }
+}
+```
+
+#### Parsed Coverage Format
+```json
+{
+  "summary": {
+    "lines_covered": 380,
+    "lines_total": 424,
+    "coverage_percentage": 89.62,
+    "missing_lines": 44,
+    "coverage_display": "90"
+  },
+  "files": [
+    {
+      "file": "src/ui/components/testing_results.py",
+      "lines_covered": 598,
+      "lines_total": 598,
+      "coverage_percentage": 100.0,
+      "missing_lines": 0,
+      "missing_line_numbers": []
+    }
+  ],
+  "modules": {
+    "ui": {
+      "files": 5,
+      "total_lines": 800,
+      "covered_lines": 750,
+      "coverage_percentage": 93.75
+    }
+  },
+  "coverage_levels": {
+    "excellent": 8,
+    "good": 2,
+    "fair": 1,
+    "poor": 0
+  }
+}
+```
+
+### Error Handling
+
+#### Graceful Degradation
+- **Missing Coverage Data**: Shows warning message
+- **Malformed JSON**: Displays error with details
+- **Empty Results**: Provides helpful instructions
+- **Partial Data**: Shows available information
+
+#### Debug Information
+- **File Loading**: Logs file paths and loading status
+- **Parsing Errors**: Shows specific error messages
+- **Data Validation**: Checks for required fields
+- **Fallback Options**: Alternative data sources
+
 ## Testing Philosophy
 
 ### 1. No External Dependencies
@@ -412,6 +728,18 @@ def test_user_dashboard(sample_user_data):
 - Remove obsolete tests
 - Update test documentation
 
+### 5. For Developers
+1. **Run Tests Regularly**: Use `python scripts/run_tests.py` to generate fresh coverage data
+2. **Check Coverage Levels**: Aim for ≥80% coverage on critical modules
+3. **Review Insights**: Pay attention to automated recommendations
+4. **Focus on Missing Lines**: Prioritize files with specific missing line numbers
+
+### 6. For Maintainers
+1. **Monitor Trends**: Track coverage changes over time
+2. **Set Standards**: Define minimum coverage requirements
+3. **Review Distribution**: Ensure balanced coverage across modules
+4. **Update Recommendations**: Refine insight algorithms based on project needs
+
 ## Troubleshooting
 
 ### Common Issues
@@ -444,11 +772,31 @@ def test_user_dashboard(sample_user_data):
 - **Cause**: Improper pytest-asyncio configuration
 - **Solution**: Ensure `pytest.ini` has `--asyncio-mode=strict` and tests use proper async decorators
 
+#### Tests not running
+- **Cause**: pytest not installed or test directory doesn't exist
+- **Solution**: Ensure pytest is installed and the test directory exists
+
+#### No coverage data
+- **Cause**: pytest-cov not installed or tests not generating coverage
+- **Solution**: Check that pytest-cov is installed and tests are generating coverage
+
+#### Timeout errors
+- **Cause**: Large test suites may need longer timeout settings
+- **Solution**: Increase timeout settings for large test suites
+
+#### Import errors
+- **Cause**: Missing required dependencies
+- **Solution**: Ensure all required dependencies are installed
+
 ### Debug Steps
 1. Check if `build/coverage.json` exists and is readable
 2. Verify test execution completed successfully
 3. Review console logs for parsing errors
 4. Validate JSON structure manually if needed
+5. Check the "📝 Logs" tab for detailed error information
+6. View the "📋 Raw Data" tab for complete JSON output
+7. Run tests manually from the command line to verify they work
+8. Check the browser console for any JavaScript errors
 
 ## MLflow Integration Testing
 
@@ -488,6 +836,13 @@ For more details on MLflow architecture and testing strategy, see [Architecture 
 - **Export Options**: PDF/CSV reports
 - **Integration**: CI/CD pipeline integration
 - **Notifications**: Coverage drop alerts
+- **Historical data**: Store and display test results over time
+- **Trend analysis**: Show coverage and test success trends
+- **Test filtering**: Filter tests by category, file, or status
+- **Export functionality**: Export results to PDF or CSV
+- **Integration with CI/CD**: Connect to continuous integration systems
+- **Performance metrics**: Track test execution time trends
+- **Custom test suites**: Allow running specific test categories
 
 #### Critical Testing Gaps to Address
 
@@ -508,13 +863,38 @@ For more details on MLflow architecture and testing strategy, see [Architecture 
 - **UI Edge Case Tests**: Complex user interactions, large datasets, market holidays, responsive design
 - **Cross-Platform Tests**: Different operating systems compatibility
 
+#### Testing Infrastructure Improvements
+- **Complete Coverage Tracking**: Address gaps in data source and utility module testing
+- **Integration Coverage**: Track coverage for end-to-end integration tests
+- **Performance Test Coverage**: Include performance and load testing in coverage metrics
+- **Security Test Coverage**: Track coverage for security validation tests
+- **Data Quality Test Coverage**: Monitor coverage for data validation and quality tests
+
 #### Potential Improvements
 - **Branch Coverage**: Support for branch coverage metrics
 - **Function Coverage**: Detailed function-level analysis
 - **Test Impact**: Identify which tests affect which lines
 - **Coverage Maps**: Visual file coverage highlighting
 
-### Related Documentation
+## Contributing
+
+To contribute to the Testing Results UI:
+
+1. Follow the existing code style and patterns
+2. Add unit tests for new functionality
+3. Update this documentation for any changes
+4. Test the UI thoroughly before submitting changes
+
+## Support
+
+For issues or questions about the Testing Results UI:
+
+1. Check the troubleshooting section above
+2. Review the logs in the "📝 Logs" tab
+3. Consult the project's main documentation
+4. Open an issue in the project repository
+
+## Related Documentation
 
 - **[Architecture Decisions](architecture-decisions.md)**: Design rationale and testing strategy decisions
 - **[Development Guide](development.md)**: Development practices and testing workflows
