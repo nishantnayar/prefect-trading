@@ -8,11 +8,11 @@
 ---
 
 ## 📎 Quick Links
-- [Project Overview](docs/project-overview.md)
 - [Setup Guide](docs/setup.md)
 - [Development Guide](docs/development.md)
 - [Testing Guide](docs/testing.md)
 - [UI Documentation](docs/ui.md)
+- [Data Systems](docs/data-systems.md)
 - [Architecture Decisions](docs/architecture-decisions.md)
 - [API Documentation](docs/api.md)
 
@@ -84,12 +84,13 @@ prefect-trading/
 │   ├── .coverage              # Coverage data
 │   └── htmlcov/               # HTML coverage reports
 ├── 📁 docs/                     # Documentation
-│   ├── api.md                   # API documentation
-│   ├── architecture.md          # System architecture
+│   ├── api.md                   # API documentation and integrations
+│   ├── architecture-decisions.md # Architecture decisions and implementation planning
+│   ├── data-systems.md          # Data recycler system and GARCH pairs trading
 │   ├── development.md           # Development guide
 │   ├── setup.md                 # Setup instructions
-│   ├── testing.md               # Testing documentation
-│   └── ui.md                    # UI documentation
+│   ├── testing.md               # Comprehensive testing guide
+│   └── ui.md                    # UI documentation (includes portfolio management)
 ├── 📁 src/                      # Source code
 │   ├── 📁 data/                 # Data collection and processing
 │   │   ├── 📁 sources/          # Data source integrations
@@ -532,12 +533,13 @@ pre-commit run --all-files
 
 ## 📚 Documentation
 
-- **[API Documentation](docs/api.md)**: External and internal API usage
-- **[Architecture Decisions](docs/architecture-decisions.md)**: System design and components
+- **[API Documentation](docs/api.md)**: External and internal API integrations
+- **[Architecture Decisions](docs/architecture-decisions.md)**: System design and implementation planning
+- **[Data Systems](docs/data-systems.md)**: Data recycler system and GARCH pairs trading
 - **[Development Guide](docs/development.md)**: Development practices and workflows
 - **[Setup Guide](docs/setup.md)**: Installation and configuration
-- **[Testing Guide](docs/testing.md)**: Testing strategies and implementation
-- **[UI Documentation](docs/ui.md)**: User interface components and features
+- **[Testing Guide](docs/testing.md)**: Comprehensive testing strategy and implementation
+- **[UI Documentation](docs/ui.md)**: User interface components and portfolio management
 
 ## 🤝 Contributing
 
