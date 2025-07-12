@@ -33,7 +33,7 @@ except ImportError:
     logging.warning("MLflow not available - model logging will be skipped")
 
 from arch import arch_model
-from statsmodels.tsa.stattools import coint
+from statsmodels.tsa.stattools import coint, acf
 from scipy import stats
 
 from src.database.database_connectivity import DatabaseConnectivity
@@ -239,10 +239,10 @@ def fit_garch_models(historical_df: pd.DataFrame,
             standardized_residuals = fitted_model.resid / fitted_model.conditional_volatility
             
             # Ljung-Box test for autocorrelation
-            lb_stat, lb_pvalue = stats.acf(residuals**2, nlags=10, qstat=True)[1:3]
+            lb_stat, lb_pvalue = acf(residuals**2, nlags=10, qstat=True)[1:3]
             
             # ARCH test
-            arch_stat, arch_pvalue = stats.acf(standardized_residuals**2, nlags=10, qstat=True)[1:3]
+            arch_stat, arch_pvalue = acf(standardized_residuals**2, nlags=10, qstat=True)[1:3]
             
             # Volatility forecasting (1-step ahead)
             forecast = fitted_model.forecast(horizon=1)
