@@ -147,7 +147,7 @@ docs/
 - **Streamlit**: Web application framework
 - **Custom CSS**: Professional styling
 - **Plotly**: Interactive visualizations
-- **AgGrid**: Advanced table functionality
+- **Streamlit Dataframes**: Advanced table functionality
 
 ### External APIs
 - **Alpaca Markets**: Market data and trading
@@ -190,10 +190,27 @@ This project is licensed under the terms specified in the LICENSE file.
 
 ## Recent Documentation Updates
 
-### December 2024 - PortfolioManager Architecture Improvements
+### July 2025 - Daily Pair Identification Flow Implementation
+- **New Prefect Flow**: Implemented automated daily pair identification with GARCH analysis
+- **Start of Day Workflow**: Created 6:00 AM pre-market flow for model preparation
+- **GARCH Integration**: Added GARCH(1,1) model fitting with statistical diagnostics
+- **MLflow Integration**: Automated model logging and versioning for selected pairs
+- **Quality Gates**: Implemented correlation, cointegration, and composite score thresholds
+- **Testing Framework**: Added comprehensive testing scripts and Makefile commands
+- **Documentation**: Integrated daily pair identification into existing documentation structure
+
+### Key Features of Daily Pair Identification Flow
+- **7-Step Process**: Data collection → Correlation analysis → Cointegration testing → GARCH fitting → Model selection → MLflow logging → Configuration update
+- **Statistical Rigor**: Correlation ≥ 0.8, cointegration p-value < 0.05, composite score > 0.7
+- **Composite Scoring**: 40% AIC/BIC + 30% volatility forecasting + 20% trading performance + 10% diagnostics
+- **Automated Execution**: Scheduled at 6:00 AM EST Mon-Fri via Prefect deployment
+- **Manual Testing**: `make test-pairs`, `make run-pairs`, `make run-start-day` commands
+- **Production Ready**: Error handling, resource management, and comprehensive logging
+
+### July 2025 - PortfolioManager Architecture Improvements
 - **Architecture Decisions**: Added comprehensive documentation of PortfolioManager singleton pattern and caching system
 - **UI Documentation**: Updated to reflect intelligent caching and centralized refresh functionality
-- **Testing Documentation**: Added comprehensive coverage of Testing page features and AgGrid integration
+- **Testing Documentation**: Added comprehensive coverage of Testing page features and Streamlit dataframe integration
 - **Portfolio Documentation**: Added detailed portfolio management features with singleton pattern
 - **Project Overview**: Updated system workflows to include Portfolio Management and Testing flows
 - **Development Guide**: Added PortfolioManager singleton pattern and caching system implementation
@@ -213,6 +230,17 @@ This project is licensed under the terms specified in the LICENSE file.
 - **API Efficiency**: Reduced API calls by 80% through intelligent caching
 - **User Experience**: Cleaner interface with single refresh button and better performance
 
-### Testing page documentation**: Coverage visualization and AgGrid integration
+### Testing page documentation**: Coverage visualization and Streamlit dataframe integration
 - **Portfolio page documentation**: Real-time data integration with singleton pattern
-- **Enhanced UI documentation**: Current navigation structure with performance improvements 
+- **Enhanced UI documentation**: Current navigation structure with performance improvements
+
+### July 2025 - AgGrid to Streamlit Refactoring
+- **UI Refactoring**: Replaced aggrid with native Streamlit dataframes for better compatibility
+- **Dependency Reduction**: Removed `streamlit-aggrid` from requirements
+- **Code Simplification**: Eliminated complex AgGrid configuration code
+- **Improved Stability**: Native Streamlit components provide more reliable performance
+- **Consistent Styling**: All tables now use uniform Streamlit styling and behavior
+- **Files Modified**: 
+  - `src/ui/components/testing_results.py` - Replaced AgGrid with `st.dataframe`
+  - `config/requirements.txt` - Removed `streamlit-aggrid` dependency
+- **Benefits**: Reduced dependencies, improved stability, easier maintenance, better performance 

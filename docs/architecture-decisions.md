@@ -1711,3 +1711,113 @@ This section tracks the implementation progress for the GARCH-GRU Pairs Trading 
 - **Dependencies**: Performance tracking system
 - **Estimated Time**: 2 days
 - **Success Criteria**: Comprehensive training monitoring 
+
+---
+
+## 8. Daily Pair Identification Flow Architecture
+
+### **Decision: Automated Pre-market Pair Identification with GARCH Analysis**
+
+### **Context:**
+- Need to identify valid trading pairs before market opens
+- GARCH models require significant computation time
+- Statistical analysis (correlation, cointegration) is computationally intensive
+- Models need to be ready for real-time signal generation during market hours
+
+### **Problem:**
+- When should pair identification run?
+- How to handle the computational requirements?
+- What statistical criteria to use for pair selection?
+- How to integrate with existing MLflow and Prefect infrastructure?
+
+### **Options Considered:**
+
+#### **Option A: Market Open (9:30 AM)**
+**Pros:**
+- Latest data available
+- No pre-market data needed
+
+**Cons:**
+- No time for model validation
+- Trading starts without validated pairs
+- Rush to complete before trading begins
+- Risk of trading with invalid models
+
+#### **Option B: Pre-market (6:00 AM)**
+**Pros:**
+- Ample time for computation
+- Models ready before market opens
+- Time for validation and testing
+- Reliable orchestration with Prefect
+
+**Cons:**
+- Uses slightly older data
+- Need to handle pre-market data availability
+
+#### **Option C: End of Previous Day**
+**Pros:**
+- Maximum time for computation
+- Models ready overnight
+
+**Cons:**
+- Data may be stale
+- No overnight monitoring
+- Harder to handle failures
+
+### **Decision Rationale:**
+- **Primary Factor**: Ensure models are ready before market opens
+- **Secondary Factor**: Reliable orchestration with Prefect
+- **Tertiary Factor**: Time for validation and error handling
+
+### **Implementation:**
+
+#### **Flow Design: 7-Step Process**
+1. **Data Collection** - Gather historical market data (60 days by default)
+2. **Correlation Analysis** - Calculate correlations between all symbol pairs
+3. **Cointegration Testing** - Test for cointegration using Engle-Granger test
+4. **GARCH Model Fitting** - Fit GARCH(1,1) models to pair spreads
+5. **Model Selection** - Select best models based on composite score
+6. **MLflow Logging** - Log models and metadata to MLflow
+7. **Configuration Update** - Update trading configuration with selected pairs
+
+#### **Quality Gates**
+- **Correlation Threshold**: 0.8 minimum correlation
+- **Cointegration Test**: p-value < 0.05
+- **Model Quality**: Composite score > 0.7
+- **Statistical Diagnostics**: Ljung-Box and ARCH tests
+
+#### **Composite Score Formula**
+- **40% AIC/BIC** - Model fit quality
+- **30% Volatility forecasting accuracy** - 1-step ahead forecast
+- **20% Trading performance** - Recent backtest (placeholder)
+- **10% Statistical diagnostics** - Residual quality
+
+#### **Prefect Integration**
+- **Schedule**: 6:00 AM EST Mon-Fri using cron: `"0 6 * * 1-5"`
+- **Work Pool**: Dedicated "daily" work pool for pre-market tasks
+- **Error Handling**: Comprehensive logging and graceful failure handling
+- **Monitoring**: Full integration with Prefect UI for flow monitoring
+
+#### **MLflow Integration**
+- **Model Versioning**: Each day gets a new model version
+- **Artifact Storage**: GARCH models and spread data
+- **Experiment Tracking**: Full lineage and metadata
+- **Performance Metrics**: Comprehensive model evaluation
+
+### **Benefits:**
+- **Automated Execution**: No manual intervention required
+- **Statistical Rigor**: Comprehensive statistical validation
+- **Production Ready**: Error handling and resource management
+- **Scalable**: Easy to add new sectors and symbols
+- **Traceable**: Full MLflow integration for model lineage
+- **Testable**: Manual testing commands for development
+
+### **Success Metrics:**
+- **Execution Time**: Complete within 2 hours (6:00 AM - 8:00 AM)
+- **Model Quality**: Composite scores > 0.7 for selected pairs
+- **Reliability**: 99%+ successful execution rate
+- **Integration**: Seamless handoff to real-time signal generation
+
+---
+
+### Phase 6: UI Integration ⏳ PENDING 

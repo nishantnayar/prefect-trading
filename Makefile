@@ -26,6 +26,9 @@ help:
 	@echo "  db-verify      - Verify schema against consolidated migrations"
 	@echo "  db-check       - Check current database schema"
 	@echo "  db-reset       - Reset database with consolidated migrations"
+	@echo "  test-pairs     - Test daily pair identification flow"
+	@echo "  run-pairs      - Run daily pair identification flow"
+	@echo "  run-start-day  - Run start of day flow (includes pair identification)"
 
 # Installation
 install:
@@ -135,6 +138,19 @@ db-reset:
 	dropdb trading_db || true
 	createdb trading_db
 	$(MAKE) db-migrate-consolidated
+
+# ML Training and Analysis
+test-pairs:
+	@echo "Testing daily pair identification flow..."
+	@python scripts/test_daily_pair_identification.py
+
+run-pairs:
+	@echo "Running daily pair identification flow..."
+	@python -c "from src.ml.daily_pair_identifier import daily_pair_identification_flow; daily_pair_identification_flow()"
+
+run-start-day:
+	@echo "Running start of day flow..."
+	@python -c "from main import start_of_day_flow; start_of_day_flow()"
 
 # Cleanup
 clean:

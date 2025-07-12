@@ -625,6 +625,41 @@ def load_coverage_data():
 - **Test Execution**: Added ability to run tests directly from the UI
 - **Real-time Updates**: Manual refresh capabilities for immediate data updates
 
+### 6. AgGrid to Streamlit Refactoring (July 2025)
+The UI has been refactored to use Streamlit's native dataframes instead of the third-party aggrid component:
+
+#### **Changes Made:**
+- **Removed aggrid dependency**: Eliminated `streamlit-aggrid` from requirements
+- **Replaced AgGrid components**: Converted all tables to use `st.dataframe()` with styling
+- **Simplified code**: Removed complex AgGrid configuration code
+- **Better compatibility**: Native Streamlit components provide more reliable performance
+
+#### **Benefits:**
+- **Reduced dependencies**: No longer requires external aggrid package
+- **Improved stability**: Native Streamlit components have fewer compatibility issues
+- **Consistent styling**: All tables now use the same Streamlit styling and behavior
+- **Easier maintenance**: Less complex code to maintain and debug
+- **Better performance**: Native components are optimized for Streamlit
+
+#### **Files Modified:**
+- `src/ui/components/testing_results.py` - Replaced AgGrid with `st.dataframe`
+- `config/requirements.txt` - Removed `streamlit-aggrid` dependency
+
+#### **Current Table Implementation:**
+```python
+# Before (AgGrid)
+from st_aggrid import AgGrid, GridOptionsBuilder
+gb = GridOptionsBuilder.from_dataframe(df)
+gb.configure_default_column(sortable=True, filterable=True)
+grid_options = gb.build()
+AgGrid(df, gridOptions=grid_options, theme="streamlit")
+
+# After (Streamlit)
+st.dataframe(df, use_container_width=True)
+```
+
+All tables maintain their functionality while using Streamlit's native components for better reliability and consistency.
+
 ## Page Structure
 
 ### 1. Home Page

@@ -10,6 +10,7 @@ from src.data.sources.alpaca_daily_loader import AlpacaDailyLoader
 from src.data.sources.news import NewsLoader
 from src.scripts.check_delisted_symbols import DelistedSymbolChecker
 from src.data.sources.alpaca_websocket import market_data_websocket_flow as websocket_flow
+from src.ml.daily_pair_identifier import daily_pair_identification_flow
 
 
 def generate_flow_run_name(flow_prefix: str) -> str:
@@ -125,6 +126,31 @@ def market_data_websocket_flow(end_time: str = "16:00"):
             logger.error(f"Market Data WebSocket Flow error: {e}")
             raise
     pass
+
+
+@flow(name="Start of Day Flow", flow_run_name=lambda: generate_flow_run_name("start-of-day"))
+def start_of_day_flow():
+    """
+    Prefect flow for start of day operations including historical data gathering and GARCH analysis.
+    This flow runs at 6:00 AM pre-market to prepare models for trading.
+    """
+    logger = get_run_logger()
+    logger.info("Starting Start of Day Flow")
+
+    try:
+        # Step 1: Gather historical data and run GARCH analysis
+        logger.info("Running daily pair identification with GARCH analysis...")
+        trading_config = daily_pair_identification_flow()
+
+        # Step 2: Additional start of day tasks can be added here
+        # For example: data validation, system health checks, etc.
+
+        logger.info("Start of Day Flow completed successfully")
+        return trading_config
+
+    except Exception as e:
+        logger.error(f"Start of Day Flow error: {e}")
+        raise
 
 
 if __name__ == '__main__':

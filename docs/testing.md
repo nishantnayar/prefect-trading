@@ -20,7 +20,7 @@ The Prefect Trading System includes a comprehensive testing strategy with automa
 - **Pytest-cov**: Coverage analysis
 - **Mock**: Component isolation
 - **Streamlit Testing**: UI component testing
-- **AgGrid**: Advanced table functionality for results display
+- **Streamlit Dataframes**: Advanced table functionality for results display
 
 ### 3. Coverage Analysis
 - **Line Coverage**: Statement-level coverage tracking
@@ -34,7 +34,7 @@ The Prefect Trading System includes a comprehensive testing strategy with automa
 The Testing page (`src/ui/components/testing_results.py`) provides:
 - **Test Execution**: Run tests directly from the UI
 - **Coverage Overview**: Visual coverage metrics and insights
-- **File-level Details**: Interactive AgGrid tables with sorting/filtering
+- **File-level Details**: Interactive Streamlit dataframes with sorting/filtering
 - **Execution Logs**: Detailed stdout, stderr, and error information
 - **Performance Metrics**: Test execution time and statistics
 
@@ -56,7 +56,7 @@ def display_coverage_overview(coverage_data: Dict):
 ```python
 def display_coverage_details(coverage_data: Dict):
     """
-    Display file-level coverage in interactive AgGrid tables.
+    Display file-level coverage in interactive Streamlit dataframes.
     
     Features:
     - Sortable columns (file name, statements, missing, coverage)
@@ -172,7 +172,7 @@ The `conftest_streamlit.py` file provides specialized fixtures for Streamlit UI 
 - ✅ **Market Status**: 29 tests covering UI components, market indicators, and display functions
 - ✅ **Home Dashboard**: Complete coverage of dashboard functionality and components
 - ✅ **Database Connectivity**: Full coverage of all database operations and error handling
-- ✅ **Testing Results**: Coverage of the testing results component and AgGrid integration
+- ✅ **Testing Results**: Coverage of the testing results component and Streamlit dataframe integration
 
 ## Running Tests
 
@@ -571,13 +571,39 @@ pytest-cov → coverage.json → normalize_coverage_data() → parse_coverage_da
 ## Recent Improvements
 
 ### 1. Testing Results UI
-- ✅ **AgGrid Integration**: Enhanced testing results display with advanced table functionality
+- ✅ **Streamlit Dataframe Integration**: Enhanced testing results display with advanced table functionality
 - ✅ **Path Normalization**: Fixed coverage display issues across different operating systems
 - ✅ **Deprecation Fixes**: Removed deprecated parameters and updated dependencies
 - ✅ **Enhanced Sorting**: Improved table sorting with numeric value preservation
 - ✅ **Better Error Handling**: Graceful handling of missing coverage data
 - ✅ **Test Execution**: Added ability to run tests directly from the UI
 - ✅ **Real-time Updates**: Manual refresh capabilities for immediate data updates
+
+### 2. AgGrid to Streamlit Refactoring (July 2025)
+The testing results interface has been refactored to use Streamlit's native dataframes:
+
+#### **Changes Made:**
+- **Removed aggrid dependency**: Eliminated `streamlit-aggrid` from requirements
+- **Replaced AgGrid tables**: Converted coverage tables to use `st.dataframe()` with styling
+- **Simplified implementation**: Removed complex AgGrid configuration code
+- **Better compatibility**: Native Streamlit components provide more reliable performance
+
+#### **Benefits:**
+- **Reduced dependencies**: No longer requires external aggrid package
+- **Improved stability**: Native Streamlit components have fewer compatibility issues
+- **Consistent styling**: All tables now use the same Streamlit styling and behavior
+- **Easier maintenance**: Less complex code to maintain and debug
+
+#### **Files Modified:**
+- `src/ui/components/testing_results.py` - Replaced AgGrid with `st.dataframe`
+- `config/requirements.txt` - Removed `streamlit-aggrid` dependency
+
+#### **Table Functionality Preserved:**
+- ✅ **Sorting**: All columns remain sortable
+- ✅ **Filtering**: Data filtering capabilities maintained
+- ✅ **Responsive Design**: Tables adapt to container width
+- ✅ **Color Coding**: P&L and coverage percentage color coding preserved
+- ✅ **Formatting**: Currency and percentage formatting maintained
 
 ### 2. Test Coverage
 - ✅ **Overall Project Coverage**: 78%
