@@ -20,17 +20,32 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional, Tuple
 import logging
 from prefect import flow, task, get_run_logger
-import mlflow
-import mlflow.pytorch
-from arch import arch_model
-from statsmodels.tsa.stattools import coint
-from scipy import stats
 import warnings
 warnings.filterwarnings('ignore')
 
+# Optional MLflow imports - handle gracefully if not available
+try:
+    import mlflow
+    import mlflow.pytorch
+    MLFLOW_AVAILABLE = True
+except ImportError:
+    MLFLOW_AVAILABLE = False
+    logging.warning("MLflow not available - model logging will be skipped")
+
+from arch import arch_model
+from statsmodels.tsa.stattools import coint
+from scipy import stats
+
 from src.database.database_connectivity import DatabaseConnectivity
-from src.mlflow_manager import MLflowManager
-from src.ml.config import MLflowConfig
+
+# Optional MLflow imports - handle gracefully if not available
+try:
+    from src.mlflow_manager import MLflowManager
+    from src.ml.config import MLflowConfig
+    MLFLOW_IMPORTS_AVAILABLE = True
+except ImportError:
+    MLFLOW_IMPORTS_AVAILABLE = False
+    logging.warning("MLflow manager imports not available - model logging will be skipped")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -321,7 +336,20 @@ def log_models_to_mlflow(selected_results: List[Dict[str, Any]]) -> List[str]:
     logger = get_run_logger()
     logger.info("Logging models to MLflow...")
     
-    mlflow_manager = MLflowManager()
+    if not MLFLOW_AVAILABLE:
+        logger.warning("MLflow is not available, skipping model logging.")
+        return []
+    
+    if not MLFLOW_IMPORTS_AVAILABLE:
+        logger.warning("MLflow manager imports not available, skipping model logging.")
+        return []
+
+    try:
+        mlflow_manager = MLflowManager()
+    except Exception as e:
+        logger.error(f"Error initializing MLflow manager: {e}")
+        return []
+    
     run_ids = []
     
     for result in selected_results:
@@ -410,13 +438,14 @@ def update_trading_configuration(selected_results: List[Dict[str, Any]],
             'mlflow_run_ids': run_ids
         }
         
-        for result, run_id in zip(selected_results, run_ids):
+        # Handle case where run_ids might be shorter than selected_results
+        for i, result in enumerate(selected_results):
             pair_config = {
                 'symbol1': result['symbol1'],
                 'symbol2': result['symbol2'],
                 'correlation': result['correlation'],
                 'composite_score': result['composite_score'],
-                'mlflow_run_id': run_id,
+                'mlflow_run_id': run_ids[i] if i < len(run_ids) else None,
                 'forecast_volatility': result['forecast_volatility'],
                 'model_parameters': {
                     'aic': result['aic'],

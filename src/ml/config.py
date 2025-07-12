@@ -6,58 +6,123 @@ This module handles MLflow configuration, experiment setup, and model registry m
 
 import os
 import yaml
-from typing import Dict, Any, Optional
-from pathlib import Path
 import mlflow
 from mlflow.tracking import MlflowClient
-from loguru import logger
+from typing import Dict, Any, Optional
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class MLflowConfig:
-    """Configuration manager for MLflow integration."""
+    """
+    MLflow configuration manager for the pairs trading system.
+    """
     
     def __init__(self, config_path: Optional[str] = None):
         """
         Initialize MLflow configuration.
         
         Args:
-            config_path: Path to configuration file. If None, uses default config/config.yaml
+            config_path: Path to configuration file (optional)
         """
         self.config_path = config_path or "config/config.yaml"
         self.config = self._load_config()
-        self._setup_mlflow()
-        
+        # Don't setup MLflow immediately - do it lazily when needed
+        self._mlflow_initialized = False
+    
     def _load_config(self) -> Dict[str, Any]:
-        """Load configuration from YAML file."""
+        """Load configuration from YAML file with environment variable substitution."""
         try:
             with open(self.config_path, 'r') as file:
-                config = yaml.safe_load(file)
+                content = file.read()
+            
+            # Handle environment variable substitution
+            content = self._substitute_env_vars(content)
+            
+            config = yaml.safe_load(content)
             return config
         except FileNotFoundError:
-            logger.error(f"Configuration file not found: {self.config_path}")
-            raise
-        except yaml.YAMLError as e:
+            logger.warning(f"Config file {self.config_path} not found. Using defaults.")
+            return {}
+        except Exception as e:
             logger.error(f"Error parsing configuration file: {e}")
-            raise
+            return {}
+    
+    def _substitute_env_vars(self, content: str) -> str:
+        """Substitute environment variables in YAML content."""
+        import re
+        import os
+        
+        def replace_env_var(match):
+            var_name = match.group(1)
+            default_value = match.group(2) if match.group(2) else ""
+            
+            # Check if environment variable exists
+            env_value = os.environ.get(var_name)
+            if env_value is not None:
+                return env_value
+            else:
+                return default_value
+        
+        # Pattern to match ${VAR:-default} or ${VAR}
+        pattern = r'\$\{([^:}]+)(?::-([^}]*))?\}'
+        return re.sub(pattern, replace_env_var, content)
     
     def _setup_mlflow(self):
         """Setup MLflow tracking and registry."""
-        mlflow_config = self.config.get('mlflow', {})
-        
-        # Set tracking URI
-        tracking_uri = os.getenv('MLFLOW_TRACKING_URI', mlflow_config.get('tracking_uri', 'http://localhost:5000'))
-        mlflow.set_tracking_uri(tracking_uri)
-        
-        # Set registry URI
-        registry_uri = os.getenv('MLFLOW_REGISTRY_URI', mlflow_config.get('registry_uri', 'http://localhost:5000'))
-        mlflow.set_registry_uri(registry_uri)
-        
-        # Set experiment name
-        experiment_name = os.getenv('MLFLOW_EXPERIMENT_NAME', mlflow_config.get('experiment_name', 'pairs_trading'))
-        mlflow.set_experiment(experiment_name)
-        
-        logger.info(f"MLflow configured - Tracking URI: {tracking_uri}, Registry URI: {registry_uri}")
-        logger.info(f"Experiment: {experiment_name}")
+        if self._mlflow_initialized:
+            return
+            
+        try:
+            mlflow_config = self.config.get('mlflow', {})
+            
+            # Set tracking URI with proper fallback
+            tracking_uri = os.getenv('MLFLOW_TRACKING_URI')
+            if not tracking_uri:
+                tracking_uri = mlflow_config.get('tracking_uri', 'http://localhost:5000')
+            
+            # Validate tracking URI
+            if not tracking_uri or tracking_uri.startswith('${'):
+                tracking_uri = 'http://localhost:5000'
+                logger.warning(f"Invalid MLFLOW_TRACKING_URI, using default: {tracking_uri}")
+            
+            mlflow.set_tracking_uri(tracking_uri)
+            
+            # Set registry URI with proper fallback
+            registry_uri = os.getenv('MLFLOW_REGISTRY_URI')
+            if not registry_uri:
+                registry_uri = mlflow_config.get('registry_uri', tracking_uri)
+            
+            # Validate registry URI
+            if not registry_uri or registry_uri.startswith('${'):
+                registry_uri = tracking_uri
+                logger.warning(f"Invalid MLFLOW_REGISTRY_URI, using tracking URI: {registry_uri}")
+            
+            mlflow.set_registry_uri(registry_uri)
+            
+            # Set experiment name
+            experiment_name = os.getenv('MLFLOW_EXPERIMENT_NAME')
+            if not experiment_name:
+                experiment_name = mlflow_config.get('experiment_name', 'pairs_trading')
+            
+            mlflow.set_experiment(experiment_name)
+            
+            self._mlflow_initialized = True
+            logger.info(f"MLflow configured - Tracking URI: {tracking_uri}, Registry URI: {registry_uri}")
+            logger.info(f"Experiment: {experiment_name}")
+            
+        except Exception as e:
+            logger.error(f"Error setting up MLflow: {e}")
+            # Don't raise the exception, just log it
+            # This allows the application to continue even if MLflow is not available
+    
+    def _ensure_mlflow_initialized(self):
+        """Ensure MLflow is initialized before use."""
+        if not self._mlflow_initialized:
+            self._setup_mlflow()
     
     def get_model_registry_config(self) -> Dict[str, Any]:
         """Get model registry configuration."""
@@ -73,7 +138,12 @@ class MLflowConfig:
     
     def get_experiment_name(self) -> str:
         """Get current experiment name."""
-        return mlflow.get_experiment_by_name(mlflow.get_experiment().name).name
+        self._ensure_mlflow_initialized()
+        try:
+            return mlflow.get_experiment_by_name(mlflow.get_experiment().name).name
+        except Exception as e:
+            logger.error(f"Error getting experiment name: {e}")
+            return 'pairs_trading'
     
     def create_experiment(self, experiment_name: str) -> str:
         """
@@ -85,6 +155,7 @@ class MLflowConfig:
         Returns:
             Experiment ID
         """
+        self._ensure_mlflow_initialized()
         try:
             experiment = mlflow.get_experiment_by_name(experiment_name)
             if experiment is None:
@@ -101,10 +172,12 @@ class MLflowConfig:
     
     def get_client(self) -> MlflowClient:
         """Get MLflow client instance."""
+        self._ensure_mlflow_initialized()
         return MlflowClient()
     
     def list_experiments(self) -> list:
         """List all experiments."""
+        self._ensure_mlflow_initialized()
         try:
             client = self.get_client()
             experiments = client.list_experiments()
@@ -123,6 +196,7 @@ class MLflowConfig:
         Returns:
             List of registered models
         """
+        self._ensure_mlflow_initialized()
         try:
             client = self.get_client()
             models = client.list_registered_models(filter_string=filter_string)
@@ -141,6 +215,7 @@ class MLflowConfig:
         Returns:
             List of model versions
         """
+        self._ensure_mlflow_initialized()
         try:
             client = self.get_client()
             versions = client.search_model_versions(f"name='{model_name}'")
@@ -160,6 +235,7 @@ class MLflowConfig:
         Returns:
             Latest model version or None if not found
         """
+        self._ensure_mlflow_initialized()
         try:
             client = self.get_client()
             latest_version = client.get_latest_versions(model_name, stages=[stage])
@@ -180,6 +256,7 @@ class MLflowConfig:
         Returns:
             True if successful, False otherwise
         """
+        self._ensure_mlflow_initialized()
         try:
             client = self.get_client()
             client.transition_model_version_stage(
@@ -204,6 +281,7 @@ class MLflowConfig:
         Returns:
             True if successful, False otherwise
         """
+        self._ensure_mlflow_initialized()
         try:
             client = self.get_client()
             client.delete_model_version(name=model_name, version=version)
@@ -214,7 +292,7 @@ class MLflowConfig:
             return False
 
 
-# Global MLflow configuration instance
+# Global MLflow configuration instance - don't initialize immediately
 mlflow_config = MLflowConfig()
 
 
@@ -239,6 +317,11 @@ def setup_mlflow_experiment(experiment_name: str) -> str:
 def get_model_registry_config() -> Dict[str, Any]:
     """Get model registry configuration."""
     return mlflow_config.get_model_registry_config()
+
+
+def get_rebaselining_config() -> Dict[str, Any]:
+    """Get rebaselining configuration."""
+    return mlflow_config.get_rebaselining_config()
 
 
 def get_performance_thresholds() -> Dict[str, float]:
