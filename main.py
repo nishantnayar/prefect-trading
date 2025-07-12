@@ -129,22 +129,26 @@ def market_data_websocket_flow(end_time: str = "16:00"):
 
 
 @flow(name="Start of Day Flow", flow_run_name=lambda: generate_flow_run_name("start-of-day"))
-def start_of_day_flow():
+def start_of_day_flow(sector: str = "Technology"):
     """
     Prefect flow for start of day operations including historical data gathering, 
     GARCH analysis, and GRU model training.
     This flow runs at 6:00 AM pre-market to prepare models for trading.
+    Matches the Jupyter notebook approach for data processing and model training.
+    
+    Args:
+        sector: Sector to analyze (default: Technology, matching notebook)
     """
     logger = get_run_logger()
-    logger.info("Starting Start of Day Flow")
+    logger.info(f"Starting Start of Day Flow for {sector} sector")
 
     try:
         # Step 1: Gather historical data, run GARCH analysis, and train GRU models
-        logger.info("Running daily pair identification with GARCH analysis and GRU training...")
-        results = daily_pair_identification_flow()
+        logger.info(f"Running daily pair identification with GARCH analysis and GRU training for {sector} sector...")
+        results = daily_pair_identification_flow(sector=sector)
 
         if results is None:
-            logger.warning("Daily pair identification flow returned no results")
+            logger.warning(f"Daily pair identification flow returned no results for {sector} sector")
             return None
 
         # Extract results
@@ -153,8 +157,10 @@ def start_of_day_flow():
         trading_config = results.get('trading_config', {})
         performance_analysis = results.get('performance_analysis', {})
         rankings_updated = results.get('rankings_updated', False)
+        sector_analyzed = results.get('sector_analyzed', sector)
 
         # Log summary
+        logger.info(f"Sector Analyzed: {sector_analyzed}")
         logger.info(f"GARCH Analysis: {len(garch_results)} pairs selected")
         logger.info(f"GRU Training: {len(gru_results)} models trained")
         logger.info(f"Database Rankings: {'Updated' if rankings_updated else 'Failed'}")
@@ -168,13 +174,14 @@ def start_of_day_flow():
         # Step 2: Additional start of day tasks can be added here
         # For example: data validation, system health checks, etc.
 
-        logger.info("Start of Day Flow completed successfully")
+        logger.info(f"Start of Day Flow completed successfully for {sector_analyzed} sector")
         return {
             'garch_results': garch_results,
             'gru_results': gru_results,
             'trading_config': trading_config,
             'performance_analysis': performance_analysis,
-            'rankings_updated': rankings_updated
+            'rankings_updated': rankings_updated,
+            'sector_analyzed': sector_analyzed
         }
 
     except Exception as e:
