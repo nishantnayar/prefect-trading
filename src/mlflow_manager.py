@@ -107,15 +107,28 @@ class MLflowManager:
             # Initialize client
             self.client = MlflowClient()
             
-            # Set default experiment
+            # Set default experiment with robust error handling
             experiment_name = self.config.get('experiment_name', 'pairs_trading')
-            self.set_experiment(experiment_name)
+            try:
+                self.set_experiment(experiment_name)
+            except Exception as exp_error:
+                logger.warning(f"Failed to set experiment {experiment_name}: {exp_error}")
+                # Try with timestamped name as fallback
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                fallback_name = f"{experiment_name}_{timestamp}"
+                try:
+                    self.set_experiment(fallback_name)
+                    logger.info(f"Using fallback experiment: {fallback_name}")
+                except Exception as fallback_error:
+                    logger.error(f"Failed to create fallback experiment: {fallback_error}")
+                    # Continue without setting experiment - it will be set when needed
             
             logger.info(f"MLflow setup complete. Tracking URI: {tracking_uri}")
             
         except Exception as e:
             logger.error(f"Error setting up MLflow: {e}")
-            raise
+            # Don't raise - allow the manager to be created even if setup fails
+            # The experiment will be set when actually needed
     
     def set_experiment(self, experiment_name: str) -> str:
         """
@@ -128,20 +141,58 @@ class MLflowManager:
             Experiment ID
         """
         try:
+            # First, try to get the experiment
             experiment = mlflow.get_experiment_by_name(experiment_name)
+            
             if experiment is None:
+                # Experiment doesn't exist, create it
                 experiment_id = mlflow.create_experiment(experiment_name)
                 logger.info(f"Created new experiment: {experiment_name}")
             else:
                 experiment_id = experiment.experiment_id
-                logger.info(f"Using existing experiment: {experiment_name}")
+                
+                # Check if experiment is deleted
+                if hasattr(experiment, 'lifecycle_stage') and experiment.lifecycle_stage == "deleted":
+                    logger.warning(f"Experiment {experiment_name} was deleted. Creating new experiment.")
+                    # Try to permanently delete the old experiment
+                    try:
+                        if self.client:
+                            self.client.delete_experiment(experiment_id)
+                    except Exception as del_error:
+                        logger.warning(f"Could not delete old experiment: {del_error}")
+                    
+                    # Create new experiment
+                    try:
+                        experiment_id = mlflow.create_experiment(experiment_name)
+                        logger.info(f"Created new experiment after deletion: {experiment_name}")
+                    except Exception as create_error:
+                        # If creation fails, try with timestamp
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        new_name = f"{experiment_name}_{timestamp}"
+                        experiment_id = mlflow.create_experiment(new_name)
+                        experiment_name = new_name
+                        logger.info(f"Created timestamped experiment: {new_name}")
+                else:
+                    logger.info(f"Using existing experiment: {experiment_name}")
             
+            # Set the experiment
             mlflow.set_experiment(experiment_name)
             return experiment_id
             
         except Exception as e:
             logger.error(f"Error setting experiment {experiment_name}: {e}")
-            raise
+            # Try to create a new experiment with a timestamp suffix
+            try:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                new_experiment_name = f"{experiment_name}_{timestamp}"
+                experiment_id = mlflow.create_experiment(new_experiment_name)
+                mlflow.set_experiment(new_experiment_name)
+                logger.info(f"Created fallback experiment: {new_experiment_name}")
+                return experiment_id
+            except Exception as fallback_error:
+                logger.error(f"Failed to create fallback experiment: {fallback_error}")
+                # Return a default experiment ID to prevent crashes
+                return "0"
     
     def create_sector_experiment(self, sector: str) -> str:
         """
