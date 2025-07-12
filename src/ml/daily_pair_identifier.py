@@ -603,9 +603,9 @@ def train_gru_models_for_pairs(historical_df: pd.DataFrame,
             )
             
             if save_success:
-                logger.info(f"✅ Performance metrics saved to database for {pair_symbol}")
+                logger.info(f"Performance metrics saved to database for {pair_symbol}")
             else:
-                logger.warning(f"⚠️  Failed to save performance metrics for {pair_symbol}")
+                logger.warning(f"Failed to save performance metrics for {pair_symbol}")
             
             # Store performance data for summary
             performance_data = {
@@ -658,10 +658,10 @@ def update_model_rankings_and_trends() -> bool:
                 cursor.execute("SELECT update_model_rankings();")
                 cursor.execute("SELECT update_model_trends();")
                 conn.commit()
-        logger.info("✅ Model rankings and trends updated in database.")
+        logger.info("Model rankings and trends updated in database.")
         return True
     except Exception as e:
-        logger.error(f"❌ Failed to update rankings/trends: {e}")
+        logger.error(f"Failed to update rankings/trends: {e}")
         return False
     finally:
         if 'db' in locals():
@@ -745,24 +745,24 @@ def analyze_training_performance(pair_performance: List[Dict[str, Any]]) -> Dict
     }
     
     # Log summary
-    logger.info(f"🏆 BEST PERFORMING PAIR: {best_pair['pair']}")
+    logger.info(f"BEST PERFORMING PAIR: {best_pair['pair']}")
     logger.info(f"   Best F1 Score: {best_pair['best_f1']:.4f}")
     logger.info(f"   Final F1 Score: {best_pair['final_f1']:.4f}")
     logger.info(f"   Correlation: {best_pair['correlation']:.4f}")
     logger.info(f"   Data Points: {best_pair['data_points']}")
     
-    logger.info(f"💾 DATABASE SAVE STATISTICS:")
+    logger.info(f"DATABASE SAVE STATISTICS:")
     logger.info(f"   Successfully saved: {saved_count}/{total_count} pairs")
     logger.info(f"   Save rate: {saved_count/total_count*100:.1f}%")
     
-    logger.info(f"📈 PERFORMANCE STATISTICS:")
+    logger.info(f"PERFORMANCE STATISTICS:")
     logger.info(f"   Average F1 Score: {avg_f1:.4f}")
     logger.info(f"   Highest F1 Score: {max_f1:.4f} ({best_pair['pair']})")
     logger.info(f"   Lowest F1 Score: {min_f1:.4f}")
     logger.info(f"   Performance Range: {max_f1 - min_f1:.4f}")
     
     if high_corr_pairs:
-        logger.info(f"🔍 CORRELATION VS PERFORMANCE ANALYSIS:")
+        logger.info(f"CORRELATION VS PERFORMANCE ANALYSIS:")
         logger.info(f"   High correlation pairs (>0.85): {len(high_corr_pairs)} pairs, Avg F1: {high_corr_avg:.4f}")
     
     if low_corr_pairs:

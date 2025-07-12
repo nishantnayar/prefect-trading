@@ -90,11 +90,11 @@ class ModelPerformanceTracker:
                 )
             )
             
-            print(f"✅ Saved performance metrics for {pair_symbol} to database")
+            print(f"Saved performance metrics for {pair_symbol} to database")
             return True
             
         except Exception as e:
-            print(f"❌ Error saving performance metrics for {pair_symbol}: {e}")
+            print(f"Error saving performance metrics for {pair_symbol}: {e}")
             return False
     
     def update_model_rankings(self) -> bool:
@@ -106,10 +106,10 @@ class ModelPerformanceTracker:
         """
         try:
             self.db.execute_query("SELECT update_model_rankings()")
-            print("✅ Updated model rankings")
+            print("Updated model rankings")
             return True
         except Exception as e:
-            print(f"❌ Error updating model rankings: {e}")
+            print(f"Error updating model rankings: {e}")
             return False
     
     def update_model_trends(self) -> bool:
@@ -121,10 +121,10 @@ class ModelPerformanceTracker:
         """
         try:
             self.db.execute_query("SELECT update_model_trends()")
-            print("✅ Updated model trends")
+            print("Updated model trends")
             return True
         except Exception as e:
-            print(f"❌ Error updating model trends: {e}")
+            print(f"Error updating model trends: {e}")
             return False
     
     def get_best_performing_pairs(self, limit: int = 10) -> pd.DataFrame:
@@ -151,7 +151,7 @@ class ModelPerformanceTracker:
                 return pd.DataFrame()
                 
         except Exception as e:
-            print(f"❌ Error getting best performing pairs: {e}")
+            print(f"Error getting best performing pairs: {e}")
             return pd.DataFrame()
     
     def get_pair_performance_trends(self, pair_symbol: str, days_back: int = 30) -> pd.DataFrame:
@@ -176,7 +176,7 @@ class ModelPerformanceTracker:
                 return pd.DataFrame()
                 
         except Exception as e:
-            print(f"❌ Error getting performance trends for {pair_symbol}: {e}")
+            print(f"Error getting performance trends for {pair_symbol}: {e}")
             return pd.DataFrame()
     
     def get_recent_pair_performance(self, pair_symbol: str, days_back: int = 7) -> pd.DataFrame:
@@ -201,7 +201,7 @@ class ModelPerformanceTracker:
                 return pd.DataFrame()
                 
         except Exception as e:
-            print(f"❌ Error getting recent performance for {pair_symbol}: {e}")
+            print(f"Error getting recent performance for {pair_symbol}: {e}")
             return pd.DataFrame()
 
 
@@ -240,7 +240,7 @@ def extract_mlflow_metrics(run_id: str) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        print(f"❌ Error extracting MLflow metrics: {e}")
+        print(f"Error extracting MLflow metrics: {e}")
         return {}
 
 
@@ -305,5 +305,5 @@ def save_training_results(
         return success
         
     except Exception as e:
-        print(f"❌ Error saving training results: {e}")
+        print(f"Error saving training results: {e}")
         return False 

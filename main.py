@@ -155,14 +155,14 @@ def start_of_day_flow():
         rankings_updated = results.get('rankings_updated', False)
 
         # Log summary
-        logger.info(f"✅ GARCH Analysis: {len(garch_results)} pairs selected")
-        logger.info(f"✅ GRU Training: {len(gru_results)} models trained")
-        logger.info(f"✅ Database Rankings: {'Updated' if rankings_updated else 'Failed'}")
+        logger.info(f"GARCH Analysis: {len(garch_results)} pairs selected")
+        logger.info(f"GRU Training: {len(gru_results)} models trained")
+        logger.info(f"Database Rankings: {'Updated' if rankings_updated else 'Failed'}")
         
         if performance_analysis:
             best_pair = performance_analysis.get('best_pair', {})
             if best_pair:
-                logger.info(f"🏆 Best GRU Model: {best_pair.get('pair', 'N/A')} "
+                logger.info(f"Best GRU Model: {best_pair.get('pair', 'N/A')} "
                            f"(F1: {best_pair.get('best_f1', 0):.4f})")
 
         # Step 2: Additional start of day tasks can be added here
