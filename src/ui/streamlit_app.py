@@ -12,6 +12,7 @@ from src.ui.home import render_home
 from src.ui.portfolio import render_portfolio
 from src.ui.components.testing_results import render_testing_results
 from src.ui.components.symbol_selector import display_symbol_selector_with_analysis
+from src.ui.model_performance.main import render_model_performance
 
 # 2. Page config must be top-level
 st.set_page_config(
@@ -62,8 +63,8 @@ def main():
     with st.sidebar:
         selected = option_menu.option_menu(
             menu_title="Trading System",
-            options=["Home", "Portfolio", "Analysis", "Testing", "Settings"],
-            icons=["house", "briefcase", "graph-up", "clipboard-check", "gear"],
+            options=["Home", "Portfolio", "Analysis", "Model Performance", "Testing", "Settings"],
+            icons=["house", "briefcase", "graph-up", "robot", "clipboard-check", "gear"],
             menu_icon="chart-line",
             default_index=0,
         )
@@ -75,6 +76,8 @@ def main():
         render_portfolio()
     elif selected == "Analysis":
         display_symbol_selector_with_analysis()
+    elif selected == "Model Performance":
+        render_model_performance()
     elif selected == "Testing":
         render_testing_results()
     elif selected == "Settings":

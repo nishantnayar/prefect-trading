@@ -75,6 +75,11 @@ A comprehensive trading system built with **Prefect** for automated market data 
   - Automated model registry management
   - Performance monitoring and comparison
   - Descriptive run naming and tagging
+- **Automated Performance Tracking**
+  - Model performance metrics storage
+  - Automated rankings and trends updates
+  - Historical performance analysis
+  - Database integration with MLflow
 
 ## 📁 Project Structure
 
@@ -121,6 +126,7 @@ prefect-trading/
 │   ├── 📁 ml/                   # Machine learning components
 │   │   ├── gru_model.py         # PyTorch GRU model implementation
 │   │   ├── train_gru_models.py  # Training pipeline with MLflow
+│   │   ├── model_performance_tracker.py  # Performance tracking and database integration
 │   │   └── config.py            # MLflow configuration
 │   ├── 📁 ui/                   # User interface components
 │   │   ├── 📁 components/       # Reusable UI components
@@ -164,6 +170,8 @@ This project uses **MLflow** for enterprise-level model management, experiment t
 - Model experiments and artifacts are tracked and versioned
 - Periodic rebaselining is orchestrated as part of Prefect flows
 - **PyTorch GRU Implementation**: New PyTorch-based GRU models with MLflow integration
+- **Automated Performance Tracking**: Model rankings and trends updated automatically after training
+- **Database Integration**: Performance metrics stored with MLflow run IDs for traceability
 - See [Architecture Decisions](docs/architecture-decisions.md) for rationale and future plans
 
 ## 🛠️ Prerequisites

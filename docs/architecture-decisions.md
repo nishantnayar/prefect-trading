@@ -1545,31 +1545,169 @@ This section tracks the implementation progress for the GARCH-GRU Pairs Trading 
 - **Estimated Time**: 2-3 days
 - **Success Criteria**: Comprehensive monitoring and alerting
 
-### Phase 5: Database Extensions ⏳ PENDING
+### Phase 5: Database Extensions ✅ COMPLETED
 
-#### 🔄 Step 1: Model Metadata Storage
-- **Date**: [Week 8]
+#### ✅ Step 1: Model Metadata Storage
+- **Date**: [Completed]
+- **Status**: COMPLETED
+- **Priority**: MEDIUM
+- **File**: `src/database/migrations/011_model_performance_tracking_complete.sql`
+- **Components**:
+  - ✅ Model performance history (`model_performance` table)
+  - ✅ Model rankings tracking (`model_rankings` table)
+  - ✅ Performance trends analysis (`model_trends` table)
+  - ✅ Pair performance tracking with MLflow integration
+  - ✅ Automated rankings and trends updates
+- **Dependencies**: Database schema design
+- **Actual Time**: 2 days
+- **Success Criteria**: ✅ Complete model and trading history storage
+- **Implementation**: 
+  - Three main tables: `model_performance`, `model_rankings`, `model_trends`
+  - Automated functions: `update_model_rankings()`, `update_model_trends()`
+  - Integration with training pipeline for automatic updates
+
+#### ✅ Step 2: Historical Performance Analysis
+- **Date**: [Completed]
+- **Status**: COMPLETED
+- **Priority**: MEDIUM
+- **Components**:
+  - ✅ Performance metrics storage and retrieval
+  - ✅ Model ranking system with F1 score ordering
+  - ✅ Performance trends over 7-day and 30-day periods
+  - ✅ Database functions for analytics queries
+  - ✅ Integration with training pipeline
+- **Dependencies**: Historical data, model metadata
+- **Actual Time**: 1 day
+- **Success Criteria**: ✅ Comprehensive historical analysis capabilities
+- **Implementation**:
+  - Functions: `get_best_performing_pairs()`, `get_pair_performance_trends()`, `get_recent_pair_performance()`
+  - Views: `current_best_models` for easy access to top performers
+  - Automatic updates after each training session
+
+---
+
+## 5. Model Performance Tracking Architecture
+
+### **Decision: Automated Database Integration with MLflow**
+
+### **Context:**
+- MLflow tracks experiments, runs, and models
+- Need persistent storage for performance metrics and rankings
+- Training pipeline generates performance data that needs to be stored and analyzed
+
+### **Options Considered:**
+
+#### **Option A: MLflow Only**
+**Pros:**
+- Single source of truth
+- Built-in experiment tracking
+- No additional database complexity
+
+**Cons:**
+- Limited analytics capabilities
+- No custom ranking system
+- Difficult to query for UI integration
+- No historical trends analysis
+
+#### **Option B: Custom Database Tables + MLflow Integration**
+**Pros:**
+- Advanced analytics and ranking
+- Custom performance tracking
+- Easy UI integration
+- Historical trends analysis
+- Automated updates
+
+**Cons:**
+- Additional database complexity
+- Need to maintain data consistency
+
+### **Decision Rationale:**
+- **Primary Factor**: Advanced analytics and UI integration requirements
+- **Secondary Factor**: Automated performance tracking
+- **Approach**: Use MLflow for experiment tracking, custom database for analytics
+
+### **Implementation:**
+- **Database Tables**:
+  - `model_performance`: Stores training results with MLflow run IDs
+  - `model_rankings`: Tracks best performing pairs by F1 score
+  - `model_trends`: Analyzes performance trends over time
+- **Automation**: Functions called automatically after training
+- **Integration**: MLflow run IDs link database records to MLflow experiments
+
+---
+
+## 6. MLflow Run Naming and Database Integration
+
+### **Decision: Separate Identifiers for Different Purposes**
+
+### **Context:**
+- MLflow uses run names for UI display
+- Database needs unique identifiers for relationships
+- Need to balance human readability with system integrity
+
+### **Implementation:**
+- **MLflow Run Names**: Descriptive, human-readable names
+  - Format: `"GRU_Training_{pair_name}_{timestamp}_v1"`
+  - Example: `"GRU_Training_NVDA-AMD_20250712_131425_v1"`
+- **Database model_run_id**: MLflow's internal UUID
+  - Format: MLflow's guaranteed-unique run ID
+  - Example: `"abc123def456"`
+- **Benefits**:
+  - Data integrity through unique IDs
+  - User-friendly MLflow interface
+  - Proper referential integrity
+  - Traceability between systems
+
+---
+
+## 7. Training Pipeline Automation
+
+### **Decision: Automated Performance Tracking**
+
+### **Context:**
+- Training generates performance metrics
+- Rankings and trends need to be updated
+- Manual updates are error-prone and time-consuming
+
+### **Implementation:**
+- **Automatic Updates**: After all pairs are processed
+- **Functions Called**:
+  - `update_model_rankings()`: Updates pair rankings by F1 score
+  - `update_model_trends()`: Updates performance trends over time
+- **Integration Point**: End of training loop in `train_gru_models.py`
+- **Error Handling**: Graceful failure with logging
+- **Benefits**:
+  - No manual intervention required
+  - Consistent data updates
+  - Real-time rankings and trends
+  - Clean training output
+
+---
+
+### Phase 6: UI Integration ⏳ PENDING
+
+#### 🔄 Step 1: Performance Dashboard
+- **Date**: [Week 9]
+- **Status**: PLANNED
+- **Priority**: HIGH
+- **Components**:
+  - Model rankings display
+  - Performance trends visualization
+  - Pair performance comparison
+  - Training history tracking
+- **Dependencies**: Database performance tables
+- **Estimated Time**: 2-3 days
+- **Success Criteria**: Interactive performance dashboard
+
+#### 🔄 Step 2: Training Monitoring
+- **Date**: [Week 9]
 - **Status**: PLANNED
 - **Priority**: MEDIUM
 - **Components**:
-  - Model performance history
-  - Trading signal history
-  - Pair performance tracking
-  - Model version tracking
-  - Performance attribution data
-- **Dependencies**: Database schema design
-- **Estimated Time**: 2-3 days
-- **Success Criteria**: Complete model and trading history storage
-
-#### 🔄 Step 2: Historical Performance Analysis
-- **Date**: [Week 8]
-- **Status**: PLANNED
-- **Priority**: LOW
-- **Components**:
-  - Historical backtesting framework
-  - Performance comparison tools
-  - Model evolution tracking
-  - Strategy optimization tools
-- **Dependencies**: Historical data, model metadata
-- **Estimated Time**: 2-3 days
-- **Success Criteria**: Comprehensive historical analysis capabilities 
+  - Real-time training progress
+  - Model performance alerts
+  - Training history logs
+  - Performance degradation detection
+- **Dependencies**: Performance tracking system
+- **Estimated Time**: 2 days
+- **Success Criteria**: Comprehensive training monitoring 

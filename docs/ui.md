@@ -56,6 +56,15 @@ The Prefect Trading System includes a modern, responsive Streamlit-based user in
 - **Interactive Tables**: AgGrid integration for advanced table functionality
 - **Independent Refresh**: Separate refresh functionality for test execution
 
+### 7. Model Performance Dashboard (`src/ui/model_performance/`)
+- **Performance Overview**: Top-level metrics and system health indicators
+- **Model Rankings**: Interactive rankings table with filtering and sorting
+- **Performance Trends**: Time-series charts showing F1 score trends
+- **Training History**: Recent training activity with MLflow integration
+- **Model Details**: Detailed view of individual model performance
+- **Performance Analytics**: Advanced analytics with distribution charts
+- **Database Integration**: Automatic data updates after training sessions
+
 ### 6. UI Components (`src/ui/components/`)
 
 #### Market Status Component (`market_status.py`)
@@ -141,7 +150,363 @@ def render_testing_results():
     """
 ```
 
+#### Model Performance Components (`src/ui/model_performance/components/`)
+
+##### Metrics Dashboard Component (`metrics_dashboard.py`)
+```python
+def render_metrics_dashboard(manager):
+    """
+    Render the metrics dashboard with top-level performance indicators.
+    
+    Features:
+    - Total models count with daily activity
+    - Average F1 score with trend indicators
+    - Best performing pair identification
+    - Training activity monitoring
+    - Performance insights and health indicators
+    - Safe null value handling for all metrics
+    """
+```
+
+##### Rankings Table Component (`rankings_table.py`)
+```python
+def render_rankings_table(manager):
+    """
+    Render the rankings table with interactive filtering and sorting.
+    
+    Features:
+    - Interactive F1 score filtering with slider
+    - Pair-based filtering with multiselect
+    - Performance indicators (Excellent/Good/Needs Improvement)
+    - CSV export functionality
+    - Summary statistics
+    - Safe decimal-to-float conversion
+    """
+```
+
+##### Trends Chart Component (`trends_chart.py`)
+```python
+def render_trends_chart(manager):
+    """
+    Render the trends chart with performance metrics over time.
+    
+    Features:
+    - Time period selection (7/30/90 days)
+    - Dual-axis charts (F1 scores and model counts)
+    - Moving averages (7-day and 30-day)
+    - Trend analysis with percentage changes
+    - Interactive Plotly charts
+    - Safe decimal-to-float conversion
+    """
+```
+
+##### Training History Component (`training_history.py`)
+```python
+def render_training_history(manager):
+    """
+    Render the training history table with recent activity.
+    
+    Features:
+    - Recent training records with performance metrics
+    - Training status indicators (Complete/Early Stop)
+    - MLflow integration with direct experiment links
+    - Summary statistics
+    - Performance categorization
+    - Safe decimal-to-float conversion
+    """
+```
+
+##### Performance Analytics Component (`performance_analytics.py`)
+```python
+def render_performance_analytics(manager):
+    """
+    Render the performance analytics section with multiple charts.
+    
+    Features:
+    - F1 score distribution histogram
+    - Accuracy vs precision scatter plots
+    - Training history over time
+    - Statistical analysis (mean, median, std dev)
+    - Performance trend calculations
+    - Safe null value handling
+    """
+```
+
+##### Model Details Component (`model_details.py`)
+```python
+def render_model_details(manager):
+    """
+    Render the model details section with pair selector and detailed view.
+    
+    Features:
+    - Pair selection from available models
+    - Detailed performance metrics
+    - Training information and hyperparameters
+    - MLflow integration
+    - Performance comparison with other models
+    - Safe null value handling
+    """
+```
+
 For detailed rationale behind UI architecture decisions, see [Architecture Decisions](architecture-decisions.md).
+
+## Model Performance Dashboard Implementation
+
+### Overview
+The Model Performance Dashboard provides comprehensive insights into ML model performance, rankings, trends, and training history. It integrates with the database to automatically display metrics after training sessions.
+
+### Architecture
+
+#### 1. Data Manager (`src/ui/model_performance/utils/data_manager.py`)
+```python
+class ModelPerformanceManager:
+    """
+    Manages database operations for model performance data.
+    
+    Key Features:
+    - Decimal-to-float conversion for PostgreSQL compatibility
+    - Safe null value handling
+    - Comprehensive error handling with fallback values
+    - Caching integration for performance optimization
+    """
+```
+
+**Key Methods:**
+- `get_overview_metrics()`: Top-level dashboard metrics
+- `get_rankings()`: Model rankings with performance data
+- `get_trends()`: Time-series performance trends
+- `get_recent_training()`: Recent training activity
+- `get_model_details()`: Detailed model information
+- `get_f1_distribution()`: F1 score distribution for analytics
+- `get_accuracy_precision_data()`: Accuracy vs precision analysis
+- `get_training_history()`: Historical training data
+
+#### 2. Component Structure
+```
+src/ui/model_performance/
+├── main.py                    # Main dashboard orchestrator
+├── __init__.py               # Package initialization
+├── components/               # UI components
+│   ├── metrics_dashboard.py  # Overview metrics
+│   ├── rankings_table.py     # Rankings and filtering
+│   ├── trends_chart.py       # Time-series charts
+│   ├── training_history.py   # Recent activity
+│   ├── performance_analytics.py # Advanced analytics
+│   ├── model_details.py      # Detailed model view
+│   └── __init__.py
+└── utils/                    # Utility modules
+    ├── data_manager.py       # Database operations
+    ├── metrics_calculator.py # Metrics calculations
+    ├── chart_helpers.py      # Chart utilities
+    └── __init__.py
+```
+
+### Key Features
+
+#### 1. Database Integration
+- **Automatic Updates**: Data automatically refreshes after training
+- **PostgreSQL Compatibility**: Handles decimal types and null values
+- **Safe Type Conversion**: Converts `decimal.Decimal` to `float` for UI compatibility
+- **Error Handling**: Graceful fallbacks for database connection issues
+
+#### 2. Caching System
+- **Streamlit Caching**: Intelligent caching with TTL (Time To Live)
+- **Cache Invalidation**: Automatic cache clearing for fresh data
+- **Performance Optimization**: Reduces database calls while maintaining data freshness
+
+#### 3. Interactive Features
+- **Filtering**: F1 score sliders and pair-based filtering
+- **Sorting**: Interactive table sorting
+- **Export**: CSV download functionality
+- **MLflow Integration**: Direct links to MLflow experiments
+
+#### 4. Data Visualization
+- **Plotly Charts**: Interactive time-series and distribution charts
+- **Performance Indicators**: Color-coded performance categories
+- **Trend Analysis**: Percentage change calculations
+- **Statistical Analysis**: Mean, median, standard deviation
+
+### Technical Implementation Details
+
+#### 1. Decimal/Float Conversion
+```python
+def _convert_decimal_to_float(self, value):
+    """Convert decimal.Decimal to float if needed."""
+    if isinstance(value, Decimal):
+        return float(value)
+    return value
+```
+
+#### 2. Safe Null Value Handling
+```python
+def _safe_float(value):
+    """Safely convert value to float, handling decimal.Decimal."""
+    if isinstance(value, Decimal):
+        return float(value)
+    if pd.isna(value):
+        return 0.0
+    return float(value)
+```
+
+#### 3. Database Query Optimization
+```sql
+-- Rankings with performance data join
+SELECT 
+    mr.rank_position,
+    mr.pair_symbol,
+    mr.f1_score,
+    mp.accuracy,
+    mp."precision",
+    mp.recall,
+    mp.training_date,
+    mr.model_run_id,
+    mr.experiment_name
+FROM model_rankings mr
+LEFT JOIN model_performance mp ON mr.pair_symbol = mp.pair_symbol 
+    AND mr.model_run_id = mp.model_run_id
+WHERE mr.ranking_date = CURRENT_DATE
+ORDER BY mr.rank_position
+```
+
+#### 4. Caching Strategy
+- **Overview Metrics**: 5 minutes cache
+- **Rankings**: 1 minute cache
+- **Trends**: 10 minutes cache
+- **Training History**: 30 seconds cache
+- **Analytics**: 5 minutes cache
+- **Model Details**: 5 minutes cache
+
+### Error Handling
+
+#### 1. Database Connection Issues
+- Graceful fallback to empty DataFrames
+- User-friendly error messages
+- Debug information in expandable sections
+
+#### 2. Null Value Protection
+- Safe dictionary access with defaults
+- Null checks before formatting operations
+- Fallback values for all metrics
+
+#### 3. Type Conversion Safety
+- Decimal-to-float conversion for PostgreSQL compatibility
+- NaN value handling
+- Safe arithmetic operations
+
+### Integration Points
+
+#### 1. Training Script Integration
+- Automatic database updates after training
+- MLflow run ID tracking
+- Performance metrics logging
+
+#### 2. Database Schema
+- `model_performance`: Core performance metrics
+- `model_rankings`: Daily rankings
+- `model_trends`: Time-series trends
+
+#### 3. MLflow Integration
+- Direct experiment links
+- Run ID tracking
+- Hyperparameter display
+
+### Performance Optimizations
+
+#### 1. Caching Strategy
+- Intelligent TTL based on data volatility
+- Cache invalidation on manual refresh
+- Reduced database load
+
+#### 2. Query Optimization
+- Efficient JOINs for related data
+- Indexed queries for fast retrieval
+- Limited result sets with pagination
+
+#### 3. UI Responsiveness
+- Asynchronous data loading
+- Progressive disclosure of information
+- Optimized chart rendering
+
+### Recent Fixes and Improvements
+
+#### 1. Decimal/Float Type Conversion Issues
+**Problem**: PostgreSQL returns `decimal.Decimal` objects, but Python arithmetic operations expect `float` values, causing "unsupported operand type(s) for -: 'float' and 'decimal.Decimal'" errors.
+
+**Solution**: 
+- Added `_convert_decimal_to_float()` method in data manager
+- Added `_safe_float()` helper functions in all components
+- Implemented comprehensive type conversion for all numeric operations
+
+#### 2. Null Value Formatting Issues
+**Problem**: `None` values being passed to string formatting operations causing "unsupported format string passed to NoneType.format" errors.
+
+**Solution**:
+- Added safe dictionary access with `dict.get(key, default) or default` pattern
+- Implemented null checks before all formatting operations
+- Provided sensible fallback values (0, False, 'N/A') for all potentially null values
+
+#### 3. Database Schema Mismatch
+**Problem**: `model_rankings` table missing columns that UI components expected (accuracy, precision, recall, training_date).
+
+**Solution**:
+- Updated `get_rankings()` method to use LEFT JOIN with `model_performance` table
+- Joined on `pair_symbol` and `model_run_id` to get complete performance data
+- Maintained same column structure for UI compatibility
+
+#### 4. Streamlit Caching Issues
+**Problem**: Streamlit unable to hash `ModelPerformanceManager` objects in cached functions.
+
+**Solution**:
+- Added leading underscores to manager parameters in all cached functions
+- Used `_manager` instead of `manager` to exclude from cache key calculation
+- Maintained functionality while resolving caching errors
+
+#### 5. Missing Function Definitions
+**Problem**: `_safe_float` function used but not defined in some components.
+
+**Solution**:
+- Added `_safe_float()` function definition to all components that use it
+- Added `decimal.Decimal` import to all components
+- Ensured consistent error handling across all components
+
+### Code Quality Improvements
+
+#### 1. Error Handling
+- Comprehensive try-catch blocks in all database operations
+- Graceful fallbacks for all error conditions
+- User-friendly error messages with troubleshooting guidance
+
+#### 2. Type Safety
+- Safe type conversion for all numeric operations
+- Null value protection throughout the codebase
+- Consistent data type handling across components
+
+#### 3. Performance Optimization
+- Intelligent caching with appropriate TTL values
+- Efficient database queries with proper JOINs
+- Reduced redundant database calls
+
+#### 4. Code Documentation
+- Comprehensive docstrings for all functions
+- Clear parameter and return type annotations
+- Inline comments explaining complex operations
+
+### Testing and Validation
+
+#### 1. Database Connectivity
+- Automatic connection testing in error scenarios
+- Fallback mechanisms for connection failures
+- Debug information for troubleshooting
+
+#### 2. Data Integrity
+- Validation of data types and ranges
+- Safe handling of missing or corrupted data
+- Consistent data presentation across components
+
+#### 3. UI Responsiveness
+- Efficient rendering of large datasets
+- Optimized chart generation
+- Smooth user interactions
 
 ## UI Features
 

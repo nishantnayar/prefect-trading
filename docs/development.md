@@ -486,6 +486,37 @@ with mlflow.start_run():
     mlflow.pytorch.log_model(model, "model")
 ```
 
+### Performance Tracking Integration
+```python
+from src.ml.model_performance_tracker import save_training_results
+
+# After training, save performance to database
+save_success = save_training_results(
+    pair_symbol="NVDA-AMD",
+    history=training_history,
+    config=model_config,
+    model_run_id=mlflow.active_run().info.run_id,
+    experiment_name=experiment_name,
+    early_stopped=False
+)
+
+# Rankings and trends are updated automatically
+# No manual intervention required
+```
+
+### Training Pipeline
+```python
+# Run the complete training pipeline
+python -m src.ml.train_gru_models
+
+# This automatically:
+# 1. Trains models for all pairs
+# 2. Saves performance metrics to database
+# 3. Updates model rankings
+# 4. Calculates performance trends
+# 5. Links all data to MLflow runs
+```
+
 ### Periodic Rebaselining
 ```python
 from prefect import flow, task
@@ -506,6 +537,12 @@ def rebaseline_workflow():
     # Register new model version
     pass
 ```
+
+### Database Integration
+- **Model Performance**: Stored in `model_performance` table with MLflow run IDs
+- **Rankings**: Updated automatically in `model_rankings` table
+- **Trends**: Calculated in `model_trends` table with 7-day and 30-day averages
+- **Traceability**: All database records link to MLflow experiments via run IDs
 
 For more details on MLflow integration, see [Architecture Decisions](architecture-decisions.md).
 
