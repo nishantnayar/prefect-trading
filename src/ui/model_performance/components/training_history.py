@@ -155,18 +155,15 @@ def render_training_history(manager):
         recent_runs = history_df[['pair_symbol', 'f1_score', 'model_run_id', 'experiment_name', 'training_date']].head(5)
         
         for _, run in recent_runs.iterrows():
-            col1, col2, col3 = st.columns([2, 1, 1])
+            col1, col2 = st.columns([3, 1])
             
             with col1:
                 st.write(f"**{run['pair_symbol']}** - F1: {run['f1_score']:.4f}")
             
             with col2:
-                # Create MLflow link (placeholder - would need actual MLflow URL)
+                # Create MLflow link - experiment_name is actually the experiment_id
                 mlflow_url = f"http://localhost:5000/#/experiments/{run['experiment_name']}/runs/{run['model_run_id']}"
                 st.link_button("View in MLflow", mlflow_url, help=f"Open {run['pair_symbol']} in MLflow")
-            
-            with col3:
-                st.write(f"`{run['model_run_id'][:12]}...`")
         
         st.info("💡 Click 'View in MLflow' to see detailed experiment information")
     

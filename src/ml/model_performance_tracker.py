@@ -27,6 +27,7 @@ class ModelPerformanceTracker:
         pair_symbol: str,
         model_run_id: str,
         experiment_name: str,
+        run_name: str,
         training_date: datetime,
         metrics: Dict[str, float],
         hyperparameters: Dict[str, Any],
@@ -40,6 +41,7 @@ class ModelPerformanceTracker:
             pair_symbol: The trading pair symbol (e.g., "AAPL-MSFT")
             model_run_id: MLflow run ID
             experiment_name: MLflow experiment name
+            run_name: MLflow run name
             training_date: When the model was trained
             metrics: Dictionary of performance metrics
             hyperparameters: Model hyperparameters
@@ -53,12 +55,12 @@ class ModelPerformanceTracker:
             # Prepare the insert query
             query = """
             INSERT INTO model_performance (
-                pair_symbol, model_run_id, experiment_name, training_date,
+                pair_symbol, model_run_id, experiment_name, run_name, training_date,
                 f1_score, accuracy, "precision", recall, auc_score,
                 loss, val_loss, epochs_trained, early_stopped,
                 model_path, hyperparameters, feature_importance
             ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb
             )
             """
             
@@ -81,7 +83,7 @@ class ModelPerformanceTracker:
             self.db.execute_query(
                 query,
                 (
-                    pair_symbol, model_run_id, experiment_name, training_date,
+                    pair_symbol, model_run_id, experiment_name, run_name, training_date,
                     f1_score, accuracy, precision, recall, auc_score,
                     loss, val_loss, epochs_trained, early_stopped,
                     model_path, hyperparams_json, feature_importance_json
@@ -248,6 +250,7 @@ def save_training_results(
     config: Dict[str, Any],
     model_run_id: str,
     experiment_name: str,
+    run_name: str = None,
     early_stopped: bool = False
 ) -> bool:
     """
@@ -259,6 +262,7 @@ def save_training_results(
         config: Model configuration
         model_run_id: MLflow run ID
         experiment_name: MLflow experiment name
+        run_name: MLflow run name (optional)
         early_stopped: Whether training was stopped early
         
     Returns:
@@ -287,6 +291,7 @@ def save_training_results(
             pair_symbol=pair_symbol,
             model_run_id=model_run_id,
             experiment_name=experiment_name,
+            run_name=run_name,
             training_date=datetime.now(),
             metrics=metrics,
             hyperparameters=config

@@ -324,7 +324,11 @@ def train_gru_model_with_mlflow(data, config):
         "run_type": "training"
     }
     
-    with mlflow.start_run(run_name=run_name, tags=tags):
+    with mlflow.start_run(run_name=run_name, tags=tags) as run:
+        # Capture run info early
+        run_id = run.info.run_id
+        experiment_id = run.info.experiment_id
+        
         # Log parameters
         mlflow.log_params(config)
         
@@ -397,7 +401,8 @@ def train_gru_model_with_mlflow(data, config):
             mlflow.pytorch.log_model(model, "model")
             print(f"Note: Model logged without signature due to: {e}")
         
-        return model, history, trainer
+        # Return run info along with model artifacts
+        return model, history, trainer, run_id, experiment_id, run_name
 
 if __name__ == "__main__":
     # Configuration (same as optimal from existing implementation)

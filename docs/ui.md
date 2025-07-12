@@ -53,7 +53,7 @@ The Prefect Trading System includes a modern, responsive Streamlit-based user in
 - **File-Level Coverage**: Detailed breakdown by individual files
 - **Test Results**: Comprehensive test execution results
 - **Execution Logs**: Detailed logs and error information
-- **Interactive Tables**: AgGrid integration for advanced table functionality
+- **Interactive Tables**: Streamlit dataframes with advanced table functionality
 - **Independent Refresh**: Separate refresh functionality for test execution
 
 ### 7. Model Performance Dashboard (`src/ui/model_performance/`)
@@ -142,7 +142,7 @@ def render_testing_results():
     
     Features:
     - Coverage summary with color-coded metrics
-    - File-level coverage breakdown in interactive AgGrid tables
+    - File-level coverage breakdown in interactive Streamlit dataframes
     - Test execution results and statistics
     - Real-time coverage data from JSON reports
     - Professional styling with progress indicators
@@ -545,7 +545,7 @@ ORDER BY mr.rank_position
 - **Interactive Charts**: Clickable data visualizations
 - **Search Functionality**: Symbol and news search
 - **Filtering Options**: Data filtering capabilities
-- **AgGrid Tables**: Advanced table functionality with sorting, filtering, and pagination
+- **Streamlit Dataframes**: Advanced table functionality with sorting, filtering, and responsive design
 
 ### 6. Professional Styling
 - **Custom CSS**: Professional appearance
@@ -577,7 +577,7 @@ Detailed breakdown of coverage by individual files:
 ```python
 def display_file_coverage():
     """
-    Display file-level coverage in an interactive AgGrid table.
+    Display file-level coverage in an interactive Streamlit dataframe.
     
     Features:
     - Sortable columns (file name, statements, missing, coverage)
@@ -617,7 +617,7 @@ def load_coverage_data():
 ```
 
 ### 5. Recent Improvements
-- **AgGrid Integration**: Replaced basic tables with advanced AgGrid functionality
+- **Streamlit Dataframe Integration**: Replaced aggrid with native Streamlit dataframes for better compatibility
 - **Path Normalization**: Fixed Windows/Unix path differences for accurate coverage display
 - **Deprecation Fixes**: Removed deprecated `fit_columns_on_grid_load` parameter
 - **Enhanced Sorting**: Improved table sorting with numeric value preservation
@@ -666,7 +666,7 @@ def load_coverage_data():
 ├─────────────────────────────────────────────────────────┤
 │ Coverage Overview (overall metrics and insights)      │
 ├─────────────────────────────────────────────────────────┤
-│ Coverage Details (file-level breakdown in AgGrid)     │
+│ Coverage Details (file-level breakdown in Streamlit)  │
 ├─────────────────────────────────────────────────────────┤
 │ Test Results (individual test outcomes)               │
 ├─────────────────────────────────────────────────────────┤
@@ -1294,7 +1294,7 @@ The Prefect Trading System UI provides a comprehensive, user-friendly interface 
 
 ### **Testing Integration**
 - **Coverage Display**: Real-time test coverage metrics with visual indicators
-- **Interactive Tables**: AgGrid integration for advanced table functionality
+- **Interactive Tables**: Streamlit dataframes with advanced table functionality
 - **Test Execution**: Direct test execution from UI
 - **Independent Refresh**: Separate refresh functionality for testing operations
 

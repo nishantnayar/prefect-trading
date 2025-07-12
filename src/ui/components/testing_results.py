@@ -15,7 +15,6 @@ from datetime import datetime
 import pandas as pd
 from typing import Dict, List, Optional, Tuple
 import sys
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode
 
 
 def run_tests_and_get_results() -> Dict:
@@ -352,29 +351,8 @@ def display_coverage_overview(coverage_data: Dict):
             modules_df = pd.DataFrame(modules_data)
             modules_df = modules_df.sort_values('Coverage %', ascending=False)
             
-            # Configure AgGrid for modules
-            gb_modules = GridOptionsBuilder.from_dataframe(modules_df)
-            gb_modules.configure_default_column(
-                sortable=True,
-                filterable=True,
-                resizable=True,
-                editable=False
-            )
-            gb_modules.configure_column("Module", width=150, pinned="left")
-            gb_modules.configure_column("Files", width=80, type=["numericColumn", "numberColumnFilter"])
-            gb_modules.configure_column("Coverage %", width=120, type=["numericColumn", "numberColumnFilter"])
-            gb_modules.configure_column("Lines Covered", width=120, type=["numericColumn", "numberColumnFilter"])
-            gb_modules.configure_column("Total Lines", width=120, type=["numericColumn", "numberColumnFilter"])
-            
-            grid_options_modules = gb_modules.build()
-            
-            AgGrid(
-                modules_df,
-                gridOptions=grid_options_modules,
-                data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-                update_mode=GridUpdateMode.SELECTION_CHANGED,
-                theme="streamlit"
-            )
+            # Display modules coverage table using Streamlit dataframe
+            st.dataframe(modules_df, use_container_width=True)
 
 
 def display_coverage_details(coverage_data: Dict):
@@ -409,32 +387,8 @@ def display_coverage_details(coverage_data: Dict):
         files_df = files_df[['file', 'Coverage Level', 'Coverage %', 'lines_covered', 'lines_total', 'missing_lines', 'missing_line_numbers']]
         files_df.columns = ['File', 'Level', 'Coverage %', 'Covered', 'Total', 'Missing', 'Missing Lines']
         
-        # Configure AgGrid options
-        gb = GridOptionsBuilder.from_dataframe(files_df)
-        gb.configure_default_column(
-            sortable=True,
-            filterable=True,
-            resizable=True,
-            editable=False
-        )
-        gb.configure_column("File", width=300, pinned="left")
-        gb.configure_column("Level", width=100)
-        gb.configure_column("Coverage %", width=100, type=["numericColumn", "numberColumnFilter"])
-        gb.configure_column("Covered", width=80, type=["numericColumn", "numberColumnFilter"])
-        gb.configure_column("Total", width=80, type=["numericColumn", "numberColumnFilter"])
-        gb.configure_column("Missing", width=80, type=["numericColumn", "numberColumnFilter"])
-        gb.configure_column("Missing Lines", width=200)
-        
-        grid_options = gb.build()
-        
-        # Display the AgGrid
-        grid_response = AgGrid(
-            files_df,
-            gridOptions=grid_options,
-            data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-            update_mode=GridUpdateMode.SELECTION_CHANGED,
-            theme="streamlit"
-        )
+        # Display file coverage details using Streamlit dataframe
+        st.dataframe(files_df, use_container_width=True)
         
         # Show files that need attention
         low_coverage_files = files_df[files_df['Coverage %'] < 80]

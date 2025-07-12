@@ -192,12 +192,7 @@ def run_gru_training():
         config_with_pair['pair_symbol2'] = symbol2
         
         # Train model with MLflow integration
-        model, history, trainer = train_gru_model_with_mlflow(pair_df, config_with_pair)
-        
-        # Get MLflow run info for database tracking
-        current_run = mlflow.active_run()
-        model_run_id = current_run.info.run_id if current_run else f"manual_run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        experiment_name = current_run.info.experiment_id if current_run else "pairs_trading/technology_sector/gru_training"
+        model, history, trainer, model_run_id, experiment_id, run_name = train_gru_model_with_mlflow(pair_df, config_with_pair)
         
         # Save training results to database
         pair_symbol = f"{symbol1}-{symbol2}"
@@ -208,7 +203,8 @@ def run_gru_training():
             history=history,
             config=config_with_pair,
             model_run_id=model_run_id,
-            experiment_name=experiment_name,
+            experiment_name=experiment_id,  # experiment_id is the correct value for MLflow links
+            run_name=run_name,
             early_stopped=early_stopped
         )
         

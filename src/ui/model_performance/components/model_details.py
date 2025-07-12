@@ -8,6 +8,10 @@ detailed information about a specific model pair.
 import streamlit as st
 import pandas as pd
 import json
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from functools import lru_cache
 
 
 @st.cache_data(ttl=300)  # 5 minutes cache for model details
@@ -23,6 +27,28 @@ def get_cached_model_details(_manager, pair_symbol: str):
         Dict containing model details
     """
     return _manager.get_model_details(pair_symbol)
+
+
+@lru_cache(maxsize=32)
+def get_mlflow_experiment_id(experiment_name: str) -> str:
+    """
+    Look up the MLflow experiment ID by name using direct DB access.
+    Returns the experiment ID as a string, or None if not found.
+    """
+    conn = psycopg2.connect(
+        host=os.getenv("MLFLOW_DB_HOST"),
+        port=os.getenv("MLFLOW_DB_PORT"),
+        dbname=os.getenv("MLFLOW_DB_NAME"),
+        user=os.getenv("MLFLOW_DB_USER"),
+        password=os.getenv("MLFLOW_DB_PASSWORD"),
+    )
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT experiment_id FROM experiments WHERE name = %s", (experiment_name,))
+            row = cur.fetchone()
+            return str(row["experiment_id"]) if row else None
+    finally:
+        conn.close()
 
 
 def render_model_details(manager):
@@ -114,16 +140,15 @@ def render_model_details(manager):
                 model_run_id = details.get('model_run_id', 'N/A') or 'N/A'
                 experiment_name = details.get('experiment_name', 'N/A') or 'N/A'
                 
-                # Truncate long IDs for display
-                display_run_id = model_run_id[:12] + "..." if len(str(model_run_id)) > 12 else model_run_id
-                
-                st.metric("Run ID", display_run_id)
                 st.metric("Experiment", experiment_name)
                 st.metric("Status", "✅ Registered")
                 
                 # MLflow link
-                if model_run_id != 'N/A':
-                    mlflow_url = f"http://localhost:5000/#/experiments/{experiment_name}/runs/{model_run_id}"
+                if model_run_id != 'N/A' and experiment_name != 'N/A':
+                    # The experiment_name is actually the experiment_id in our database
+                    experiment_id = experiment_name
+                    base_url = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+                    mlflow_url = f"{base_url}/#/experiments/{experiment_id}/runs/{model_run_id}"
                     st.link_button(
                         "🔗 View in MLflow",
                         mlflow_url,
