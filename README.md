@@ -64,6 +64,18 @@ A comprehensive trading system built with **Prefect** for automated market data 
   - Secret management for API credentials
   - Error handling and retry logic
 
+### 🤖 Machine Learning & Model Management
+- **PyTorch GRU Models**
+  - Pairs trading signal generation
+  - GARCH-GRU hybrid architecture
+  - Real-time model inference
+  - Comprehensive model training pipeline
+- **MLflow Integration**
+  - Experiment tracking and model versioning
+  - Automated model registry management
+  - Performance monitoring and comparison
+  - Descriptive run naming and tagging
+
 ## 📁 Project Structure
 
 The project follows a clean, organized structure with configuration files centralized and build artifacts contained. For rationale behind major architectural choices, see [Architecture Decisions](docs/architecture-decisions.md).
@@ -106,7 +118,10 @@ prefect-trading/
 │   │   ├── 📁 migrations/       # Database schema migrations
 │   │   ├── database_connectivity.py
 │   │   └── 📁 sql/
-│   ├── 📁 scripts/              # Utility scripts
+│   ├── 📁 ml/                   # Machine learning components
+│   │   ├── gru_model.py         # PyTorch GRU model implementation
+│   │   ├── train_gru_models.py  # Training pipeline with MLflow
+│   │   └── config.py            # MLflow configuration
 │   ├── 📁 ui/                   # User interface components
 │   │   ├── 📁 components/       # Reusable UI components
 │   │   ├── home.py              # Main dashboard page
@@ -148,6 +163,7 @@ This project uses **MLflow** for enterprise-level model management, experiment t
 - MLflow server runs with PostgreSQL backend for persistence
 - Model experiments and artifacts are tracked and versioned
 - Periodic rebaselining is orchestrated as part of Prefect flows
+- **PyTorch GRU Implementation**: New PyTorch-based GRU models with MLflow integration
 - See [Architecture Decisions](docs/architecture-decisions.md) for rationale and future plans
 
 ## 🛠️ Prerequisites
@@ -216,7 +232,19 @@ make db-check
 - **⚠️ EXTRA TABLES**: These are typically system tables (Prefect, MLflow, etc.) and are expected - not a problem
 - **❌ MISSING TABLES**: These indicate actual schema mismatches that need attention
 
-### 4. Start the System
+### 4. MLflow Setup
+```bash
+# Create MLflow database
+createdb mlflow_db
+
+# Start MLflow server
+mlflow server --backend-store-uri postgresql://postgres:nishant@localhost/mlflow_db --default-artifact-root file:./mlruns --host 0.0.0.0 --port 5000
+
+# Set environment variable
+export MLFLOW_TRACKING_URI=http://localhost:5000
+```
+
+### 5. Start the System
 ```bash
 # Start Prefect server
 prefect server start
@@ -253,9 +281,19 @@ market_data_websocket_flow()
    - **Testing**: Test results and coverage visualization
    - **Settings**: System configuration
 
+### Running ML Training
+```bash
+# Train PyTorch GRU models for all pairs
+python -m src.ml.train_gru_models
+
+# View MLflow experiments
+# Open http://localhost:5000 in your browser
+```
+
 ### Monitoring
 - **Prefect UI**: `http://localhost:4200` - Monitor workflow execution
 - **Streamlit Dashboard**: `http://localhost:8501` - View real-time data
+- **MLflow UI**: `http://localhost:5000` - Monitor ML experiments and models
 - **Logs**: Check `logs/trading_system.log` for detailed logs
 
 ## ⚙️ Configuration

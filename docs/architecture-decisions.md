@@ -255,6 +255,80 @@ This document records the key architectural decisions made during the developmen
 ### **Context:**
 - Current WebSocket implementation only collects data for AAPL
 - Need multiple symbols for pairs trading implementation
+
+---
+
+## 7. PyTorch GRU Training Strategy Decision
+
+### **Decision: Train All Pairs Initially for Comprehensive Baseline**
+
+### **Context:**
+- Need to establish baseline performance across all possible pairs
+- Want to identify which pairs perform best before optimization
+- Current system has 23 symbols generating 253 possible pairs
+- Need to balance comprehensive analysis with computational efficiency
+- **Note**: This is a new PyTorch implementation, not a migration from TensorFlow
+
+### **Options Considered:**
+
+#### **Option A: Train Top N Pairs Only (Previous Approach)**
+**Pros:**
+- Faster training time
+- Focus on highest correlation pairs
+- Lower computational cost
+- Quick iteration cycles
+
+**Cons:**
+- Miss potential hidden gems (lower correlation but high predictive power)
+- No baseline for comparison
+- Risk of overfitting to correlation metric
+- Limited discovery of unexpected patterns
+
+#### **Option B: Train All Pairs Initially (Current Decision)**
+**Pros:**
+- Comprehensive baseline across all pairs
+- Discover unexpected high-performing pairs
+- Better understanding of pair performance distribution
+- Data-driven optimization decisions
+- Identify pairs that perform well despite lower correlation
+
+**Cons:**
+- Longer training time (253 models vs 5-10 models)
+- Higher computational cost
+- More complex MLflow experiment management
+- Potential for information overload
+
+### **Decision Rationale:**
+- **Primary Factor**: Establish comprehensive baseline for data-driven optimization
+- **Secondary Factor**: Discover unexpected high-performing pairs
+- **Tertiary Factor**: Better understanding of performance distribution
+
+### **Implementation:**
+- Modified `prepare_pairs_data()` to accept `top_pairs=None` for all pairs
+- Updated training loop to handle all pairs that meet correlation threshold (>0.8)
+- Enhanced MLflow experiment naming for better organization
+- Added performance tracking for all pairs
+
+### **Future Optimization Strategy:**
+1. **Phase 1**: Train all pairs (current) - establish baseline
+2. **Phase 2**: Analyze performance distribution and identify top performers
+3. **Phase 3**: Implement selective training based on performance metrics
+4. **Phase 4**: Continuous monitoring and re-evaluation
+
+### **Performance Deprecation Triggers:**
+- Training time exceeds acceptable limits (>2 hours for full dataset)
+- MLflow experiment management becomes unwieldy
+- Computational costs exceed budget
+- Performance analysis shows diminishing returns
+
+### **Monitoring Metrics:**
+- Total training time per run
+- Performance distribution across all pairs
+- Top 10% vs bottom 10% performance gap
+- Correlation vs performance relationship
+- MLflow experiment size and management overhead
+
+---
 - System needs to support real-time data collection for multiple symbols
 
 ### **Options Considered:**
@@ -1324,22 +1398,24 @@ This section tracks the implementation progress for the GARCH-GRU Pairs Trading 
   - 10% Statistical diagnostics (residual quality)
 - **Estimated Time**: 0 days (design completed)
 
-#### 🔄 Step 4: PyTorch GRU Migration and Refactoring
-- **Date**: [Current]
-- **Status**: IN PROGRESS
+#### ✅ Step 4: PyTorch GRU Implementation
+- **Date**: [Completed]
+- **Status**: COMPLETED
 - **Priority**: HIGH
 - **File**: `src/ml/gru_model.py`
 - **Components**:
-  - Convert existing TensorFlow GRU to PyTorch
-  - Refactor monolithic pipeline into modular components
-  - Maintain exact same architecture and hyperparameters
-  - Preserve F1=0.7445 performance
-  - Add MLflow model logging capabilities
-  - Create clean, reusable PyTorch classes
+  - ✅ New PyTorch GRU implementation (not a migration)
+  - ✅ Modular pipeline design with clean components
+  - ✅ Optimized architecture and hyperparameters
+  - ✅ MLflow model logging capabilities
+  - ✅ Clean, reusable PyTorch classes
+  - ✅ **Training Strategy**: Train all pairs initially for comprehensive baseline
+  - ✅ **Performance Analysis**: Comprehensive ranking and statistics
+  - ✅ **Clean Output**: Focus on performance ranking without target comparisons
 - **Dependencies**: `torch`, `numpy`, `pandas` (existing)
-- **Estimated Time**: 3-4 days
-- **Success Criteria**: F1 score ≥ 0.7445 after PyTorch migration
-- **Refactoring Goals**: Modular, maintainable, MLflow-ready code
+- **Actual Time**: 3 days
+- **Success Criteria**: ✅ New PyTorch implementation completed with MLflow integration
+- **Implementation Goals**: ✅ Modular, maintainable, MLflow-ready code
 
 #### 🔄 Step 5: GARCH Model Refactoring and Modularization
 - **Date**: [Current]

@@ -98,6 +98,16 @@ python scripts/manage_symbols.py
 python scripts/manual_save.py
 ```
 
+### MLflow Scripts
+
+#### `create_mlflow_db.sql`
+**Purpose**: Creates the MLflow database for model tracking and experiment management.
+
+**Usage**:
+```bash
+psql -U postgres -f scripts/create_mlflow_db.sql
+```
+
 ### Testing Scripts
 
 #### `run_tests.py`
@@ -115,6 +125,40 @@ python scripts/run_tests.py
 ```bash
 python scripts/setup_test_env.py
 ```
+
+## ML Training Scripts
+
+### PyTorch GRU Implementation
+
+The ML training scripts are located in `src/ml/`:
+
+#### `train_gru_models.py`
+**Purpose**: Trains PyTorch GRU models for all pairs with MLflow integration.
+
+**Features**:
+- Trains models for all pairs that meet correlation threshold (>0.8)
+- Comprehensive performance analysis and ranking
+- MLflow experiment tracking with descriptive run names
+- Model registry integration
+- Performance statistics and correlation analysis
+
+**Usage**:
+```bash
+# Train all pairs
+python -m src.ml.train_gru_models
+
+# View results in MLflow UI
+# Open http://localhost:5000
+```
+
+#### `gru_model.py`
+**Purpose**: PyTorch GRU model implementation and training utilities.
+
+**Features**:
+- PyTorch GRU model architecture
+- Dataset and training utilities
+- MLflow integration for model logging
+- Performance tracking and early stopping
 
 ## Makefile Integration
 

@@ -315,8 +315,8 @@ if __name__ == "__main__":
     loader = AlpacaDataLoader()
     
     # Load hourly historical data (stored in market_data table)
-    print("Loading hourly historical data...")
-    loader.run_historical_load(timeframe=TimeFrame.Hour)
+    # print("Loading hourly historical data...")
+    #loader.run_historical_load(timeframe=TimeFrame.Hour)
     
     # Load 1-minute historical data (stored in market_data_historical table)
     print("\nLoading 1-minute historical data...")
