@@ -239,10 +239,14 @@ def fit_garch_models(historical_df: pd.DataFrame,
             standardized_residuals = fitted_model.resid / fitted_model.conditional_volatility
             
             # Ljung-Box test for autocorrelation
-            lb_stat, lb_pvalue = acf(residuals**2, nlags=10, qstat=True)[1:3]
+            lb_result = acf(residuals**2, nlags=10, qstat=True)
+            lb_stat = lb_result[1][-1]  # Last Q-statistic
+            lb_pvalue = lb_result[2][-1]  # Last p-value
             
             # ARCH test
-            arch_stat, arch_pvalue = acf(standardized_residuals**2, nlags=10, qstat=True)[1:3]
+            arch_result = acf(standardized_residuals**2, nlags=10, qstat=True)
+            arch_stat = arch_result[1][-1]  # Last Q-statistic
+            arch_pvalue = arch_result[2][-1]  # Last p-value
             
             # Volatility forecasting (1-step ahead)
             forecast = fitted_model.forecast(horizon=1)
@@ -251,13 +255,13 @@ def fit_garch_models(historical_df: pd.DataFrame,
             # Calculate composite score
             aic_score = 1 / (1 + np.exp(fitted_model.aic / 1000))  # Normalize AIC
             vol_forecast_score = 1 / (1 + np.abs(forecast_vol - spread.std()))  # Volatility forecast accuracy
-            lb_score = 1 - lb_pvalue  # Higher is better (less autocorrelation)
-            arch_score = 1 - arch_pvalue  # Higher is better (less ARCH effects)
+            lb_score = 1 - float(lb_pvalue)  # Higher is better (less autocorrelation)
+            arch_score = 1 - float(arch_pvalue)  # Higher is better (less ARCH effects)
             
-            composite_score = (0.4 * aic_score + 
-                             0.3 * vol_forecast_score + 
-                             0.15 * lb_score + 
-                             0.15 * arch_score)
+            composite_score = float(0.4 * aic_score + 
+                                   0.3 * vol_forecast_score + 
+                                   0.15 * lb_score + 
+                                   0.15 * arch_score)
             
             result = {
                 'symbol1': symbol1,
