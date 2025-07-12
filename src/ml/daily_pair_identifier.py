@@ -76,7 +76,8 @@ def gather_historical_data(lookback_days: int = 60) -> pd.DataFrame:
         WHERE symbol IS NOT NULL 
         ORDER BY symbol
         """
-        symbols_df = pd.read_sql(query, db.engine)
+        symbols_result = db.execute_query(query)
+        symbols_df = pd.DataFrame(symbols_result, columns=['symbol'])
         symbols = symbols_df['symbol'].tolist()
         
         logger.info(f"Found {len(symbols)} symbols for analysis")
@@ -86,7 +87,7 @@ def gather_historical_data(lookback_days: int = 60) -> pd.DataFrame:
         start_date = end_date - timedelta(days=lookback_days)
         
         query = """
-        SELECT symbol, timestamp, close_price
+        SELECT symbol, timestamp, close
         FROM market_data 
         WHERE timestamp >= %s 
         AND timestamp <= %s
@@ -94,10 +95,11 @@ def gather_historical_data(lookback_days: int = 60) -> pd.DataFrame:
         ORDER BY symbol, timestamp
         """
         
-        data = pd.read_sql(query, db.engine, params=[start_date, end_date, symbols])
+        historical_result = db.execute_query(query, (start_date, end_date, symbols))
+        data = pd.DataFrame(historical_result, columns=['symbol', 'timestamp', 'close'])
         
         # Pivot to get symbols as columns
-        historical_df = data.pivot(index='timestamp', columns='symbol', values='close_price')
+        historical_df = data.pivot(index='timestamp', columns='symbol', values='close')
         
         logger.info(f"Gathered {len(historical_df)} data points for {len(symbols)} symbols")
         
