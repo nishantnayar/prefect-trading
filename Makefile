@@ -148,6 +148,10 @@ test-pairs-simple:
 	@echo "Testing basic functionality of daily pair identification flow..."
 	@python scripts/test_daily_pair_identification_simple.py
 
+test-enhanced-flow:
+	@echo "Testing enhanced Prefect flow with GRU training..."
+	@python scripts/test_enhanced_prefect_flow.py
+
 run-pairs:
 	@echo "Running daily pair identification flow..."
 	@python -c "from src.ml.daily_pair_identifier import daily_pair_identification_flow; daily_pair_identification_flow()"

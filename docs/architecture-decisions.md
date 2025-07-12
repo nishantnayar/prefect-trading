@@ -1820,4 +1820,134 @@ This section tracks the implementation progress for the GARCH-GRU Pairs Trading 
 
 ---
 
+## 9. Enhanced Prefect Flow with GRU Training Integration
+
+### **Decision: Complete Integration of GRU Training into Prefect Flow**
+
+### **Context:**
+- Existing `train_gru_models.py` script provided comprehensive GRU training
+- Prefect flow only handled GARCH analysis and pair selection
+- Need to consolidate all training functionality into production Prefect system
+- Maintain feature parity while adding production capabilities
+
+### **Problem:**
+- How to integrate GRU training into existing Prefect flow?
+- How to maintain all functionality from standalone script?
+- How to handle database integration and performance tracking?
+- How to ensure production readiness with scheduling and monitoring?
+
+### **Options Considered:**
+
+#### **Option A: Keep Separate Scripts**
+**Pros:**
+- No changes to existing Prefect flow
+- Standalone script remains functional
+
+**Cons:**
+- Two separate training systems
+- Inconsistent execution and monitoring
+- Manual coordination required
+- No production scheduling
+
+#### **Option B: Replace Prefect Flow**
+**Pros:**
+- Single training system
+- All functionality in one place
+
+**Cons:**
+- Lose GARCH analysis capabilities
+- Lose Prefect integration benefits
+- Lose scheduled execution
+
+#### **Option C: Enhance Prefect Flow (Chosen)**
+**Pros:**
+- Complete feature parity with standalone script
+- Maintain GARCH analysis capabilities
+- Keep Prefect integration benefits
+- Single source of truth for training
+- Production scheduling and monitoring
+
+**Cons:**
+- More complex flow
+- Longer execution time
+
+### **Decision Rationale:**
+- **Primary Factor**: Complete integration of all training functionality
+- **Secondary Factor**: Maintain production capabilities
+- **Tertiary Factor**: Single source of truth for training
+
+### **Implementation:**
+
+#### **Enhanced Flow Design: 11-Step Process**
+1. **Data Collection** - Gather historical market data
+2. **Correlation Analysis** - Find highly correlated pairs
+3. **Cointegration Testing** - Test for statistical cointegration
+4. **GARCH Model Fitting** - Fit GARCH(1,1) models to spreads
+5. **Model Selection** - Select best GARCH models
+6. **GARCH MLflow Logging** - Log GARCH models to MLflow
+7. **GRU Model Training** - Train GRU models for all pairs
+8. **Database Integration** - Save performance metrics to database
+9. **Rankings Update** - Update model rankings and trends
+10. **Performance Analysis** - Analyze and summarize results
+11. **Configuration Update** - Update trading configuration
+
+#### **New Tasks Added**
+- **`train_gru_models_for_pairs()`**: GRU training with MLflow integration
+- **`update_model_rankings_and_trends()`**: Database rankings and trends update
+- **`analyze_training_performance()`**: Comprehensive performance analysis
+
+#### **Enhanced Parameters**
+- **`train_all_pairs`**: Whether to train GRU models for all pairs (default: True)
+- **Return Format**: Comprehensive results including both GARCH and GRU data
+
+#### **Complete Feature Parity**
+| Feature | `train_gru_models.py` | Enhanced Prefect Flow | Status |
+|---------|----------------------|----------------------|---------|
+| **GRU Model Training** | ✅ | ✅ | **IMPLEMENTED** |
+| **All Pairs Training** | ✅ | ✅ | **IMPLEMENTED** |
+| **MLflow Integration** | ✅ | ✅ | **IMPLEMENTED** |
+| **Database Performance Tracking** | ✅ | ✅ | **IMPLEMENTED** |
+| **Model Rankings Update** | ✅ | ✅ | **IMPLEMENTED** |
+| **Performance Analysis** | ✅ | ✅ | **IMPLEMENTED** |
+| **Correlation Analysis** | ✅ | ✅ | **IMPLEMENTED** |
+| **Error Handling** | ✅ | ✅ | **IMPLEMENTED** |
+| **Comprehensive Logging** | ✅ | ✅ | **IMPLEMENTED** |
+| **GARCH Analysis** | ❌ | ✅ | **BONUS** |
+| **Prefect Integration** | ❌ | ✅ | **BONUS** |
+| **Scheduled Execution** | ❌ | ✅ | **BONUS** |
+
+#### **Integration Points**
+- **MLflow**: Uses existing `MLflowManager` for consistent configuration
+- **Database**: Uses existing `save_training_results()` and ranking functions
+- **Prefect**: Enhanced `start_of_day_flow()` handles both GARCH and GRU results
+- **Configuration**: All parameters configurable via flow parameters
+
+#### **Production Benefits**
+- **Scheduled Execution**: Runs automatically at 6:00 AM via Prefect
+- **Comprehensive Monitoring**: Full integration with Prefect UI
+- **Error Handling**: Graceful failure handling with detailed logging
+- **Resource Management**: Proper task orchestration and resource allocation
+
+### **Benefits:**
+- **Complete Integration**: No more separate training scripts needed
+- **Production Ready**: Scheduled execution and comprehensive monitoring
+- **Enhanced Capabilities**: Both GARCH and GRU analysis in one flow
+- **Maintainability**: Single source of truth for all training functionality
+- **Scalability**: Easy to modify and extend with new features
+
+### **Migration Path:**
+- **From Standalone Script**: Replace `python -m src.ml.train_gru_models` with `make run-start-day`
+- **Configuration**: All parameters now handled via Prefect flow parameters
+- **Monitoring**: Use Prefect UI instead of console output
+- **Results**: Access via Prefect flow return values
+
+### **Success Metrics:**
+- **Feature Parity**: 100% functionality from standalone script
+- **Execution Time**: Complete within 3 hours (6:00 AM - 9:00 AM)
+- **Reliability**: 99%+ successful execution rate
+- **Integration**: Seamless handoff to real-time signal generation
+- **Monitoring**: Full visibility via Prefect UI
+
+---
+
 ### Phase 6: UI Integration ⏳ PENDING 

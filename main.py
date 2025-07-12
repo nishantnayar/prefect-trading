@@ -131,22 +131,51 @@ def market_data_websocket_flow(end_time: str = "16:00"):
 @flow(name="Start of Day Flow", flow_run_name=lambda: generate_flow_run_name("start-of-day"))
 def start_of_day_flow():
     """
-    Prefect flow for start of day operations including historical data gathering and GARCH analysis.
+    Prefect flow for start of day operations including historical data gathering, 
+    GARCH analysis, and GRU model training.
     This flow runs at 6:00 AM pre-market to prepare models for trading.
     """
     logger = get_run_logger()
     logger.info("Starting Start of Day Flow")
 
     try:
-        # Step 1: Gather historical data and run GARCH analysis
-        logger.info("Running daily pair identification with GARCH analysis...")
-        trading_config = daily_pair_identification_flow()
+        # Step 1: Gather historical data, run GARCH analysis, and train GRU models
+        logger.info("Running daily pair identification with GARCH analysis and GRU training...")
+        results = daily_pair_identification_flow()
+
+        if results is None:
+            logger.warning("Daily pair identification flow returned no results")
+            return None
+
+        # Extract results
+        garch_results = results.get('garch_results', [])
+        gru_results = results.get('gru_results', [])
+        trading_config = results.get('trading_config', {})
+        performance_analysis = results.get('performance_analysis', {})
+        rankings_updated = results.get('rankings_updated', False)
+
+        # Log summary
+        logger.info(f"✅ GARCH Analysis: {len(garch_results)} pairs selected")
+        logger.info(f"✅ GRU Training: {len(gru_results)} models trained")
+        logger.info(f"✅ Database Rankings: {'Updated' if rankings_updated else 'Failed'}")
+        
+        if performance_analysis:
+            best_pair = performance_analysis.get('best_pair', {})
+            if best_pair:
+                logger.info(f"🏆 Best GRU Model: {best_pair.get('pair', 'N/A')} "
+                           f"(F1: {best_pair.get('best_f1', 0):.4f})")
 
         # Step 2: Additional start of day tasks can be added here
         # For example: data validation, system health checks, etc.
 
         logger.info("Start of Day Flow completed successfully")
-        return trading_config
+        return {
+            'garch_results': garch_results,
+            'gru_results': gru_results,
+            'trading_config': trading_config,
+            'performance_analysis': performance_analysis,
+            'rankings_updated': rankings_updated
+        }
 
     except Exception as e:
         logger.error(f"Start of Day Flow error: {e}")
