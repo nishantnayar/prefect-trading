@@ -83,8 +83,8 @@ deployments:
   tags: ["historical-data", "data-loading", "manual"]
   description: "Manual historical data loading for all active symbols (hourly and 1-minute data)"
   schedule: null  # Manual trigger only
-  flow_name: load_historical_data_task
-  entrypoint: "main.py:load_historical_data_task"
+  flow_name: historical_data_loader_flow
+  entrypoint: "main.py:historical_data_loader_flow"
   parameters: {}
   work_pool:
     name: daily

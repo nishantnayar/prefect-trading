@@ -166,6 +166,27 @@ def start_of_day_flow():
         raise
 
 
+@flow(name="Historical Data Loader Flow", flow_run_name=lambda: generate_flow_run_name("historical-loader"))
+def historical_data_loader_flow():
+    """
+    Prefect flow to load historical market data.
+    This flow loads both hourly and 1-minute historical data for all active symbols.
+    """
+    logger = get_run_logger()
+    logger.info("Starting Historical Data Loader Flow")
+    try:
+        # Connect to database
+        db = postgres_connect()
+        
+        # Load historical data using the task
+        load_historical_data_task()
+        
+        logger.info("Historical Data Loader Flow completed successfully")
+    except Exception as e:
+        logger.error(f"Historical Data Loader Flow error: {e}")
+        raise
+
+
 @flow(name="Market Data WebSocket Flow", flow_run_name=lambda: generate_flow_run_name("websocket-data"))
 def market_data_websocket_flow(end_time: str = "16:00"):
     """
