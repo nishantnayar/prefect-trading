@@ -17,7 +17,7 @@ import mlflow
 import mlflow.pytorch
 
 from src.ml.train_gru_models import run_gru_training, prepare_pairs_data_from_features
-from src.ml.mlflow_manager import MLflowManager
+from src.mlflow_manager import MLflowManager
 from src.database.database_connectivity import DatabaseConnectivity
 from src.data.sources.symbol_manager import SymbolManager
 from src.flows.preprocessing_flows import data_preprocessing_flow
