@@ -25,8 +25,21 @@ class WebSocketConfig:
             config_path: Path to config.yaml file. If None, uses default location.
         """
         if config_path is None:
-            # Default config path relative to project root
-            config_path = Path(__file__).parent.parent.parent / "config" / "config.yaml"
+            # Try multiple possible config paths
+            possible_paths = [
+                "config/config.yaml",  # Relative to current working directory
+                Path(__file__).parent.parent.parent / "config" / "config.yaml",  # Relative to this file
+                Path.cwd() / "config" / "config.yaml",  # Relative to current working directory
+            ]
+            
+            # Use the first path that exists
+            for path in possible_paths:
+                if Path(path).exists():
+                    config_path = path
+                    break
+            else:
+                # If none exist, use the first one as default
+                config_path = possible_paths[0]
         
         self.config_path = Path(config_path)
         self._config = None

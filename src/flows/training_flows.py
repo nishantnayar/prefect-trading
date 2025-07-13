@@ -75,9 +75,8 @@ def train_gru_models_task(
     logger.info(f"Training GRU models for {len(pairs_data_list)} pairs")
     
     try:
-        # Set up MLflow
+        # Set up MLflow (experiment is already configured in MLflowManager initialization)
         mlflow_manager = MLflowManager()
-        mlflow_manager.setup_experiment()
         
         # Train models
         model, history, trainer = run_gru_training(
