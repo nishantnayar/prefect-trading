@@ -7,9 +7,11 @@ from prefect import flow, task, get_run_logger
 from src.database.database_connectivity import DatabaseConnectivity
 from src.data.sources.yahoo_finance_loader import YahooFinanceDataLoader
 from src.data.sources.alpaca_daily_loader import AlpacaDailyLoader
+from src.data.sources.alpaca_historical_loader import AlpacaDataLoader
 from src.data.sources.news import NewsLoader
 from src.scripts.check_delisted_symbols import DelistedSymbolChecker
 from src.data.sources.alpaca_websocket import market_data_websocket_flow as websocket_flow
+from alpaca.data.timeframe import TimeFrame
 
 
 def generate_flow_run_name(flow_prefix: str) -> str:
@@ -26,6 +28,32 @@ def postgres_connect():
         return db
     except Exception as e:
         logger.error(f"Database connection error: {e}")
+        raise
+
+
+@task(name="Load Historical Data Task")
+def load_historical_data_task():
+    """
+    Prefect task to load historical market data.
+    This task loads both hourly and 1-minute historical data for all active symbols.
+    """
+    logger = get_run_logger()
+    try:
+        logger.info("Initializing historical data loader...")
+        historical_loader = AlpacaDataLoader()
+        
+        # Load hourly historical data (last 30 days)
+        logger.info("Loading hourly historical data...")
+        historical_loader.run_historical_load(timeframe=TimeFrame.Hour)
+        
+        # Load 1-minute historical data (last 7 days)
+        logger.info("Loading 1-minute historical data...")
+        historical_loader.load_1min_historical_data()
+        
+        logger.info("Historical data loading completed successfully")
+        return True
+    except Exception as e:
+        logger.error(f"Historical data loading error: {e}")
         raise
 
 
@@ -109,6 +137,35 @@ def eod_process_flow():
         raise
 
 
+@flow(name="Start of Day Flow", flow_run_name=lambda: generate_flow_run_name("start-of-day"))
+def start_of_day_flow():
+    """
+    Prefect flow to run start-of-day processes for the trading system.
+    This includes historical data loading and other initialization tasks.
+    """
+    logger = get_run_logger()
+    logger.info("Starting Start of Day Flow")
+    try:
+        # Connect to database
+        db = postgres_connect()
+        
+        # Task 1: Load historical data (first task)
+        logger.info("Executing Task 1: Historical Data Loading")
+        load_historical_data_task()
+        
+        # Future tasks can be added here:
+        # - Symbol maintenance check
+        # - Market data validation
+        # - Model performance checks
+        # - System health checks
+        # - etc.
+        
+        logger.info("Start of Day Flow completed successfully")
+    except Exception as e:
+        logger.error(f"Start of Day Flow error: {e}")
+        raise
+
+
 @flow(name="Market Data WebSocket Flow", flow_run_name=lambda: generate_flow_run_name("websocket-data"))
 def market_data_websocket_flow(end_time: str = "16:00"):
     """
@@ -128,6 +185,11 @@ def market_data_websocket_flow(end_time: str = "16:00"):
 
 
 if __name__ == '__main__':
-    hourly_process_flow()
-    eod_process_flow()
-    market_data_websocket_flow()
+    # Uncomment the flow you want to run:
+    # start_of_day_flow()             # Start of day processes
+    # hourly_process_flow()           # Hourly data collection
+    # eod_process_flow()              # End-of-day processing
+    # market_data_websocket_flow()    # Real-time WebSocket data
+    
+    # For testing, run start of day flow
+    start_of_day_flow()
