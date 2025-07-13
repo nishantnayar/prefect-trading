@@ -4,6 +4,7 @@ import yaml
 from pathlib import Path
 
 from src.database.database_connectivity import DatabaseConnectivity
+from src.utils.config_loader import get_sectors_config
 
 
 class SymbolManager:
@@ -16,9 +17,10 @@ class SymbolManager:
     def _load_config(self) -> dict:
         """Load configuration from config.yaml"""
         try:
-            config_path = Path(__file__).parent.parent.parent.parent / "config" / "config.yaml"
-            with open(config_path, 'r') as f:
-                return yaml.safe_load(f)
+            # Use the new config loader
+            config = get_sectors_config()
+            print("Loaded sectors configuration")
+            return {"sectors": config}
         except Exception as e:
             print(f"Warning: Could not load config, using defaults: {e}")
             return {"sectors": {"active": ["technology"]}}

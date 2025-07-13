@@ -47,34 +47,10 @@ class DataPreprocessingUtils:
     def _load_config(self) -> dict:
         """Load configuration from config.yaml"""
         try:
-            # Try multiple possible config paths
-            possible_paths = [
-                "config/config.yaml",  # Relative to current working directory
-                Path(__file__).parent.parent.parent.parent / "config" / "config.yaml",  # Relative to this file
-                Path.cwd() / "config" / "config.yaml",  # Relative to current working directory
-            ]
-            
-            for config_path in possible_paths:
-                try:
-                    with open(config_path, 'r') as f:
-                        config = yaml.safe_load(f)
-                        logger.info(f"Loaded config from: {config_path}")
-                        return config
-                except (FileNotFoundError, OSError):
-                    continue
-            
-            # If none of the paths work, use defaults
-            logger.warning("Could not load config from any path, using defaults")
-            return {
-                "variance_stability": {
-                    "arch_test_pvalue_threshold": 1e-100,
-                    "rolling_std_cv_threshold": 2.0,
-                    "ljung_box_pvalue_threshold": 0.001,
-                    "test_window": 30,
-                    "arch_lags": 5,
-                    "ljung_box_lags": 10
-                }
-            }
+            # Use the new config loader
+            config = get_variance_stability_config()
+            logger.info("Loaded variance stability configuration")
+            return {"variance_stability": config}
         except Exception as e:
             logger.warning(f"Could not load config, using defaults: {e}")
             return {
