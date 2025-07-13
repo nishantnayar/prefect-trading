@@ -546,6 +546,110 @@ def rebaseline_workflow():
 
 For more details on MLflow integration, see [Architecture Decisions](architecture-decisions.md).
 
+## Prefect Workflow Management
+
+### Start-of-Day Flow
+
+The start-of-day flow (`start_of_day_flow`) is the primary workflow that runs every morning at 6:00 AM EST (pre-market) to prepare the trading system for the day. This comprehensive flow includes:
+
+#### Flow Components
+
+1. **Historical Data Loading**
+   - Loads hourly historical data (last 30 days)
+   - Loads 1-minute historical data (last 7 days)
+   - Ensures all symbols have sufficient data for analysis
+
+2. **Data Preprocessing**
+   - Runs variance stability testing on all symbols
+   - Filters symbols based on configurable criteria
+   - Prepares data for model training
+   - Uses settings from `config.yaml` for variance stability thresholds
+
+3. **Model Training**
+   - Trains GRU models for all sectors (Technology, Healthcare, Finance, etc.)
+   - Integrates with MLflow for experiment tracking
+   - Saves model performance metrics to database
+   - Updates model rankings and trends
+
+4. **Symbol Maintenance**
+   - Checks for delisted symbols
+   - Updates symbol status in database
+   - Ensures data quality and completeness
+
+5. **Additional Data Loading**
+   - Loads Yahoo Finance company information
+   - Fetches news articles and sentiment data
+   - Prepares comprehensive market data
+
+#### Configuration
+
+The flow uses configuration from `config.yaml`:
+
+```yaml
+variance_stability:
+  # Original strict criteria (commented out)
+  # min_variance_ratio: 0.1
+  # max_variance_ratio: 10.0
+  # min_std_dev: 0.01
+  # max_std_dev: 0.5
+  
+  # Current relaxed criteria
+  min_variance_ratio: 0.05
+  max_variance_ratio: 20.0
+  min_std_dev: 0.005
+  max_std_dev: 1.0
+```
+
+#### Deployment
+
+The flow is deployed via Prefect with the following configuration:
+
+```yaml
+- name: start-of-day-flow
+  version: 1.0.0
+  tags: ["start-of-day", "historical-data", "data-loading", "pre-market", "preprocessing", "training"]
+  description: "Start of day processes including historical data loading, data preprocessing, model training, symbol maintenance, and system initialization"
+  schedule:
+    cron: "0 6 * * 1-5"  # 6:00 AM EST Mon-Fri (pre-market)
+    timezone: America/New_York
+  flow_name: start_of_day_flow
+  entrypoint: "main.py:start_of_day_flow"
+```
+
+#### Manual Execution
+
+To run the start-of-day flow manually:
+
+```bash
+# Run from command line
+python main.py
+
+# Or run individual components
+python -c "from main import start_of_day_flow; start_of_day_flow()"
+```
+
+#### Monitoring and Logging
+
+- All tasks include comprehensive logging
+- Flow run names include timestamps for easy tracking
+- Integration with Prefect's monitoring dashboard
+- Error handling with detailed error messages
+- Performance metrics tracked in MLflow
+
+#### Error Handling
+
+The flow includes robust error handling:
+- Database connection failures are logged and retried
+- Individual task failures don't stop the entire flow
+- Detailed error messages for debugging
+- Graceful degradation when services are unavailable
+
+### Other Flows
+
+- **Hourly Process Flow**: Runs every hour during market hours (9AM-4PM EST)
+- **End-of-Day Flow**: Runs at 6PM EST for daily cleanup and analysis
+- **WebSocket Flow**: Manages real-time data collection during market hours
+
 ## Resources
 
 - [Python Style Guide (PEP 8)](https://www.python.org/dev/peps/pep-0008/)

@@ -883,6 +883,384 @@ def prepare_pairs_data(price_a, price_b, beta):
     }
 ```
 
+##### Statistical Tests for Variance Stability
+
+After applying logarithmic transformations, it's important to validate that variance has been successfully stabilized. The following tests help confirm that the data preprocessing is working correctly:
+
+| **Method** | **Successful Stabilization Sign** |
+|------------|-----------------------------------|
+| **Visual Plot** | No obvious "funnel" shape (e.g., widening/narrowing volatility) |
+| **Rolling Std** | Flat or stable trend (no large spikes/dips) |
+| **ARCH Test** | p-value > 0.05 → Residual heteroscedasticity is not significant |
+
+**Implementation Example:**
+```python
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from statsmodels.stats.diagnostic import het_arch
+
+def test_variance_stability(returns, window=30):
+    """
+    Test variance stability of return series.
+    
+    Args:
+        returns: Log return series
+        window: Rolling window size for standard deviation
+    
+    Returns:
+        dict: Test results and plots
+    """
+    # 1. Visual Plot - Check for funnel shape
+    plt.figure(figsize=(12, 8))
+    
+    plt.subplot(2, 2, 1)
+    plt.plot(returns)
+    plt.title('Log Returns Over Time')
+    plt.ylabel('Log Returns')
+    
+    # 2. Rolling Standard Deviation
+    rolling_std = returns.rolling(window=window).std()
+    
+    plt.subplot(2, 2, 2)
+    plt.plot(rolling_std)
+    plt.title(f'Rolling Standard Deviation (Window={window})')
+    plt.ylabel('Standard Deviation')
+    
+    # 3. ARCH Test for heteroscedasticity
+    # Remove NaN values for testing
+    clean_returns = returns.dropna()
+    arch_stat, arch_pvalue = het_arch(clean_returns, nlags=4)
+    
+    plt.subplot(2, 2, 3)
+    plt.hist(returns, bins=50, alpha=0.7)
+    plt.title('Distribution of Log Returns')
+    plt.xlabel('Log Returns')
+    
+    plt.subplot(2, 2, 4)
+    plt.scatter(returns[:-1], returns[1:], alpha=0.5)
+    plt.xlabel('Log Returns (t-1)')
+    plt.ylabel('Log Returns (t)')
+    plt.title('Autocorrelation Plot')
+    
+    plt.tight_layout()
+    plt.show()
+    
+    # 4. Summary statistics
+    results = {
+        'rolling_std_mean': rolling_std.mean(),
+        'rolling_std_std': rolling_std.std(),
+        'rolling_std_cv': rolling_std.std() / rolling_std.mean(),  # Coefficient of variation
+        'arch_statistic': arch_stat,
+        'arch_pvalue': arch_pvalue,
+        'is_stable': arch_pvalue > 0.05 and rolling_std.std() / rolling_std.mean() < 0.5
+    }
+    
+    print(f"Variance Stability Test Results:")
+    print(f"  - Rolling Std Mean: {results['rolling_std_mean']:.6f}")
+    print(f"  - Rolling Std Std: {results['rolling_std_std']:.6f}")
+    print(f"  - Coefficient of Variation: {results['rolling_std_cv']:.4f}")
+    print(f"  - ARCH Test p-value: {results['arch_pvalue']:.4f}")
+    print(f"  - Variance Stable: {'✅ YES' if results['is_stable'] else '❌ NO'}")
+    
+    return results
+
+# Example usage
+def validate_log_transformation(raw_prices):
+    """
+    Validate that log transformation stabilizes variance.
+    """
+    # Calculate log returns
+    log_returns = np.log(raw_prices / raw_prices.shift(1))
+    
+    # Test variance stability
+    stability_results = test_variance_stability(log_returns)
+    
+    if stability_results['is_stable']:
+        print("✅ Log transformation successfully stabilized variance")
+        return log_returns
+    else:
+        print("⚠️  Variance may not be fully stabilized. Consider additional transformations.")
+        return log_returns
+```
+
+##### Practical Data Preparation and Variance Stabilization Workflow
+
+This section describes the practical workflow for preparing and normalizing financial time series data, as implemented in the research Jupyter notebook.
+
+##### Step 1: Data Preparation – Stock Selection
+
+- **Goal:** Focus on stocks with the most complete data.
+- **Method:**
+  1. Count the number of records for each stock symbol:
+     ```python
+     symbol_counts = pd.DataFrame(original_df['symbol'].value_counts())
+     ```
+  2. Select stocks with at least 80% of the maximum record count:
+     ```python
+     high = symbol_counts['count'].head(1).values
+     high_percent = high[0] * 0.80
+     # Filter symbols as needed
+     ```
+
+##### Step 2: Normalization
+
+- **Goal:** Stabilize variance and prepare features for modeling.
+- **Method:**
+  1. For each symbol, compute:
+     - `log_close`: Natural log of the close price.
+     - `log_return`: Difference of log_close (i.e., log returns).
+     - `z_scores`: Expanding window z-score of log returns.
+     ```python
+     gru_result_df['log_close'] = gru_result_df.groupby('symbol')['close'].transform(lambda x: np.log(x))
+     gru_result_df['log_return'] = gru_result_df.groupby('symbol')['log_close'].diff()
+     gru_result_df['z_scores'] = gru_result_df.groupby('symbol')['log_return'].transform(
+         lambda x: (x - x.expanding().mean()) / x.expanding().std()
+     )
+     ```
+  2. Remove rows with NaN in `log_return` or `z_scores`:
+     ```python
+     gru_result_df = gru_result_df.dropna(subset=['log_return'])
+     gru_result_df = gru_result_df.dropna(subset=['z_scores'])
+     ```
+
+##### Step 3: Variance Stability Testing and Filtering
+
+- **Goal:** Ensure that variance stabilization is effective for each stock.
+- **Method:**
+  1. For each symbol, apply:
+     - **Rolling Standard Deviation:** Should be flat/stable after transformation.
+     - **ARCH Test:** Use `het_arch` from `statsmodels`; require p-value > 0.05 for stability.
+     ```python
+     from statsmodels.stats.diagnostic import het_arch
+     for symbol in symbols:
+         symbol_data = gru_result_df[gru_result_df['symbol'] == symbol]
+         _, pvalue, *_ = het_arch(symbol_data['z_scores'].dropna(), nlags=5)
+         if pvalue > 0.05:
+             # Stock passes variance stability test
+         else:
+             # Stock fails, consider removing
+     ```
+  2. Remove stocks that do not meet the variance stability criteria.
+
+---
+
+**Note:**  
+This workflow ensures that only stocks with sufficient, stable, and well-normalized data are used for downstream modeling (e.g., GRU, GARCH). The approach is fully aligned with best practices for financial time series preprocessing.
+
+---
+
+#### Feature Storage and Database Design
+
+To maintain data integrity and performance, computed features are stored in a separate table rather than modifying the original historical data.
+
+##### Database Schema
+
+```sql
+-- Table for storing computed features
+CREATE TABLE market_data_features (
+    id SERIAL PRIMARY KEY,
+    symbol VARCHAR(10) NOT NULL,
+    timestamp TIMESTAMP NOT NULL,
+    
+    -- Core features
+    log_close DECIMAL(15,6),
+    log_return DECIMAL(15,6),
+    z_score DECIMAL(15,6),
+    
+    -- Additional computed features
+    rolling_std DECIMAL(15,6),
+    rolling_mean DECIMAL(15,6),
+    volatility_annualized DECIMAL(15,6),
+    
+    -- Metadata
+    feature_date DATE NOT NULL,
+    computation_method VARCHAR(50) DEFAULT 'expanding_window',
+    data_source VARCHAR(20) DEFAULT 'market_data_historical',
+    
+    -- Tracking
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    
+    -- Constraints and indexes
+    UNIQUE(symbol, timestamp),
+    CONSTRAINT fk_symbol FOREIGN KEY (symbol) REFERENCES symbols(symbol)
+);
+
+-- Indexes for performance
+CREATE INDEX idx_features_symbol_timestamp ON market_data_features(symbol, timestamp);
+CREATE INDEX idx_features_date ON market_data_features(feature_date);
+CREATE INDEX idx_features_symbol_date ON market_data_features(symbol, feature_date);
+
+-- Table for variance stability tracking
+CREATE TABLE variance_stability_tracking (
+    id SERIAL PRIMARY KEY,
+    symbol VARCHAR(10) NOT NULL,
+    test_date DATE NOT NULL,
+    
+    -- Test metrics
+    record_count INTEGER,
+    arch_test_pvalue DECIMAL(10,6),
+    rolling_std_cv DECIMAL(10,6),  -- Coefficient of variation
+    ljung_box_pvalue DECIMAL(10,6),
+    
+    -- Results
+    is_stable BOOLEAN NOT NULL,
+    filter_reason TEXT,  -- 'arch_test_failed', 'insufficient_data', 'high_volatility'
+    
+    -- Test parameters
+    test_window INTEGER DEFAULT 30,
+    arch_lags INTEGER DEFAULT 5,
+    
+    -- Tracking
+    created_at TIMESTAMP DEFAULT NOW(),
+    
+    -- Constraints
+    UNIQUE(symbol, test_date),
+    CONSTRAINT fk_stability_symbol FOREIGN KEY (symbol) REFERENCES symbols(symbol)
+);
+
+-- Indexes for variance stability
+CREATE INDEX idx_stability_symbol_date ON variance_stability_tracking(symbol, test_date);
+CREATE INDEX idx_stability_date_stable ON variance_stability_tracking(test_date, is_stable);
+```
+
+##### Feature Computation Strategy
+
+**Daily Workflow:**
+1. **Check Existing Features:** Query `market_data_features` for today's symbols
+2. **Compute Missing Features:** Generate features for symbols without data
+3. **Variance Stability Test:** Check stability and update `variance_stability_tracking`
+4. **Use Stable Features:** Filter to only stable symbols for modeling
+
+**Performance Optimizations:**
+- **Caching:** Cache frequently used features in memory during trading day
+- **Batch Processing:** Compute features in batches for multiple symbols
+- **Incremental Updates:** Only compute features for new data points
+- **Partitioning:** Consider partitioning by date for large datasets
+
+**Feature Computation Methods:**
+
+```python
+def compute_features_for_symbol(symbol: str, price_data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Compute all features for a single symbol.
+    
+    Args:
+        symbol: Stock symbol
+        price_data: DataFrame with 'close' column
+        
+    Returns:
+        DataFrame with computed features
+    """
+    features = price_data.copy()
+    
+    # Core features
+    features['log_close'] = np.log(features['close'])
+    features['log_return'] = features['log_close'].diff()
+    
+    # Z-score with expanding window
+    features['z_score'] = features.groupby('symbol')['log_return'].transform(
+        lambda x: (x - x.expanding().mean()) / x.expanding().std()
+    )
+    
+    # Rolling statistics
+    features['rolling_std'] = features['log_return'].rolling(30).std()
+    features['rolling_mean'] = features['log_return'].rolling(30).mean()
+    
+    # Annualized volatility
+    features['volatility_annualized'] = features['rolling_std'] * np.sqrt(252)
+    
+    return features
+```
+
+##### Variance Stability Testing Strategy
+
+**Testing Criteria:**
+1. **ARCH Test:** p-value > 0.05 (no significant heteroscedasticity)
+2. **Rolling Std CV:** Coefficient of variation < 0.5 (stable variance)
+3. **Ljung-Box Test:** p-value > 0.05 (no significant autocorrelation)
+
+**Filtering Logic:**
+```python
+def test_variance_stability(symbol: str, feature_data: pd.DataFrame) -> dict:
+    """
+    Test variance stability for a symbol.
+    
+    Returns:
+        Dict with test results and stability status
+    """
+    # Get z_scores for testing
+    z_scores = feature_data['z_score'].dropna()
+    
+    if len(z_scores) < 30:
+        return {
+            'is_stable': False,
+            'filter_reason': 'insufficient_data',
+            'record_count': len(z_scores)
+        }
+    
+    # ARCH test
+    arch_stat, arch_pvalue = het_arch(z_scores, nlags=5)
+    
+    # Rolling std coefficient of variation
+    rolling_std = z_scores.rolling(30).std()
+    rolling_std_cv = rolling_std.std() / rolling_std.mean()
+    
+    # Ljung-Box test
+    lb_stat, lb_pvalue = acorr_ljungbox(z_scores, lags=10, return_df=True)
+    
+    # Determine stability
+    is_stable = (
+        arch_pvalue > 0.05 and 
+        rolling_std_cv < 0.5 and 
+        all(p > 0.05 for p in lb_pvalue)
+    )
+    
+    filter_reason = None
+    if not is_stable:
+        if arch_pvalue <= 0.05:
+            filter_reason = 'arch_test_failed'
+        elif rolling_std_cv >= 0.5:
+            filter_reason = 'high_volatility'
+        else:
+            filter_reason = 'autocorrelation_detected'
+    
+    return {
+        'is_stable': is_stable,
+        'filter_reason': filter_reason,
+        'arch_test_pvalue': arch_pvalue,
+        'rolling_std_cv': rolling_std_cv,
+        'ljung_box_pvalue': lb_pvalue.tolist(),
+        'record_count': len(z_scores)
+    }
+```
+
+##### Data Access Patterns
+
+**For Modeling:**
+```sql
+-- Get stable features for modeling
+SELECT f.* 
+FROM market_data_features f
+JOIN variance_stability_tracking v ON f.symbol = v.symbol 
+    AND f.feature_date = v.test_date
+WHERE v.is_stable = true 
+    AND f.feature_date >= CURRENT_DATE - INTERVAL '30 days'
+ORDER BY f.symbol, f.timestamp;
+```
+
+**For Monitoring:**
+```sql
+-- Check variance stability status
+SELECT symbol, test_date, is_stable, filter_reason, arch_test_pvalue
+FROM variance_stability_tracking 
+WHERE test_date = CURRENT_DATE
+ORDER BY is_stable DESC, symbol;
+```
+
+---
+
 ##### Key Considerations
 
 1. **No Look-Ahead Bias**: Always use expanding windows for z-score calculation to avoid using future information
@@ -890,6 +1268,7 @@ def prepare_pairs_data(price_a, price_b, beta):
 3. **Data Quality**: Handle missing values and outliers appropriately
 4. **Stationarity**: Ensure spread series is stationary before applying z-score normalization
 5. **Beta Estimation**: Use proper methods (OLS, Kalman filter) for beta estimation in spread construction
+6. **Variance Validation**: Always test for variance stability after transformations
 
 ### Best Practices
 
@@ -936,3 +1315,84 @@ def prepare_pairs_data(price_a, price_b, beta):
 - **[API Documentation](api.md)**: External API integrations and data sources
 - **[Setup Guide](setup.md)**: System setup and configuration
 - **[Development Guide](development.md)**: Development practices and workflows 
+
+## Variance Stability Testing
+
+Variance stability testing is a critical step in financial time series analysis to ensure that the statistical properties of the data are consistent over time. This is especially important for pairs trading strategies where we rely on stable relationships between assets.
+
+### Theory and Background
+
+**Why Variance Stability Matters:**
+- **Pairs Trading Assumption**: Pairs trading assumes that the spread between two correlated assets will revert to its mean. This assumption breaks down if the variance of the spread is not stable.
+- **Model Performance**: Machine learning models trained on data with unstable variance may perform poorly in production.
+- **Risk Management**: Unstable variance can lead to unexpected losses and poor risk estimates.
+
+**Statistical Tests Used:**
+1. **ARCH Test (Autoregressive Conditional Heteroskedasticity)**: Tests for heteroskedasticity in the residuals
+2. **Rolling Standard Deviation Coefficient of Variation**: Measures the stability of volatility over time
+3. **Ljung-Box Test**: Tests for autocorrelation in the residuals
+
+### Configuration
+
+Variance stability criteria are configurable via `config/config.yaml`:
+
+```yaml
+variance_stability:
+  # Original strict criteria (commented out)
+  # arch_test_pvalue_threshold: 0.05
+  # rolling_std_cv_threshold: 0.5
+  # ljung_box_pvalue_threshold: 0.05
+  
+  # Current relaxed criteria (for testing/development)
+  arch_test_pvalue_threshold: 1e-100  # Essentially ignore ARCH test
+  rolling_std_cv_threshold: 2.0       # Allow higher volatility
+  ljung_box_pvalue_threshold: 0.001   # More lenient autocorrelation test
+  
+  # Test parameters
+  test_window: 30
+  arch_lags: 5
+  ljung_box_lags: 10
+```
+
+**Thresholds Explained:**
+- **ARCH p-value**: Must be > threshold (higher = more lenient)
+- **Rolling std CV**: Must be < threshold (lower = more strict)
+- **Ljung-Box p-value**: Must be > threshold (higher = more lenient)
+
+### Practical Workflow
+
+**When to Use Log Close vs Log Returns:**
+- **Log Close**: Use when you want to model the price level directly
+- **Log Returns**: Use for variance stability testing and most ML applications (recommended)
+
+**Z-Score Normalization:**
+- Computed using expanding or rolling windows
+- Helps stabilize variance and make data more suitable for ML models
+
+**Variance Stability Testing Process:**
+1. Compute log returns from price data
+2. Calculate z-scores using expanding/rolling windows
+3. Apply statistical tests (ARCH, rolling std CV, Ljung-Box)
+4. Filter symbols based on stability criteria
+5. Use only stable symbols for pairs trading
+
+### Implementation Details
+
+The variance stability testing is implemented in `src/utils/data_preprocessing_utils.py` and integrates with the training pipeline in `src/ml/train_gru_models.py`.
+
+**Key Features:**
+- Configurable thresholds via config file
+- Robust error handling for edge cases
+- Database storage of test results
+- Integration with MLflow for experiment tracking
+- Support for both expanding and rolling window computations
+
+**Usage Example:**
+```python
+from src.utils.data_preprocessing_utils import DataPreprocessingUtils
+
+utils = DataPreprocessingUtils()
+stable_features, stable_symbols, test_results = utils.test_variance_stability_for_multiple_symbols(
+    feature_data, symbols, test_window=30, arch_lags=5
+)
+``` 

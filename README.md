@@ -254,7 +254,12 @@ python main.py
 The system includes several automated workflows that can be run individually or scheduled:
 
 ### Core Data Flows
-- **`start_of_day_flow()`** - Historical data loading and system initialization
+- **`start_of_day_flow()`** - Comprehensive start-of-day workflow including:
+  - Historical data loading (hourly and 1-minute data)
+  - Data preprocessing with variance stability testing
+  - Model training for all sectors with MLflow integration
+  - Symbol maintenance and delisting checks
+  - Yahoo Finance data collection
 - **`hourly_process_flow()`** - Hourly data collection and processing
 - **`eod_process_flow()`** - End-of-day symbol maintenance and data updates
 - **`market_data_websocket_flow()`** - Real-time market data streaming
@@ -402,6 +407,19 @@ When contributing to the project:
 This project is licensed under the terms specified in the LICENSE file.
 
 ## 🔄 Recent Updates
+
+### July 2025 - Enhanced Start-of-Day Flow Integration
+- **Prefect Integration**: Integrated data preprocessing and model training into the start-of-day flow
+- **Comprehensive Workflow**: Start-of-day flow now includes 5 major components:
+  - Historical data loading (hourly and 1-minute data)
+  - Data preprocessing with variance stability testing
+  - Model training for all sectors with MLflow integration
+  - Symbol maintenance and delisting checks
+  - Yahoo Finance data collection
+- **Configuration Management**: Variance stability criteria moved to config.yaml for easy adjustment
+- **Documentation Updates**: Enhanced development guide with detailed Prefect workflow documentation
+- **Scheduled Execution**: Flow runs automatically at 6:00 AM EST (pre-market) on weekdays
+- **Error Handling**: Robust error handling with comprehensive logging and monitoring
 
 ### July 2025 - PortfolioManager Architecture Improvements
 - **Architecture Decisions**: Added comprehensive documentation of PortfolioManager singleton pattern and caching system

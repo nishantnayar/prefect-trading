@@ -13,6 +13,17 @@ from src.scripts.check_delisted_symbols import DelistedSymbolChecker
 from src.data.sources.alpaca_websocket import market_data_websocket_flow as websocket_flow
 from alpaca.data.timeframe import TimeFrame
 
+# Import new preprocessing and training flows
+from src.flows.preprocessing_flows import (
+    data_preprocessing_flow,
+    daily_preprocessing_flow
+)
+from src.flows.training_flows import (
+    complete_training_flow,
+    daily_training_flow,
+    sector_training_flow
+)
+
 
 def generate_flow_run_name(flow_prefix: str) -> str:
     return f"{flow_prefix}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
@@ -141,7 +152,7 @@ def eod_process_flow():
 def start_of_day_flow():
     """
     Prefect flow to run start-of-day processes for the trading system.
-    This includes historical data loading and other initialization tasks.
+    This includes historical data loading, data preprocessing, model training, and other initialization tasks.
     """
     logger = get_run_logger()
     logger.info("Starting Start of Day Flow")
@@ -153,12 +164,21 @@ def start_of_day_flow():
         logger.info("Executing Task 1: Historical Data Loading")
         load_historical_data_task()
 
-        # Future tasks can be added here:
-        # - Symbol maintenance check
-        # - Market data validation
-        # - Model performance checks
-        # - System health checks
-        # - etc.
+        # Task 2: Data preprocessing with variance stability testing
+        logger.info("Executing Task 2: Data Preprocessing")
+        daily_preprocessing_flow()
+
+        # Task 3: Model training for all sectors
+        logger.info("Executing Task 3: Model Training")
+        complete_training_flow()
+
+        # Task 4: Symbol maintenance check
+        logger.info("Executing Task 4: Symbol Maintenance")
+        symbol_maintenance_flow()
+
+        # Task 5: Load additional market data (Yahoo Finance)
+        logger.info("Executing Task 5: Yahoo Finance Data Loading")
+        yahoo_data_loader_flow()
 
         logger.info("Start of Day Flow completed successfully")
     except Exception as e:

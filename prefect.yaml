@@ -9,8 +9,8 @@ pull:
 deployments:
 - name: start-of-day-flow
   version: 1.0.0
-  tags: ["start-of-day", "historical-data", "data-loading", "pre-market"]
-  description: "Start of day processes including historical data loading, symbol maintenance, and system initialization"
+  tags: ["start-of-day", "historical-data", "data-loading", "pre-market", "preprocessing", "training"]
+  description: "Start of day processes including historical data loading, data preprocessing, model training, symbol maintenance, and system initialization"
   schedule:
     cron: "0 6 * * 1-5"  # 6:00 AM EST Mon-Fri (pre-market)
     timezone: America/New_York
