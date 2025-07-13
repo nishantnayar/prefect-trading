@@ -173,12 +173,12 @@ def start_of_day_flow():
         complete_training_flow()
 
         # Task 4: Symbol maintenance check
-        logger.info("Executing Task 4: Symbol Maintenance")
-        symbol_maintenance_flow()
+        # logger.info("Executing Task 4: Symbol Maintenance")
+        # symbol_maintenance_flow()
 
         # Task 5: Load additional market data (Yahoo Finance)
-        logger.info("Executing Task 5: Yahoo Finance Data Loading")
-        yahoo_data_loader_flow()
+        # logger.info("Executing Task 5: Yahoo Finance Data Loading")
+        # yahoo_data_loader_flow()
 
         logger.info("Start of Day Flow completed successfully")
     except Exception as e:
