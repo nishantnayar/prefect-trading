@@ -129,6 +129,9 @@ class GRUTrainer:
             
             # Forward pass
             outputs = self.model(batch_x).squeeze()
+            # Patch: ensure shapes match for BCELoss
+            outputs = outputs.view(-1)
+            batch_y = batch_y.view(-1)
             loss = self.criterion(outputs, batch_y)
             
             # Backward pass
@@ -159,6 +162,9 @@ class GRUTrainer:
         with torch.no_grad():
             for batch_x, batch_y in self.val_loader:
                 outputs = self.model(batch_x).squeeze()
+                # Patch: ensure shapes match for BCELoss
+                outputs = outputs.view(-1)
+                batch_y = batch_y.view(-1)
                 loss = self.criterion(outputs, batch_y)
                 
                 total_loss += loss.item()

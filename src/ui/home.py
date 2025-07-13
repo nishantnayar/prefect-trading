@@ -13,11 +13,12 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from pytz import timezone
-from src.ui.components.symbol_selector import display_symbol_selector
+from src.ui.components.symbol_selector import display_symbol_selector, display_sector_selector
 from src.ui.components.date_display import get_current_cst_formatted, format_datetime_est_to_cst
 from src.ui.components.market_status import display_market_status
 from src.database.database_connectivity import DatabaseConnectivity
 from src.data.sources.portfolio_manager import PortfolioManager
+from src.utils.data_recycler_utils import get_latest_price
 
 # Load environment variables
 load_dotenv('config/.env', override=True)
@@ -429,16 +430,29 @@ def render_home():
     st.divider()
     
     # Symbol Selection and Analysis
-    st.subheader("🔍 Symbol Analysis")
-    selected_symbol = display_symbol_selector()
+    st.subheader("📊 Symbol Analysis")
+    
+    # Add sector selection
+    selected_sectors = display_sector_selector()
+    
+    # Symbol selection with sector filtering
+    selected_symbol = display_symbol_selector(sectors=selected_sectors)
     if selected_symbol:
         st.session_state.selected_symbol = selected_symbol
+        
+        # Show selected symbol info
+        st.success(f"✅ Selected: **{selected_symbol}** - Use the Analysis page for detailed analysis")
+        
+        # Get dynamic current price
+        price, price_source = get_latest_price(selected_symbol)
+        price_display = f"${price:.2f}" if price is not None else "N/A"
+        price_caption = f"(from {'Real-Time' if price_source == 'market_data' else 'Historical' if price_source == 'market_data_historical' else 'Unknown'})"
         
         # Create columns for symbol details
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.metric("Current Price", "$185.92", "+1.5%")
+            st.metric("Current Price", price_display, help=price_caption)
         with col2:
             st.metric("Volume", "45.2M", "+12%")
         with col3:

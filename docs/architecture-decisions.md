@@ -1229,6 +1229,98 @@ Result:    All symbols use AAPL data with correct symbol names
 
 ---
 
+## Sector Configuration and Usage Guide
+
+### Overview
+
+The trading system supports configurable sector filtering, allowing you to focus on specific sectors (e.g., Technology, Healthcare, Financial Services) for trading and analysis. This section explains how to configure and use the sector filtering system in practice.
+
+### Available Sectors (Example)
+
+- Technology (211 symbols)
+- Industrials (136 symbols)
+- Financial Services (124 symbols)
+- Consumer Cyclical (119 symbols)
+- Healthcare (96 symbols)
+- Real Estate (58 symbols)
+- Consumer Defensive (55 symbols)
+- Communication Services (45 symbols)
+- Basic Materials (39 symbols)
+- Utilities (32 symbols)
+
+### Configuration
+
+#### In `config/config.yaml`:
+```yaml
+sectors:
+  active: ["Technology"]  # Only Technology is active by default
+  available: ["Technology", "Healthcare", "Financial Services", "Basic Materials", "Communication Services", "Consumer Cyclical", "Consumer Defensive", "Energy", "Industrials", "Real Estate", "Utilities"]
+```
+
+#### Changing Active Sectors
+- **Script:**
+  ```bash
+  python scripts/manage_sectors.py set-active Technology
+  python scripts/manage_sectors.py set-active Technology Healthcare
+  ```
+- **Makefile:**
+  ```bash
+  make set-active-sectors SECTORS="Technology Healthcare"
+  ```
+- **Manual:**
+  Edit `config/config.yaml` directly.
+
+#### Checking and Listing Sectors
+- Show sector summary:
+  ```bash
+  python scripts/manage_sectors.py summary
+  make sector-summary
+  ```
+- Show current config:
+  ```bash
+  python scripts/manage_sectors.py config
+  make sector-config
+  ```
+- Show symbols for a sector:
+  ```bash
+  python scripts/manage_sectors.py symbols Technology
+  make sector-symbols SECTOR=Technology
+  ```
+
+### ML Training and Data Collection
+- Train for active sectors:
+  ```bash
+  make train-gru-models
+  ```
+- Train for specific sectors:
+  ```bash
+  make train-gru-models-tech
+  make train-gru-models-healthcare
+  make train-gru-models-all-sectors
+  ```
+- Load historical data for sectors:
+  ```bash
+  python scripts/load_historical_data.py --timeframe hour --days 30 --sectors Technology Healthcare
+  ```
+
+### UI Usage
+- The Streamlit UI includes a sector selector and only shows symbols from selected sectors.
+
+### Troubleshooting
+- If you get "No symbols found" errors, check sector spelling and use the summary commands above.
+- If sector configuration isn't working, check YAML syntax and use the SymbolManager in a Python shell to debug.
+
+### Best Practices
+- Start with Technology sector for baseline testing.
+- Use smaller sectors for quick tests.
+- Monitor training time and memory when using multiple sectors.
+- Consider sector combinations for pairs trading.
+
+### Future Enhancements
+- Sector performance tracking, dynamic sector selection, sector rotation strategies, cross-sector pairs, and sector ETF support.
+
+---
+
 ## Decision Template for Future Use
 
 ### Decision: [Brief description]
@@ -1454,22 +1546,22 @@ This section tracks the implementation progress for the GARCH-GRU Pairs Trading 
 
 ### Phase 3: MLflow Integration and Strategy Refactoring ⏳ PENDING
 
-#### 🔄 Step 1: Daily Pair Identification Implementation
-- **Date**: [Week 4]
-- **Status**: PLANNED
+#### ✅ Step 1: PyTorch GRU Implementation
+- **Date**: [Completed]
+- **Status**: COMPLETED
 - **Priority**: HIGH
-- **File**: `src/ml/daily_pair_identifier.py`
+- **File**: `src/ml/gru_model.py`
 - **Components**:
-  - Implement Prefect workflow for daily pair identification
-  - Data collection and preprocessing tasks
-  - Pair validation with correlation and cointegration tests
-  - GARCH model fitting and evaluation
-  - Model selection and ranking logic
-  - MLflow integration for model storage
-  - Trading configuration updates
-- **Dependencies**: Previous phase components (PyTorch modules)
-- **Estimated Time**: 3-4 days
-- **Success Criteria**: Automated daily pair identification with MLflow tracking
+  - PyTorch GRU model implementation
+  - Complete training pipeline with MLflow integration
+  - All pairs training for comprehensive baseline
+  - Performance analysis and ranking
+  - Database integration for performance tracking
+  - Automated rankings and trends updates
+  - Comprehensive error handling and logging
+- **Dependencies**: PyTorch, MLflow, PostgreSQL
+- **Actual Time**: 3 days
+- **Success Criteria**: Complete PyTorch GRU training system with MLflow tracking
 
 #### 🔄 Step 2: Real-time Signal Generation Implementation
 - **Date**: [Week 5]

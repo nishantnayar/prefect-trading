@@ -78,14 +78,3 @@ deployments:
     name: realtime  # Using existing realtime pool
     work_queue_name: default
 
-- name: historical-data-loader
-  version: 1.0.0
-  tags: ["historical-data", "data-loading", "manual"]
-  description: "Manual historical data loading for all active symbols (hourly and 1-minute data)"
-  schedule: null  # Manual trigger only
-  flow_name: historical_data_loader_flow
-  entrypoint: "main.py:historical_data_loader_flow"
-  parameters: {}
-  work_pool:
-    name: daily
-    work_queue_name: default

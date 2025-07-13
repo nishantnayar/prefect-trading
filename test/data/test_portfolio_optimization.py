@@ -49,38 +49,6 @@ def test_portfolio_manager_initialization(portfolio_manager):
     assert hasattr(portfolio_manager, 'clear_cache')
 
 
-@pytest.mark.skip(reason="Singleton pattern makes patching difficult - test design issue")
-@patch('src.data.sources.portfolio_manager.PortfolioManager')
-def test_first_call_makes_api_calls(mock_portfolio_class, mock_portfolio_data):
-    """Test that first call makes API calls."""
-    # This test cannot work with singleton pattern without major refactoring
-    pass
-
-
-@pytest.mark.skip(reason="Singleton pattern makes patching difficult - test design issue")
-@patch('src.data.sources.portfolio_manager.PortfolioManager')
-def test_second_call_uses_cache(mock_portfolio_class, mock_portfolio_data):
-    """Test that second call uses cache."""
-    # This test cannot work with singleton pattern without major refactoring
-    pass
-
-
-@pytest.mark.skip(reason="Singleton pattern makes patching difficult - test design issue")
-@patch('src.data.sources.portfolio_manager.PortfolioManager')
-def test_cache_clearing(mock_portfolio_class, mock_portfolio_data):
-    """Test that cache clearing works correctly."""
-    # This test cannot work with singleton pattern without major refactoring
-    pass
-
-
-@pytest.mark.skip(reason="Singleton pattern makes patching difficult - test design issue")
-@patch('src.data.sources.portfolio_manager.PortfolioManager')
-def test_individual_method_calls(mock_portfolio_class):
-    """Test that individual method calls work correctly."""
-    # This test cannot work with singleton pattern without major refactoring
-    pass
-
-
 def test_backward_compatibility(portfolio_manager):
     """Test that the portfolio manager maintains backward compatibility."""
     # Test old method still works
@@ -104,22 +72,6 @@ def test_portfolio_manager_methods_exist(portfolio_manager):
     
     for method_name in expected_methods:
         assert hasattr(portfolio_manager, method_name), f"Method {method_name} not found"
-
-
-@pytest.mark.skip(reason="Singleton pattern makes patching difficult - test design issue")
-@patch('src.data.sources.portfolio_manager.PortfolioManager')
-def test_data_consistency(mock_portfolio_class, mock_portfolio_data):
-    """Test that data consistency is maintained across calls."""
-    # This test cannot work with singleton pattern without major refactoring
-    pass
-
-
-@pytest.mark.skip(reason="Cache duration is hardcoded in production - test design issue")
-@patch('src.data.sources.portfolio_manager.PortfolioManager')
-def test_cache_duration_configuration(mock_portfolio_class):
-    """Test that cache duration can be configured."""
-    # This test cannot work with hardcoded cache duration without major refactoring
-    pass
 
 
 @pytest.mark.integration

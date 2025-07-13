@@ -41,15 +41,15 @@ def load_historical_data_task():
     try:
         logger.info("Initializing historical data loader...")
         historical_loader = AlpacaDataLoader()
-        
+
         # Load hourly historical data (last 30 days)
         logger.info("Loading hourly historical data...")
         historical_loader.run_historical_load(timeframe=TimeFrame.Hour)
-        
+
         # Load 1-minute historical data (last 7 days)
         logger.info("Loading 1-minute historical data...")
         historical_loader.load_1min_historical_data()
-        
+
         logger.info("Historical data loading completed successfully")
         return True
     except Exception as e:
@@ -148,42 +148,21 @@ def start_of_day_flow():
     try:
         # Connect to database
         db = postgres_connect()
-        
+
         # Task 1: Load historical data (first task)
         logger.info("Executing Task 1: Historical Data Loading")
         load_historical_data_task()
-        
+
         # Future tasks can be added here:
         # - Symbol maintenance check
         # - Market data validation
         # - Model performance checks
         # - System health checks
         # - etc.
-        
+
         logger.info("Start of Day Flow completed successfully")
     except Exception as e:
         logger.error(f"Start of Day Flow error: {e}")
-        raise
-
-
-@flow(name="Historical Data Loader Flow", flow_run_name=lambda: generate_flow_run_name("historical-loader"))
-def historical_data_loader_flow():
-    """
-    Prefect flow to load historical market data.
-    This flow loads both hourly and 1-minute historical data for all active symbols.
-    """
-    logger = get_run_logger()
-    logger.info("Starting Historical Data Loader Flow")
-    try:
-        # Connect to database
-        db = postgres_connect()
-        
-        # Load historical data using the task
-        load_historical_data_task()
-        
-        logger.info("Historical Data Loader Flow completed successfully")
-    except Exception as e:
-        logger.error(f"Historical Data Loader Flow error: {e}")
         raise
 
 
@@ -211,6 +190,6 @@ if __name__ == '__main__':
     # hourly_process_flow()           # Hourly data collection
     # eod_process_flow()              # End-of-day processing
     # market_data_websocket_flow()    # Real-time WebSocket data
-    
+
     # For testing, run start of day flow
     start_of_day_flow()

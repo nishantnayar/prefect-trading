@@ -46,7 +46,7 @@ def run_migration():
         raise
 
 
-def load_historical_data(timeframe='hour', days_back=None, symbols=None):
+def load_historical_data(timeframe='hour', days_back=None, symbols=None, sectors=None):
     """
     Load historical data for symbols.
     
@@ -54,6 +54,7 @@ def load_historical_data(timeframe='hour', days_back=None, symbols=None):
         timeframe: 'hour' or 'minute'
         days_back: Number of days to look back
         symbols: List of specific symbols to load (None for all active symbols)
+        sectors: List of sectors to filter by (None for active sectors from config)
     """
     try:
         loader = AlpacaDataLoader()
@@ -86,16 +87,18 @@ def load_historical_data(timeframe='hour', days_back=None, symbols=None):
                     table_name = "market_data_historical" if timeframe == 'minute' else "market_data"
                     loader.store_historical_data(data, table_name)
         else:
-            # Load data for all symbols
+            # Load data for all symbols (with sector filtering)
             if timeframe == 'minute':
                 # Use the dedicated method for 1-minute data
-                loader.load_1min_historical_data(days_back=days_back)
+                loader.load_1min_historical_data(days_back=days_back, sectors=sectors)
             else:
                 # Use the general method for hourly data
-                loader.load_all_symbols_historical_data(timeframe=tf, days_back=days_back)
-            
+                loader.load_all_symbols_historical_data(timeframe=tf, days_back=days_back, sectors=sectors)
+        
+        logger.info("Historical data loading completed successfully")
+        
     except Exception as e:
-        logger.error(f"Error loading historical data: {str(e)}")
+        logger.error(f"Error loading historical data: {e}")
         raise
 
 
@@ -107,6 +110,8 @@ def main():
                        help='Number of days to look back (max 7 for minute data)')
     parser.add_argument('--symbols', nargs='+', 
                        help='Specific symbols to load (default: all active symbols)')
+    parser.add_argument('--sectors', nargs='+', 
+                       help='Sectors to filter by (default: active sectors from config)')
     parser.add_argument('--migrate-only', action='store_true',
                        help='Only run migration, skip data loading')
     
@@ -126,7 +131,8 @@ def main():
         load_historical_data(
             timeframe=args.timeframe,
             days_back=args.days,
-            symbols=args.symbols
+            symbols=args.symbols,
+            sectors=args.sectors
         )
         
         logger.info("Historical data loading completed successfully!")

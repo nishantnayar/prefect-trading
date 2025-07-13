@@ -170,11 +170,13 @@ class TestSymbolManagerComprehensive:
         symbol_manager.db.get_session.assert_called_once()
         mock_cursor.execute.assert_called_once()
         
-        # Check the SQL query
+        # Check the SQL query - updated to match current implementation with JOIN
         call_args = mock_cursor.execute.call_args
-        assert "SELECT symbol" in call_args[0][0]
-        assert "WHERE is_active = true" in call_args[0][0]
-        assert "ORDER BY symbol" in call_args[0][0]
+        assert "SELECT DISTINCT s.symbol" in call_args[0][0]
+        assert "FROM symbols s" in call_args[0][0]
+        assert "JOIN yahoo_company_info y ON s.symbol = y.symbol" in call_args[0][0]
+        assert "WHERE s.is_active = true" in call_args[0][0]
+        assert "ORDER BY s.symbol" in call_args[0][0]
         
         # Check the result
         assert symbols == ["AAPL", "GOOGL", "MSFT", "TSLA"]

@@ -63,6 +63,34 @@ def format_datetime_est_to_cst(dt: Union[datetime, str],
     return f"{day}{suffix} {month}, {year} {hour}:{minute} {ampm}"
 
 
+def format_date_nice(dt: Union[datetime, str]) -> str:
+    """Format a date as '12th June, 2025'
+    
+    Args:
+        dt: Either a datetime object or date string
+        
+    Returns:
+        str: Formatted date string
+    """
+    # Convert string to datetime if needed
+    if isinstance(dt, str):
+        try:
+            dt = datetime.fromisoformat(dt)
+        except ValueError:
+            try:
+                dt = datetime.strptime(dt, '%Y-%m-%d')
+            except ValueError as e:
+                raise ValueError("Invalid date string format. Expected ISO format or YYYY-MM-DD.") from e
+    
+    # Get components for custom formatting
+    day = dt.day
+    suffix = get_ordinal_suffix(day)
+    month = dt.strftime("%B")
+    year = dt.year
+    
+    return f"{day}{suffix} {month}, {year}"
+
+
 def get_current_cst() -> datetime:
     """Get current time in CST timezone
 

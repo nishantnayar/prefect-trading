@@ -160,38 +160,32 @@ python -m src.ml.train_gru_models
 - MLflow integration for model logging
 - Performance tracking and early stopping
 
-### Daily Pair Identification
+### ML Training and Analysis
 
-#### `test_daily_pair_identification.py`
-**Purpose**: Test script for the daily pair identification flow with GARCH analysis.
+#### `train_gru_models.py` (in src/ml/)
+**Purpose**: Train PyTorch GRU models for all pairs with MLflow integration.
 
 **Features**:
-- Manual testing of daily pair identification flow
-- Relaxed parameters for faster testing
-- Comprehensive output with pair analysis results
-- Error handling and debugging support
+- Trains models for all pairs that meet correlation threshold (>0.8)
+- Comprehensive performance analysis and ranking
+- MLflow experiment tracking with descriptive run names
+- Model registry integration
+- Performance statistics and correlation analysis
 
 **Usage**:
 ```bash
-# Test with relaxed parameters (faster execution)
-python scripts/test_daily_pair_identification.py
+# Train all pairs
+python -m src.ml.train_gru_models
 
-# Or use Makefile command
-make test-pairs
+# View results in MLflow UI
+# Open http://localhost:5000
 ```
 
-**Test Parameters**:
-- `lookback_days=30` (vs 60 for production)
-- `min_correlation=0.7` (vs 0.8 for production)
-- `max_cointegration_pvalue=0.1` (vs 0.05 for production)
-- `min_composite_score=0.5` (vs 0.7 for production)
-- `max_pairs=5` (vs 10 for production)
-
 **Output**:
-- Active pairs with correlation and composite scores
-- MLflow run IDs for each selected pair
+- Trained GRU models for all valid pairs
+- MLflow run IDs for each model
 - Performance statistics and analysis summary
-- Error details if any issues occur
+- Database rankings and trends updates
 
 ## Makefile Integration
 

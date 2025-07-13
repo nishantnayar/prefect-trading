@@ -29,6 +29,21 @@ help:
 	@echo "  test-pairs     - Test daily pair identification flow"
 	@echo "  run-pairs      - Run daily pair identification flow"
 	@echo "  run-start-day  - Run start of day flow (includes pair identification)"
+	@echo ""
+	@echo "ML Training (Sector-Specific):"
+	@echo "  train-gru-models        - Train models for active sectors (from config)"
+	@echo "  train-gru-models-tech   - Train models for Technology sector only"
+	@echo "  train-gru-models-healthcare - Train models for Healthcare sector only"
+	@echo "  train-gru-models-financial - Train models for Financial Services sector only"
+	@echo "  train-gru-models-all-sectors - Train models for all sectors"
+	@echo ""
+	@echo "Sector Analysis:"
+	@echo "  show-sector-summary     - Show symbol count by sector"
+	@echo "  show-tech-symbols       - Show Technology sector symbols"
+	@echo "  sector-summary          - Show detailed sector summary"
+	@echo "  sector-symbols          - Show symbols for specific sector (SECTOR=name)"
+	@echo "  sector-config           - Show current sector configuration"
+	@echo "  set-active-sectors      - Set active sectors (SECTORS='sector1 sector2')"
 
 # Installation
 install:
@@ -140,21 +155,57 @@ db-reset:
 	$(MAKE) db-migrate-consolidated
 
 # ML Training and Analysis
-test-pairs:
-	@echo "Testing daily pair identification flow..."
-	@python scripts/test_daily_pair_identification.py
+train-gru-models:
+	@echo "Training PyTorch GRU models for active sectors..."
+	@python -m src.ml.train_gru_models
 
-test-pairs-simple:
-	@echo "Testing basic functionality of daily pair identification flow..."
-	@python scripts/test_daily_pair_identification_simple.py
+train-gru-models-tech:
+	@echo "Training PyTorch GRU models for Technology sector only..."
+	@python -c "from src.ml.train_gru_models import run_gru_training; run_gru_training(sectors=['Technology'])"
 
-test-enhanced-flow:
-	@echo "Testing enhanced Prefect flow with GRU training..."
-	@python scripts/test_enhanced_prefect_flow.py
+train-gru-models-healthcare:
+	@echo "Training PyTorch GRU models for Healthcare sector only..."
+	@python -c "from src.ml.train_gru_models import run_gru_training; run_gru_training(sectors=['Healthcare'])"
 
-run-pairs:
-	@echo "Running daily pair identification flow..."
-	@python -c "from src.ml.daily_pair_identifier import daily_pair_identification_flow; daily_pair_identification_flow()"
+train-gru-models-financial:
+	@echo "Training PyTorch GRU models for Financial Services sector only..."
+	@python -c "from src.ml.train_gru_models import run_gru_training; run_gru_training(sectors=['Financial Services'])"
+
+train-gru-models-all-sectors:
+	@echo "Training PyTorch GRU models for all sectors..."
+	@python -c "from src.ml.train_gru_models import run_gru_training; run_gru_training(sectors=['Technology', 'Healthcare', 'Financial Services', 'Basic Materials', 'Communication Services', 'Consumer Cyclical', 'Consumer Defensive', 'Energy', 'Industrials', 'Real Estate'])"
+
+show-sector-summary:
+	@echo "Showing sector summary..."
+	@python -c "from src.data.sources.symbol_manager import SymbolManager; sm = SymbolManager(); summary = sm.get_sector_summary(); print('Symbols by Sector:'); [print(f'  {sector}: {count} symbols') for sector, count in summary.items()]"
+
+show-tech-symbols:
+	@echo "Showing Technology sector symbols..."
+	@python -c "from src.data.sources.symbol_manager import SymbolManager; sm = SymbolManager(); symbols = sm.get_symbols_by_sector('Technology'); print(f'Technology symbols ({len(symbols)}):'); [print(f'  {symbol}') for symbol in symbols[:20]]; print('...' if len(symbols) > 20 else '')"
+
+sector-summary:
+	@echo "Showing sector summary..."
+	@python scripts/manage_sectors.py summary
+
+sector-symbols:
+	@echo "Showing symbols for specified sector..."
+	@if [ -z "$(SECTOR)" ]; then \
+		echo "Usage: make sector-symbols SECTOR=Technology"; \
+		exit 1; \
+	fi
+	@python scripts/manage_sectors.py symbols $(SECTOR)
+
+sector-config:
+	@echo "Showing current sector configuration..."
+	@python scripts/manage_sectors.py config
+
+set-active-sectors:
+	@echo "Setting active sectors..."
+	@if [ -z "$(SECTORS)" ]; then \
+		echo "Usage: make set-active-sectors SECTORS='Technology Healthcare'"; \
+		exit 1; \
+	fi
+	@python scripts/manage_sectors.py set-active $(SECTORS)
 
 run-start-day:
 	@echo "Running start of day flow..."

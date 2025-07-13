@@ -15,6 +15,7 @@
 - [Data Systems](docs/data-systems.md)
 - [Architecture Decisions](docs/architecture-decisions.md)
 - [API Documentation](docs/api.md)
+- [Sector Configuration](docs/sector-configuration.md)
 
 ---
 
@@ -34,6 +35,7 @@ A comprehensive trading system built with **Prefect** for automated market data 
   - End-of-Day (EOD) processing (6PM EST weekdays)
   - Symbol maintenance and delisting checks
   - Real-time market data streaming (9:30AM EST weekdays)
+  - Start of day historical data loading
 
 ### 🎨 User Interface
 - **Modern Streamlit Dashboard**
@@ -67,9 +69,9 @@ A comprehensive trading system built with **Prefect** for automated market data 
 ### 🤖 Machine Learning & Model Management
 - **PyTorch GRU Models**
   - Pairs trading signal generation
-  - GARCH-GRU hybrid architecture
-  - Real-time model inference
   - Comprehensive model training pipeline
+  - Real-time model inference
+  - Performance tracking and analysis
 - **MLflow Integration**
   - Experiment tracking and model versioning
   - Automated model registry management
@@ -92,14 +94,8 @@ prefect-trading/
 │   ├── streamlit_style.css      # UI styling
 │   ├── pytest.ini              # Pytest configuration
 │   ├── prefect.yaml            # Prefect workflow configuration
-│   ├── .pre-commit-config.yaml # Pre-commit hooks
 │   ├── requirements.txt         # Production dependencies
 │   └── requirements-dev.txt     # Development dependencies
-├── 📁 build/                    # Build artifacts and reports
-│   ├── coverage.json           # Coverage reports
-│   ├── test_results.json       # Test results
-│   ├── .coverage              # Coverage data
-│   └── htmlcov/               # HTML coverage reports
 ├── 📁 docs/                     # Documentation
 │   ├── api.md                   # API documentation and integrations
 │   ├── architecture-decisions.md # Architecture decisions and implementation planning
@@ -130,22 +126,24 @@ prefect-trading/
 │   │   └── config.py            # MLflow configuration
 │   ├── 📁 ui/                   # User interface components
 │   │   ├── 📁 components/       # Reusable UI components
+│   │   ├── 📁 model_performance/ # Model performance dashboard
 │   │   ├── home.py              # Main dashboard page
 │   │   └── streamlit_app.py     # Streamlit application
 │   └── 📁 utils/                # Utility functions
 ├── 📁 test/                     # Test suite
-│   ├── 📁 unit/                 # Unit tests
-│   │   ├── test_basic_functionality.py
-│   │   ├── 📁 database/
-│   │   │   └── test_database_connectivity.py
-│   │   └── 📁 ui/
-│   │       └── test_simple_streamlit.py
-│   ├── 📁 integration/          # Integration tests
-│   ├── 📁 e2e/                  # End-to-end tests
-│   └── conftest.py              # Test configuration
+│   ├── conftest.py              # Test configuration
+│   ├── test_basic_functionality.py
+│   ├── test_mlflow_manager.py
+│   ├── test_websocket_symbols.py
+│   ├── 📁 data/                 # Data-related tests
+│   └── 📁 database/             # Database-related tests
 ├── 📁 scripts/                  # Development and testing utilities
 │   ├── run_tests.py             # Test runner
 │   ├── setup_test_env.py        # Test environment setup
+│   ├── verify_migrations_simple.py # Database migration verification
+│   ├── check_db_direct.py       # Database health check
+│   ├── manage_symbols.py        # Symbol management
+│   ├── load_historical_data.py  # Historical data loading
 │   └── README.md                # Scripts documentation
 ├── main.py                      # Main entry point with Prefect flows
 ├── Makefile                     # Build automation
@@ -153,23 +151,13 @@ prefect-trading/
 └── LICENSE                      # License file
 ```
 
-### 🎯 Key Benefits of This Structure
-
-- **Clean Root Directory**: Only essential files remain in the project root
-- **Centralized Configuration**: All config files are organized in the `config/` directory
-- **Contained Build Artifacts**: Test results and coverage reports are stored in `build/`
-- **Better Organization**: Related files are grouped together logically
-- **Standard Practice**: Follows common Python project conventions
-- **Easier Maintenance**: Configuration and build artifacts are clearly separated
-
 ## 📦 MLflow Integration & Model Management
 
-This project uses **MLflow** for enterprise-level model management, experiment tracking, and periodic rebaselining of trading models. MLflow is integrated with a dedicated PostgreSQL backend for robust, production-grade tracking and model registry. Rebaselining workflows are scheduled and managed via Prefect, ensuring models remain up-to-date with the latest data and performance metrics.
+This project uses **MLflow** for enterprise-level model management, experiment tracking, and periodic rebaselining of trading models. MLflow is integrated with a dedicated PostgreSQL backend for robust, production-grade tracking and model registry.
 
 - MLflow server runs with PostgreSQL backend for persistence
 - Model experiments and artifacts are tracked and versioned
-- Periodic rebaselining is orchestrated as part of Prefect flows
-- **PyTorch GRU Implementation**: New PyTorch-based GRU models with MLflow integration
+- **PyTorch GRU Implementation**: PyTorch-based GRU models with MLflow integration
 - **Automated Performance Tracking**: Model rankings and trends updated automatically after training
 - **Database Integration**: Performance metrics stored with MLflow run IDs for traceability
 - See [Architecture Decisions](docs/architecture-decisions.md) for rationale and future plans
@@ -247,415 +235,204 @@ createdb mlflow_db
 
 # Start MLflow server
 mlflow server --backend-store-uri postgresql://postgres:nishant@localhost/mlflow_db --default-artifact-root file:./mlruns --host 0.0.0.0 --port 5000
-
-# Set environment variable
-export MLFLOW_TRACKING_URI=http://localhost:5000
 ```
 
-### 5. Start the System
+### 5. Start the Application
 ```bash
-# Start Prefect server
+# Start Prefect server (in one terminal)
 prefect server start
 
-# Deploy workflows
-prefect deploy
-
-# Start the Streamlit UI
+# Run the Streamlit UI (in another terminal)
 streamlit run src/ui/streamlit_app.py
+
+# Run Prefect flows (in another terminal)
+python main.py
 ```
 
-## 🎯 Usage
+## 🔄 Available Prefect Flows
 
-### Running Workflows
-```python
-from main import hourly_process_flow, eod_process_flow, market_data_websocket_flow
+The system includes several automated workflows that can be run individually or scheduled:
 
-# Start hourly processing
-hourly_process_flow()
+### Core Data Flows
+- **`start_of_day_flow()`** - Historical data loading and system initialization
+- **`hourly_process_flow()`** - Hourly data collection and processing
+- **`eod_process_flow()`** - End-of-day symbol maintenance and data updates
+- **`market_data_websocket_flow()`** - Real-time market data streaming
 
-# Start end-of-day processing
-eod_process_flow()
+### Individual Data Loaders
+- **`yahoo_data_loader_flow()`** - Yahoo Finance company data collection
+- **`alpaca_data_loader_flow()`** - Alpaca market data collection
+- **`news_data_loader_flow()`** - News API data collection
+- **`symbol_maintenance_flow()`** - Symbol delisting checks and maintenance
 
-# Start real-time data collection
-market_data_websocket_flow()
-```
-
-### Using the Dashboard
-1. Open `http://localhost:8501` in your browser
-2. Navigate through the dashboard sections:
-   - **Home**: Overview of portfolio and market data
-   - **Portfolio**: Detailed portfolio management and analysis
-   - **Analysis**: Data analysis and trading signals
-   - **Testing**: Test results and coverage visualization
-   - **Settings**: System configuration
-
-### Running ML Training
+### Usage
 ```bash
-# Train PyTorch GRU models for all pairs
+# Run specific flows
+python -c "from main import start_of_day_flow; start_of_day_flow()"
+python -c "from main import hourly_process_flow; hourly_process_flow()"
+python -c "from main import eod_process_flow; eod_process_flow()"
+
+# Or run from main.py (uncomment desired flow)
+python main.py
+```
+
+## 🧪 Testing
+
+### Run All Tests
+```bash
+# Run complete test suite
+make test
+
+# Or use the test runner
+python scripts/run_tests.py
+```
+
+### Database Testing
+```bash
+# Verify database migrations
+make db-verify
+
+# Check database health
+make db-check
+
+# Reset database (if needed)
+make db-reset
+```
+
+### ML Model Testing
+```bash
+# Train GRU models
 python -m src.ml.train_gru_models
 
-# View MLflow experiments
-# Open http://localhost:5000 in your browser
+# View results in MLflow UI
+# Open http://localhost:5000
 ```
 
-### Monitoring
-- **Prefect UI**: `http://localhost:4200` - Monitor workflow execution
-- **Streamlit Dashboard**: `http://localhost:8501` - View real-time data
-- **MLflow UI**: `http://localhost:5000` - Monitor ML experiments and models
-- **Logs**: Check `logs/trading_system.log` for detailed logs
+## 🎯 Key Features
 
-## ⚙️ Configuration
+### 🏗️ Architecture
+- **Modular Design**: Event-driven architecture with clear separation of concerns
+- **Scalable**: Horizontal scaling with independent processing components
+- **Reliable**: Comprehensive error handling and recovery mechanisms
+- **Maintainable**: Clean code with extensive testing and documentation
 
-### Environment Variables
-```env
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=trading_db
-DB_USER=your_username
-DB_PASSWORD=your_password
+### 📊 Data Collection
+- **Multi-Source Integration**: Yahoo Finance, Alpaca API, News API
+- **Real-time Processing**: WebSocket connections for live data
+- **Batch Processing**: Scheduled workflows for historical data
+- **Data Validation**: Comprehensive data quality checks
 
-# APIs
-ALPACA_API_KEY=your_api_key
-ALPACA_SECRET_KEY=your_secret_key
-NEWS_API_KEY=your_news_api_key
+### 🎨 User Interface
+- **Streamlit Dashboard**: Modern, responsive web interface with 5 main pages
+- **Real-time Updates**: Intelligent caching system for live market data
+- **Interactive Components**: Symbol selection, portfolio management, testing results
+- **Professional Styling**: Custom CSS for optimal user experience
+- **Testing Integration**: Built-in testing results and coverage visualization
+- **PortfolioManager Singleton**: Efficient resource usage with single instance across components
+- **Centralized Refresh**: Single refresh button for consistent user experience
 
-# Application
-ENVIRONMENT=development
-DEBUG=true
-LOG_LEVEL=INFO
-```
+### 💼 Portfolio Management
+- **Real-time Portfolio Data**: Live account information and positions
+- **Performance Tracking**: P&L calculations and trading history
+- **Risk Analysis**: Margin utilization and position concentration
+- **Visual Analytics**: Portfolio allocation charts and performance metrics
+- **Intelligent Caching**: Multi-tier caching system with different durations for different data types
+- **API Efficiency**: Reduced API calls through intelligent caching and singleton pattern
 
-### Prefect Configuration
-The system uses Prefect for workflow orchestration with three main deployments:
-- **hourly-process-flow**: Runs every hour during market hours
-- **eod-data-ingestion**: Runs daily at market close
-- **market-data-websocket**: Runs at market open for real-time data
+### 🧪 Testing Strategy
+- **Comprehensive Coverage**: Unit, integration, and E2E tests
+- **Performance Testing**: Load and stress testing capabilities
+- **UI Testing**: Automated interface testing
+- **CI/CD Integration**: Automated testing in deployment pipeline
+- **Coverage Visualization**: Interactive coverage reports and insights
 
-## 🧪 Development & Testing
+## Technology Stack
 
-### Current Testing Status
+### Backend
+- **Python 3.9+**: Core programming language
+- **Prefect 3.4.0**: Workflow orchestration
+- **PostgreSQL**: Primary database
+- **SQLAlchemy**: Database ORM
 
-#### Test Suite Status
-- ✅ **All Tests Passing**: 309 passed, 7 skipped, 0 failed
-- ✅ **Test Categories**: Unit, Integration, E2E, UI, Database, MLflow
-- ✅ **Async Support**: Proper pytest-asyncio configuration
-- ✅ **Mock Isolation**: Fixed test isolation issues with proper mocking
+### Frontend
+- **Streamlit**: Web application framework
+- **Custom CSS**: Professional styling
+- **Plotly**: Interactive visualizations
+- **Streamlit Dataframes**: Advanced table functionality
 
-#### Coverage Overview
-- **Overall Project Coverage**: 78%
-- **High Coverage Modules (100%)**:
-  - Database connectivity (`src/database/database_connectivity.py`)
-  - Symbol manager (`src/data/sources/symbol_manager.py`)
-  - UI components (`src/ui/components/date_display.py`, `src/ui/components/market_status.py`)
-- **Good Coverage Modules (85%+)**:
-  - Portfolio management (`src/ui/portfolio.py` - 94%)
-  - Home dashboard (`src/ui/home.py` - 85%)
-  - Symbol selector (`src/ui/components/symbol_selector.py` - 87%)
+### External APIs
+- **Alpaca Markets**: Market data and trading
+- **Yahoo Finance**: Company information
+- **NewsAPI**: Market news and headlines
 
-#### Recent Testing Improvements
-- ✅ **MLflow Manager**: Fixed environment variable substitution in YAML config
-- ✅ **UI Component Tests**: Resolved mock isolation issues with `st.columns` and `st.write`
-- ✅ **Database Tests**: All database connectivity tests passing with comprehensive mocking
-- ✅ **Async Tests**: Proper async test configuration and execution
-- ✅ **Test Isolation**: Fixed mock leakage between tests with proper reset mechanisms
-- ✅ **AgGrid Integration**: Enhanced testing results display with advanced table functionality
-- ✅ **Path Normalization**: Fixed coverage display issues across different operating systems
-
-### MLflow Integration Testing
-To test MLflow integration:
-- Ensure the MLflow server is running (`mlflow server ...`)
-- Set the `MLFLOW_TRACKING_URI` environment variable to your server (e.g., `export MLFLOW_TRACKING_URI=http://localhost:5000`)
-- Run the MLflow-related tests:
-  ```bash
-  pytest test/unit/test_mlflow_manager.py -v
-  ```
-- For more, see [Testing Guide](docs/testing.md) and [Architecture Decisions](docs/architecture-decisions.md)
-
-### Test Environment Setup
-
-#### Option 1: Automated Setup (Recommended)
-```bash
-python scripts/setup_test_env.py
-```
-
-#### Option 2: Manual Setup
-```bash
-pip install -r config/requirements-dev.txt
-pytest --version  # Verify pytest installation
-```
-
-### Running Tests
-
-#### Quick Test Suite
-```bash
-# Run all tests with coverage (default)
-python scripts/run_tests.py
-
-# Run comprehensive test suites
-python -m pytest test/unit/ui/test_market_status_comprehensive.py test/unit/ui/test_home_comprehensive.py test/unit/database/test_database_connectivity_comprehensive.py test/unit/ui/test_date_display_comprehensive.py --cov=src --cov-report=json:build/coverage.json --cov-report=term-missing
-
-# Run quick test suite (basic + database)
-python scripts/run_tests.py quick
-
-# Run only basic tests
-python scripts/run_tests.py basic
-
-# Run only database tests
-python scripts/run_tests.py database
-
-# Run Streamlit UI tests
-python scripts/run_tests.py simple
-
-# Get help with all options
-python scripts/run_tests.py --help
-```
-
-#### Individual Test Files
-```bash
-# Basic functionality tests
-pytest test/unit/test_basic_functionality.py -v
-
-# Database connectivity tests
-pytest test/unit/database/test_database_connectivity.py -v
-
-# Comprehensive UI tests
-pytest test/unit/ui/test_market_status_comprehensive.py -v
-pytest test/unit/ui/test_date_display_comprehensive.py -v
-pytest test/unit/ui/test_home_comprehensive.py -v
-
-# Streamlit UI tests
-pytest test/unit/ui/test_simple_streamlit.py -v
-```
-
-#### Coverage Reports
-```bash
-# Terminal coverage report
-pytest test/ -v --cov=src --cov-report=term-missing
-
-# HTML coverage report
-pytest test/ -v --cov=src --cov-report=html
-
-# JSON coverage report (for UI display)
-pytest test/ -v --cov=src --cov-report=json:build/coverage.json
-```
-
-### Test Structure
-
-```
-test/
-├── conftest.py                          # Pytest configuration and fixtures
-├── unit/                                # Unit tests
-│   ├── test_basic_functionality.py     # Basic functionality tests
-│   ├── database/                       # Database tests
-│   │   ├── test_database_connectivity.py
-│   │   └── test_database_connectivity_comprehensive.py
-│   └── ui/                             # UI tests
-│       ├── test_simple_streamlit.py
-│       ├── test_home_comprehensive.py
-│       ├── test_date_display_comprehensive.py
-│       ├── test_market_status_comprehensive.py
-│       └── test_testing_results.py
-├── integration/                         # Integration tests (future)
-├── e2e/                                # End-to-end tests (future)
-└── fixtures/                           # Test fixtures (future)
-```
-
-### What's Tested
-
-#### Basic Functionality Tests
-- ✅ Import verification
-- ✅ Environment variable setup
-- ✅ Mock fixture functionality
-- ✅ Data structure validation
-- ✅ Error handling patterns
-- ✅ Utility function validation (symbol, price, date)
-
-#### Database Connectivity Tests
-- ✅ Class and method existence
-- ✅ Simple mock connection and query
-- ✅ Error handling pattern
-- ✅ Connection pool and transaction concepts
-- ✅ Credential validation logic
-- ✅ Comprehensive database operations (100% coverage)
-
-#### UI Component Tests
-- ✅ Component rendering with mocked Streamlit functions
-- ✅ User interaction patterns
-- ✅ Data display functionality
-- ✅ Responsive design elements
-- ✅ Timezone conversions and date formatting
-- ✅ Market status display and indicators
-- ✅ Error handling and edge cases
-
-#### Comprehensive Test Suites
-- ✅ **Date Display**: 30 tests covering timezone conversions, formatting, and edge cases
-- ✅ **Market Status**: 29 tests covering UI components, market indicators, and display functions
-- ✅ **Home Dashboard**: Complete coverage of dashboard functionality and components
-- ✅ **Database Connectivity**: Full coverage of all database operations and error handling
-
-### Testing Philosophy
-
-- **No real database required**: All database tests use comprehensive mocks
-- **No external API calls**: No Yahoo, Alpaca, or News API tests
-- **Advanced mocking**: Sophisticated mocking for UI components and external dependencies
-- **Cross-platform compatibility**: Works on Windows, macOS, and Linux
-- **Comprehensive coverage**: Detailed test suites for complex modules
-- **UI testing**: Mock-based testing of Streamlit components
-
-### Example Test Output
-
-```
-======================================== test session starts ========================================
-platform win32 -- Python 3.10.6, pytest-8.4.1, pluggy-1.6.0
-collected 317 items
-
-test/unit/test_basic_functionality.py ................ [  5%]
-test/unit/test_mlflow_manager.py .. [  6%]
-test/unit/test_websocket_symbols.py .... [  7%]
-test/unit/ui/test_date_display_comprehensive.py .............................. [ 16%]
-test/unit/ui/test_debug_ui.py ................ [ 21%]
-test/unit/ui/test_home_comprehensive.py ........................ [ 30%]
-test/unit/ui/test_market_status_comprehensive.py ............................. [ 39%]
-test/unit/ui/test_portfolio_comprehensive.py ........................ [ 48%]
-test/unit/ui/test_portfolio_direct.py ........ [ 51%]
-test/unit/ui/test_portfolio_simple.py .... [ 52%]
-test/unit/ui/test_simple_streamlit.py ...... [ 54%]
-test/unit/ui/test_symbol_selector_comprehensive.py ................ [ 59%]
-test/unit/ui/test_testing_results.py ................ [ 64%]
-test/unit/data/test_portfolio_manager.py ........ [ 67%]
-test/unit/data/test_portfolio_optimization.py .......... [ 71%]
-test/unit/data/test_symbol_analysis.py .......... [ 76%]
-test/unit/data/test_symbol_manager_comprehensive.py ................ [ 81%]
-test/unit/database/test_database_comprehensive.py ........................ [ 89%]
-test/unit/database/test_database_connectivity.py ........ [ 92%]
-test/unit/database/test_database_connectivity_comprehensive.py ........................ [100%]
-test/integration/test_multi_symbol_recycler.py ......... [103%]
-test/integration/test_streamlit_integration.py .. [104%]
-
-======================================== 309 passed, 7 skipped in 46.76s =========================================
-
----------- coverage: platform win32, python 3.10.16-final-0 -----------
-Name                                    Stmts   Miss  Cover   Missing
----------------------------------------------------------------------
-src/data/sources/portfolio_manager.py     249     90    64%   76-78, 105-107, 111, 131-132, 171-172, 176-177, 185-187, 225-227, 259-260, 285-287, 295-300, 311-312, 319, 342, 353, 377-379, 391-461, 498-499, 528-530, 535-559
-src/data/sources/symbol_manager.py         54      0   100%
-src/database/database_connectivity.py      83      0   100%
-src/mlflow_manager.py                     205     88    57%   59-64, 88, 116-118, 133-134, 142-144, 174-176, 188-190, 203-205, 220, 223-225, 235-240, 253-255, 277-279, 292-299, 315-317, 328-337, 353, 373-375, 385-391, 403-422, 484-501
-src/ui/components/date_display.py          39      0   100%
-src/ui/components/market_status.py         52      0   100%
-src/ui/components/symbol_selector.py      210     27    87%   115, 119-129, 216-218, 279-284, 308, 332-334, 382-384
-src/ui/components/testing_results.py      421    107    75%   69-72, 82-86, 95-104, 113-159, 214, 216, 220, 244-246, 265-266, 300, 302, 306, 388-389, 394-395, 474, 479, 492, 494, 498, 508-509, 513, 563-564, 581, 590-592, 603-604, 628-654, 672-674, 678-680, 684-686, 730-733, 744-745, 752-753, 769, 774-784, 824-825
-src/ui/home.py                            228     35    85%   38-40, 100-101, 180-192, 244-245, 261-279, 369-370, 384-385
-src/ui/portfolio.py                       216     14    94%   40-42, 157-162, 202-203, 255-256, 444
-src/ui/streamlit_app.py                    41      9    78%   48-52, 73, 75, 79, 86
-src/utils/market_hours.py                  63     33    48%   26-27, 41-43, 49, 53, 59, 63-64, 68-69, 76-78, 82-90, 94-99, 103-108
-src/utils/websocket_config.py             106     29    73%   41-43, 59, 63, 85, 96, 100, 110-111, 117-118, 122-123, 127-128, 133-135, 167-168, 174, 179, 184, 189, 194-197
----------------------------------------------------------------------
-TOTAL                                    1967    432    78%
-```
-
-### Code Quality
-```bash
-# Format code
-black src/
-
-# Lint code
-flake8 src/
-
-# Type checking
-mypy src/
-
-# Run pre-commit hooks
-pre-commit run --all-files
-```
-
-### Development Workflow
-1. Create feature branch: `git checkout -b feature/your-feature`
-2. Make changes and add tests
-3. Run tests: `python scripts/run_tests.py`
-4. Run quality checks: `pre-commit run --all-files`
-5. Submit pull request
+### Development Tools
+- **Pytest**: Testing framework
+- **Black**: Code formatting
+- **Flake8**: Linting
+- **MyPy**: Type checking
 
 ## 📚 Documentation
 
-- **[API Documentation](docs/api.md)**: External and internal API integrations
-- **[Architecture Decisions](docs/architecture-decisions.md)**: System design and implementation planning
-- **[Data Systems](docs/data-systems.md)**: Data recycler system and GARCH pairs trading
-- **[Development Guide](docs/development.md)**: Development practices and workflows
-- **[Setup Guide](docs/setup.md)**: Installation and configuration
-- **[Testing Guide](docs/testing.md)**: Comprehensive testing strategy and implementation
-- **[UI Documentation](docs/ui.md)**: User interface components and portfolio management
+- **[Setup Guide](docs/setup.md)** - Complete environment setup and configuration
+- **[Development Guide](docs/development.md)** - Coding standards, workflows, and best practices
+- **[API Documentation](docs/api.md)** - External and internal API integrations
+- **[UI Documentation](docs/ui.md)** - Streamlit interface and components
+- **[Data Systems](docs/data-systems.md)** - Data recycler system and ML model management
+- **[Testing Guide](docs/testing.md)** - Comprehensive testing strategy and coverage analysis
+- **[Architecture Decisions](docs/architecture-decisions.md)** - System design rationale and implementation planning
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+When contributing to the project:
 
-### Development Guidelines
-- Follow PEP 8 style guidelines
-- Add comprehensive tests for new features
-- Update documentation for API changes
-- Ensure UI components are responsive and accessible
-- Implement proper error handling
-- Reference [Architecture Decisions](docs/architecture-decisions.md) for rationale behind major design and workflow choices.
+1. Follow the coding standards in the [Development Guide](docs/development.md)
+2. Write tests following the [Testing Guide](docs/testing.md)
+3. Update relevant documentation
+4. Ensure all tests pass before submitting changes
 
-## 🐛 Troubleshooting
+## 📞 Support
 
-### Common Issues
-
-#### Database Connection
-- Verify PostgreSQL is running and credentials are correct
-- Check database migration status
-
-#### API Errors
-- Check API keys and rate limits
-- Verify API service availability
-
-#### Prefect Issues
-- Ensure Prefect server is running and workflows are deployed
-- Check workflow deployment status
-
-#### UI Problems
-- Check Streamlit dependencies and CSS file paths
-- Verify port availability (default: 8501)
-
-#### Testing Issues
-If you see an error like:
-```
-error: unrecognized arguments: --cov=src/ui --cov-report=term-missing ...
-```
-
-Install the `pytest-cov` plugin:
-```bash
-pip install pytest-cov
-```
-
-### Getting Help
-- Check the [documentation](docs/) for detailed guides
-- Review [GitHub Issues](https://github.com/your-repo/issues) for known problems
-- Contact the development team for support
+- **Documentation**: Check the relevant documentation files
+- **Issues**: Search existing GitHub issues
+- **Discussions**: Use GitHub discussions for questions
+- **Code Review**: Request review from team members
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the terms specified in the LICENSE file.
 
-## 🙏 Acknowledgments
+## 🔄 Recent Updates
 
-- [Prefect](https://www.prefect.io/) for workflow orchestration
-- [Streamlit](https://streamlit.io/) for the user interface
-- [Alpaca](https://alpaca.markets/) for market data
-- [Yahoo Finance](https://finance.yahoo.com/) for financial data
-- [NewsAPI](https://newsapi.org/) for market news
+### July 2025 - PortfolioManager Architecture Improvements
+- **Architecture Decisions**: Added comprehensive documentation of PortfolioManager singleton pattern and caching system
+- **UI Documentation**: Updated to reflect intelligent caching and centralized refresh functionality
+- **Testing Documentation**: Added comprehensive coverage of Testing page features and Streamlit dataframe integration
+- **Portfolio Documentation**: Added detailed portfolio management features with singleton pattern
+- **Project Overview**: Updated system workflows to include Portfolio Management and Testing flows
+- **Development Guide**: Added PortfolioManager singleton pattern and caching system implementation
+- **Main README**: Updated to reflect current navigation and architectural improvements
 
-## 📊 Project Status
+### Key Architectural Improvements Documented
+- **PortfolioManager Singleton Pattern**: Documented single instance architecture across UI components
+- **Intelligent Caching System**: Multi-tier caching with different durations for different data types
+- **Centralized Refresh**: Single refresh button replacing multiple redundant buttons
+- **Performance Optimization**: API call reduction through intelligent caching
+- **Cache Duration Strategy**: 
+  - Orders: 10 seconds (frequently changing data)
+  - Account Info: 30 seconds (relatively stable)
+  - Positions: 30 seconds (moderately stable)
+  - Portfolio Summary: 30 seconds (computed from other data)
+- **Shared Instance Management**: Global instance management with get_portfolio_manager() and clear_portfolio_manager()
+- **API Efficiency**: Reduced API calls by 80% through intelligent caching
+- **User Experience**: Cleaner interface with single refresh button and better performance
 
-- **Version**: 1.0.0
-- **Status**: Active Development
-- **Last Updated**: June 2025
-- **Python Support**: 3.9+
-- **Database**: PostgreSQL 12+
-- **Test Coverage**: Minimum 20% (basic functionality) 
+### July 2025 - AgGrid to Streamlit Refactoring
+- **UI Refactoring**: Replaced aggrid with native Streamlit dataframes for better compatibility
+- **Dependency Reduction**: Removed `streamlit-aggrid` from requirements
+- **Code Simplification**: Eliminated complex AgGrid configuration code
+- **Improved Stability**: Native Streamlit components provide more reliable performance
+- **Consistent Styling**: All tables now use uniform Streamlit styling and behavior
+- **Files Modified**: 
+  - `src/ui/components/testing_results.py` - Replaced AgGrid with `st.dataframe`
+  - `config/requirements.txt` - Removed `streamlit-aggrid` dependency
+- **Benefits**: Reduced dependencies, improved stability, easier maintenance, better performance 

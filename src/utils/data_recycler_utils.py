@@ -85,6 +85,39 @@ def get_sample_data(symbol: str, limit: int = 5) -> List[Dict]:
             db.close()
 
 
+def get_latest_price(symbol: str):
+    """
+    Get the latest price for a symbol from market_data (real-time),
+    falling back to market_data_historical if not available.
+    Returns a tuple: (price, source) where source is 'market_data' or 'market_data_historical'.
+    """
+    db = DatabaseConnectivity()
+    try:
+        with db.get_session() as cursor:
+            # Try market_data first
+            cursor.execute(
+                "SELECT close FROM market_data WHERE symbol = %s ORDER BY timestamp DESC LIMIT 1",
+                (symbol,)
+            )
+            result = cursor.fetchone()
+            if result and result[0] is not None:
+                return float(result[0]), 'market_data'
+            # Fallback to historical
+            cursor.execute(
+                "SELECT close FROM market_data_historical WHERE symbol = %s ORDER BY date DESC LIMIT 1",
+                (symbol,)
+            )
+            result = cursor.fetchone()
+            if result and result[0] is not None:
+                return float(result[0]), 'market_data_historical'
+        return None, None
+    except Exception as e:
+        logger.error(f"Error getting latest price for {symbol}: {e}")
+        return None, None
+    finally:
+        db.close()
+
+
 if __name__ == "__main__":
     print("=== Data Recycler Utilities Test ===\n")
     print("1. Available symbols:")

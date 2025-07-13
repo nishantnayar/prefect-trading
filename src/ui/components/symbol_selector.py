@@ -6,10 +6,14 @@ from loguru import logger
 
 from src.data.sources.symbol_manager import SymbolManager
 from src.database.database_connectivity import DatabaseConnectivity
+from src.ui.components.date_display import format_date_nice
 
 
-def display_symbol_selector() -> str:
-    """Display symbol selector component.
+def display_symbol_selector(sectors: Optional[List[str]] = None) -> str:
+    """Display symbol selector component with optional sector filtering.
+    
+    Args:
+        sectors: List of sectors to filter by. If None, uses active sectors from config.
     
     Returns:
         str: Selected symbol or None if no selection
@@ -17,24 +21,70 @@ def display_symbol_selector() -> str:
     try:
         # Initialize SymbolManager and get active symbols
         symbol_manager = SymbolManager()
-        symbols = symbol_manager.get_active_symbols()
+        symbols = symbol_manager.get_active_symbols(sectors=sectors)
         
         if not symbols:
             st.warning("No active symbols found")
             return None
-            
-        # Create symbol selector
-        selected_symbol = st.selectbox(
-            label="Select a Symbol",
-            options=symbols,
-            index=0 if symbols else None
-        )
+        
+        # Get sector summary for display
+        sector_summary = symbol_manager.get_sector_summary()
+        
+        # Create symbol selector with sector info
+        if sectors:
+            sector_display = ", ".join(sectors)
+            selected_symbol = st.selectbox(
+                label=f"Select a Symbol (Filtered by: {sector_display})",
+                options=symbols,
+                index=0 if symbols else None
+            )
+        else:
+            selected_symbol = st.selectbox(
+                label="Select a Symbol",
+                options=symbols,
+                index=0 if symbols else None
+            )
         
         return selected_symbol
         
     except Exception as e:
         logger.error(f"Error in symbol selector: {e}")
         st.error("Error loading symbols. Please try again later.")
+        return None
+
+
+def display_sector_selector() -> Optional[List[str]]:
+    """Display sector selector component.
+    
+    Returns:
+        Optional[List[str]]: Selected sectors or None if no selection
+    """
+    try:
+        symbol_manager = SymbolManager()
+        available_sectors = symbol_manager.get_available_sectors()
+        active_sectors = symbol_manager.get_active_sectors()
+        
+        # Get actual sectors from database
+        sector_summary = symbol_manager.get_sector_summary()
+        actual_sectors = list(sector_summary.keys())
+        
+        if not actual_sectors:
+            st.warning("No sectors found in database")
+            return None
+        
+        # Create sector selector
+        selected_sectors = st.multiselect(
+            label="Select Sectors to Filter",
+            options=actual_sectors,
+            default=active_sectors if active_sectors else actual_sectors[:1],
+            help="Select one or more sectors to filter symbols"
+        )
+        
+        return selected_sectors if selected_sectors else None
+        
+    except Exception as e:
+        logger.error(f"Error in sector selector: {e}")
+        st.error("Error loading sectors. Please try again later.")
         return None
 
 
@@ -49,8 +99,8 @@ def display_symbol_analysis(symbol: str) -> None:
         return
     
     try:
-        # Create tabs for different analysis sections
-        tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview", "📈 Market Data", "🏢 Company Info", "📰 News"])
+        # Create tabs for different analysis sections (remove News tab)
+        tab1, tab2, tab3 = st.tabs(["📊 Overview", "📈 Market Data", "🏢 Company Info"])
         
         with tab1:
             display_symbol_overview_with_db(symbol)
@@ -60,9 +110,6 @@ def display_symbol_analysis(symbol: str) -> None:
         
         with tab3:
             display_company_info(symbol)
-        
-        with tab4:
-            display_symbol_news(symbol)
         
     except Exception as e:
         logger.error(f"Error in symbol analysis: {e}")
@@ -108,19 +155,19 @@ def display_symbol_overview(symbol: str, data: dict) -> None:
                 st.metric("Status", "🟢 Active" if symbol_info['is_active'] else "🔴 Inactive")
             with col2:
                 st.metric("Name", symbol_info['name'] or "N/A")
-                st.metric("Added", symbol_info['start_date'].strftime('%Y-%m-%d'))
+                st.metric("Added", format_date_nice(symbol_info['start_date']))
             with col3:
-                st.metric("Last Updated", symbol_info['updated_at'].strftime('%Y-%m-%d'))
+                st.metric("Last Updated", format_date_nice(symbol_info['updated_at']))
                 if symbol_info['end_date']:
-                    st.metric("End Date", symbol_info['end_date'].strftime('%Y-%m-%d'))
+                    st.metric("End Date", format_date_nice(symbol_info['end_date']))
         if market_summary:
             st.subheader("📈 Market Data Summary")
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("Data Points", f"{market_summary[0]:,}")
-                st.metric("First Data", market_summary[1].strftime('%Y-%m-%d') if market_summary[1] else "N/A")
+                st.metric("First Data", format_date_nice(market_summary[1]) if market_summary[1] else "N/A")
             with col2:
-                st.metric("Last Data", market_summary[2].strftime('%Y-%m-%d') if market_summary[2] else "N/A")
+                st.metric("Last Data", format_date_nice(market_summary[2]) if market_summary[2] else "N/A")
                 st.metric("Avg Price", f"${market_summary[3]:.2f}" if market_summary[3] else "N/A")
             with col3:
                 st.metric("Max Price", f"${market_summary[4]:.2f}" if market_summary[4] else "N/A")
@@ -387,6 +434,9 @@ def display_symbol_news(symbol: str) -> None:
 def display_symbol_selector_with_analysis() -> Optional[str]:
     """Display symbol selector with comprehensive analysis.
     
+    Uses the symbol already selected on the main page if available,
+    otherwise shows a symbol selector.
+    
     Returns:
         Optional[str]: Selected symbol or None
     """
@@ -394,11 +444,28 @@ def display_symbol_selector_with_analysis() -> Optional[str]:
     st.write("Explore data analysis and trading signals.")
     st.header("🔍 Symbol Analysis")
     
-    # Get selected symbol
-    selected_symbol = display_symbol_selector()
+    # Check if a symbol is already selected from the main page
+    selected_symbol = st.session_state.get('selected_symbol')
     
     if selected_symbol:
-        # Display analysis
+        # Display the currently selected symbol
+        st.info(f"📈 Analyzing: **{selected_symbol}**")
+        
+        # Option to change symbol
+        if st.button("🔄 Change Symbol"):
+            st.session_state.selected_symbol = None
+            st.rerun()
+        
+        # Display analysis for the selected symbol
         display_symbol_analysis(selected_symbol)
+        
+    else:
+        # No symbol selected, show symbol selector
+        st.info("Please select a symbol to analyze")
+        selected_symbol = display_symbol_selector()
+        
+        if selected_symbol:
+            st.session_state.selected_symbol = selected_symbol
+            st.rerun()
     
     return selected_symbol 

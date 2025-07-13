@@ -1,4 +1,3 @@
-# Database Configuration
 database:
   host: localhost
   port: 5432
@@ -7,97 +6,96 @@ database:
   password: ${DB_PASSWORD}
   pool_size: 5
   max_overflow: 10
-
-# MLflow Configuration
 mlflow:
   tracking_uri: ${MLFLOW_TRACKING_URI:-http://localhost:5000}
   registry_uri: ${MLFLOW_REGISTRY_URI:-http://localhost:5000}
-  experiment_name: "pairs_trading"
+  experiment_name: pairs_trading
   artifact_root: ${MLFLOW_ARTIFACT_ROOT:-file:./mlruns}
-  
 model_registry:
-  naming_pattern: "pairs_trading_gru_garch_{sector}_{version}_{date}"
+  naming_pattern: pairs_trading_gru_garch_{sector}_{version}_{date}
   stages:
-    - staging
-    - production
-    - archived
-  
-# Currently only technology sector is active
-# Future: Add healthcare, financial sectors as needed
+  - staging
+  - production
+  - archived
 sectors:
-  active: ["technology"]
-  available: ["technology", "healthcare", "financial"]
-  
+  active:
+  - Technology
+  available:
+  - Technology
+  - Healthcare
+  - "Financial Services"
+  - "Basic Materials"
+  - "Communication Services"
+  - "Consumer Cyclical"
+  - "Consumer Defensive"
+  - Energy
+  - Industrials
+  - "Real Estate"
+  - Utilities
 performance_thresholds:
   f1_score_improvement: 0.02
   sharpe_ratio_improvement: 0.1
   max_drawdown_improvement: 0.01
-  f1_score_minimum: 0.70
+  f1_score_minimum: 0.7
   sharpe_ratio_minimum: 1.0
-
-# Alpaca Configuration
 alpaca:
   api_key: ${ALPACA_API_KEY}
   secret_key: ${ALPACA_SECRET_KEY}
-  base_url: https://paper-api.alpaca.markets  # Using paper trading by default
-  data_url: "https://data.alpaca.markets"
-
-# WebSocket Configuration
+  base_url: https://paper-api.alpaca.markets
+  data_url: https://data.alpaca.markets
 websocket:
-  mode: "recycler"  # "alpaca" or "recycler"
-  symbols: ["AAPL", "PDFS", "ROG"]  # Symbols for websocket data collection
+  mode: recycler
+  symbols:
+  - AAPL
+  - PDFS
+  - ROG
   recycler:
-    server_url: "ws://localhost:8765"
-    replay_mode: "loop"  # "loop", "date_range", "single_pass"
+    server_url: ws://localhost:8765
+    replay_mode: loop
     replay_speed: 1.0
     date_range:
-      start_date: "2025-06-23"  # My earliest available data
-      end_date: "2025-06-30"    # Example date range
-    symbols: ["AAPL", "PDFS", "ROG"]  # Pairs trading symbols (PDFS/ROG will use AAPL as proxy)
-    loop_count: -1  # -1 = infinite, 1 = single pass
+      start_date: '2025-06-23'
+      end_date: '2025-06-30'
+    symbols:
+    - AAPL
+    - PDFS
+    - ROG
+    loop_count: -1
     data_retention:
-      recycled_data_days: 1  # Keep recycled data for 1 day
-      auto_cleanup: true     # Automatically clean up old recycled data
-
-# Application Settings
+      recycled_data_days: 1
+      auto_cleanup: true
 app:
   environment: ${ENVIRONMENT}
   debug: ${DEBUG}
   log_level: ${LOG_LEVEL}
-
-# Data Collection Settings
 data_collection:
-  interval_minutes: 60  # Collect data every hour
+  interval_minutes: 60
   symbols:
-    - AAPL
-    - MSFT
-    - GOOGL
-    - AMZN
-    - META
-
+  - AAPL
+  - MSFT
+  - GOOGL
+  - AMZN
+  - META
 logging:
   level: INFO
-  format: "{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"
-  log_dir: "${REPO_ROOT}/logs"
-  log_file: "trading_system.log"
-  rotation: "500 MB"
-  retention: "10 days"
-  compression: "zip"
-  max_age_days: 3  # Keep logs for 3 days
-
+  format: '{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}'
+  log_dir: ${REPO_ROOT}/logs
+  log_file: trading_system.log
+  rotation: 500 MB
+  retention: 10 days
+  compression: zip
+  max_age_days: 3
 trading:
   default_currency: USD
   risk_free_rate: 0.02
-  max_position_size: 0.1  # 10% of portfolio
-  stop_loss_pct: 0.02     # 2% stop loss
-  take_profit_pct: 0.04   # 4% take profit
-
+  max_position_size: 0.1
+  stop_loss_pct: 0.02
+  take_profit_pct: 0.04
 data:
   default_timeframe: 1d
-  cache_dir: "data/cache"
+  cache_dir: data/cache
   max_retries: 3
   timeout: 30
-
 ml:
   random_state: 42
   test_size: 0.2
@@ -105,4 +103,4 @@ ml:
   batch_size: 32
   learning_rate: 0.001
   max_epochs: 100
-  early_stopping_patience: 10 
+  early_stopping_patience: 10

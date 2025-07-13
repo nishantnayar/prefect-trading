@@ -149,17 +149,18 @@ class AlpacaDataLoader:
             logger.error(f"Error storing historical data: {str(e)}")
             raise
 
-    def run_historical_load(self, days_back: int = None, timeframe: TimeFrame = TimeFrame.Hour):
+    def run_historical_load(self, days_back: int = None, timeframe: TimeFrame = TimeFrame.Hour, sectors: List[str] = None):
         """
-        Run a historical data load for all active symbols.
+        Run a historical data load for active symbols, optionally filtered by sector.
         
         Args:
             days_back: Number of days of historical data to load (not used, defaults to 30 days for hourly, 7 for minute)
             timeframe: Data timeframe (Hour by default, Minute for 1-minute data)
+            sectors: List of sectors to filter by. If None, uses active sectors from config.
         """
         try:
-            # Get active symbols
-            symbols = self.symbol_manager.get_active_symbols()
+            # Get active symbols with sector filtering
+            symbols = self.symbol_manager.get_active_symbols(sectors=sectors)
             if not symbols:
                 logger.error("No active symbols found")
                 return
@@ -192,13 +193,14 @@ class AlpacaDataLoader:
             logger.error(f"Error in historical data load: {str(e)}")
             raise
 
-    def load_1min_historical_data(self, symbols: List[str] = None, days_back: int = 7):
+    def load_1min_historical_data(self, symbols: List[str] = None, days_back: int = 7, sectors: List[str] = None):
         """
-        Load 1-minute historical data for specified symbols or all active symbols.
+        Load 1-minute historical data for specified symbols or all active symbols, optionally filtered by sector.
         
         Args:
             symbols: List of symbols to load data for. If None, loads all active symbols
             days_back: Number of days to look back (max 7 due to Alpaca API restrictions)
+            sectors: List of sectors to filter by. If None, uses active sectors from config.
         """
         try:
             # Limit days_back to 7 for 1-minute data
@@ -208,7 +210,7 @@ class AlpacaDataLoader:
             
             # Get symbols if not provided
             if symbols is None:
-                symbols = self.symbol_manager.get_active_symbols()
+                symbols = self.symbol_manager.get_active_symbols(sectors=sectors)
                 if not symbols:
                     logger.error("No active symbols found")
                     return
@@ -237,19 +239,18 @@ class AlpacaDataLoader:
             logger.error(f"Error loading 1-minute historical data: {str(e)}")
             raise
 
-    def load_all_symbols_historical_data(self, timeframe: TimeFrame = TimeFrame.Hour, days_back: int = None):
+    def load_all_symbols_historical_data(self, timeframe: TimeFrame = TimeFrame.Hour, days_back: int = None, sectors: List[str] = None):
         """
-        Load historical data for all symbols in the symbols table.
+        Load historical data for all symbols in the symbols table, optionally filtered by sector.
         
         Args:
             timeframe: Data timeframe (Hour by default, Minute for 1-minute data)
             days_back: Number of days to look back (max 7 for minute data)
+            sectors: List of sectors to filter by. If None, uses active sectors from config.
         """
         try:
-            # Get all symbols from database
-            with self.db.get_session() as cursor:
-                cursor.execute("SELECT symbol FROM symbols WHERE is_active = true")
-                symbols = [row[0] for row in cursor.fetchall()]
+            # Get symbols with sector filtering
+            symbols = self.symbol_manager.get_active_symbols(sectors=sectors)
             
             if not symbols:
                 logger.error("No active symbols found in database")
