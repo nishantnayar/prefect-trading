@@ -1103,7 +1103,7 @@ ALPACA_SECRET_KEY=your_alpaca_secret_key
 Run the test script to verify your setup:
 
 ```bash
-python scripts/test_portfolio.py
+python scripts/run_tests.py database
 ```
 
 This will test:
@@ -1221,12 +1221,12 @@ Located in `src/data/sources/portfolio_manager.py`:
    - Ensure your Alpaca account is active and that you have agreed to the latest terms of service.
 
 3. **"Error loading portfolio data"**
-   - Run the test script for detailed error information: `python scripts/test_portfolio.py`
+   - Run the test script for detailed error information: `python scripts/run_tests.py database`
    - Check the logs in the `logs/` directory for detailed error messages and tracebacks.
    - Make sure the Alpaca API service is operational by checking their status page.
 
 #### Getting Help
-1. **Run the test script:** `python scripts/test_portfolio.py`
+1. **Run the test script:** `python scripts/run_tests.py database`
 2. Check the logs for detailed error messages.
 
 ## Testing

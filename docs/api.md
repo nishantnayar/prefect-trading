@@ -92,7 +92,7 @@ ticker = yf.Ticker("AAPL")
 
 3. **Test the Connection**
    ```bash
-   python scripts/test_alpaca_credentials.py
+   python scripts/run_tests.py database
    ```
 
 4. **Restart Your Application**
@@ -130,9 +130,8 @@ The portfolio manager includes enhanced error handling:
 - [Community Forum](https://forum.alpaca.markets/)
 
 **Scripts Available**:
-- `scripts/test_alpaca_credentials.py` - Test API connection
-- `scripts/diagnose_alpaca_issue.py` - Detailed diagnosis
-- `scripts/update_alpaca_credentials.py` - Update credentials
+- `scripts/run_tests.py` - Run comprehensive test suites including API connection tests
+- `scripts/check_env_file.py` - Check environment configuration
 - Enhanced error handling in `portfolio_manager.py`
 
 #### Available Methods

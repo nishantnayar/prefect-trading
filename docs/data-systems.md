@@ -91,7 +91,7 @@ Configuration management that:
 #### 4. Utility Scripts
 
 - `scripts/manage_symbols.py` - Manage symbol configuration and check data status
-- `scripts/test_multi_symbol_recycler.py` - Test the multi-symbol system
+- `scripts/run_tests.py` - Run comprehensive test suites
 - `scripts/start_data_recycler.py` - Start the data recycler server
 - `scripts/run_configurable_websocket.py` - Run the configurable client
 
@@ -124,7 +124,7 @@ python -m src.data.sources.data_recycler_server
 
 #### 3. Test the System
 ```bash
-python scripts/test_multi_symbol_recycler.py
+python scripts/run_tests.py
 ```
 
 #### 4. Check Data Status (After Monday's Data Collection)
@@ -769,6 +769,127 @@ class MLflowGARCHGRUTrainer:
 - **Dependencies**: Historical data, model metadata
 - **Estimated Time**: 2-3 days
 - **Success Criteria**: Comprehensive historical analysis capabilities
+
+### Data Preprocessing and Mathematical Foundations
+
+#### Logarithmic Returns and Z-Score Normalization
+
+This section covers the mathematical foundations for data preprocessing in financial time series analysis, specifically focusing on when to use logarithmic returns vs. log close prices, and how to properly apply z-score normalization.
+
+##### Log Close vs. Log Returns
+
+**Log Close**
+- This is simply the natural logarithm of the closing price: `log(P_t)`
+- Used primarily in cointegration testing and spread construction.
+
+**Log Returns**
+- This is the difference in log closing prices between consecutive time periods: 
+  ```
+  r_t = log(P_t) - log(P_{t-1}) = log(P_t / P_{t-1})
+  ```
+- Log returns are used for **modeling price changes**, volatility, and returns distributions.
+- **Variance is more stable** for log returns compared to raw prices.
+
+##### Z-Score Normalization - Expanding Window
+
+Z-score normalization is applied using an expanding window approach:
+```
+Z_t = (X_t - μ_{t-1}) / σ_{t-1}
+```
+
+Where:
+- `X_t` is the current value (spread or return)
+- `μ_{t-1}` is the mean of all previous values
+- `σ_{t-1}` is the standard deviation of all previous values
+
+This approach ensures that:
+- No look-ahead bias is introduced
+- The normalization adapts to changing market conditions
+- Historical data is preserved for backtesting
+
+##### When to Use Each Approach
+
+| **Task**              | **Use**                           | **Why**                               |
+|-----------------------|-----------------------------------|---------------------------------------|
+| Cointegration tests   | log close                         | To assess long-term relationship      |
+| Spread construction   | log close                         | To build mean-reverting spread        |
+| Volatility modeling   | log returns                       | To stabilize variance                 |
+| Z-score normalization | log close (spread) or log returns | Depending on what is being normalized |
+
+##### Implementation Guidelines
+
+**For Cointegration & Spread Construction:**
+- Use **log close prices** (not returns)
+- Spread is typically based on logs of prices:
+  ```
+  Spread_t = log(P_{A,t}) - β * log(P_{B,t}) - μ
+  ```
+- This is because cointegration is about finding stationary combinations of non-stationary price series.
+
+**For Volatility Modeling (GARCH), Time-Series Features:**
+- Use **log returns** as input for volatility estimation and normalization
+- Log returns provide more stable variance for statistical modeling
+
+**For Normalization / Z-scores:**
+- If normalizing the spread, use z-scores **of the spread series** (which itself is constructed from log prices)
+- If normalizing returns, use z-scores **of log returns**
+
+##### Code Implementation Example
+
+```python
+import numpy as np
+import pandas as pd
+
+def calculate_log_returns(prices):
+    """Calculate log returns from price series."""
+    return np.log(prices / prices.shift(1))
+
+def calculate_log_close(prices):
+    """Calculate log of closing prices."""
+    return np.log(prices)
+
+def calculate_spread(log_prices_a, log_prices_b, beta):
+    """Calculate spread from log prices using beta."""
+    return log_prices_a - beta * log_prices_b
+
+def expanding_zscore(series, min_periods=30):
+    """Calculate z-score using expanding window."""
+    expanding_mean = series.expanding(min_periods=min_periods).mean()
+    expanding_std = series.expanding(min_periods=min_periods).std()
+    return (series - expanding_mean) / expanding_std
+
+# Example usage for pairs trading
+def prepare_pairs_data(price_a, price_b, beta):
+    """Prepare data for pairs trading analysis."""
+    # Step 1: Calculate log prices
+    log_price_a = calculate_log_close(price_a)
+    log_price_b = calculate_log_close(price_b)
+    
+    # Step 2: Calculate spread
+    spread = calculate_spread(log_price_a, log_price_b, beta)
+    
+    # Step 3: Calculate z-score of spread
+    spread_zscore = expanding_zscore(spread)
+    
+    # Step 4: Calculate log returns for volatility modeling
+    returns_a = calculate_log_returns(price_a)
+    returns_b = calculate_log_returns(price_b)
+    
+    return {
+        'spread': spread,
+        'spread_zscore': spread_zscore,
+        'returns_a': returns_a,
+        'returns_b': returns_b
+    }
+```
+
+##### Key Considerations
+
+1. **No Look-Ahead Bias**: Always use expanding windows for z-score calculation to avoid using future information
+2. **Minimum Periods**: Use at least 30 periods for stable statistics
+3. **Data Quality**: Handle missing values and outliers appropriately
+4. **Stationarity**: Ensure spread series is stationary before applying z-score normalization
+5. **Beta Estimation**: Use proper methods (OLS, Kalman filter) for beta estimation in spread construction
 
 ### Best Practices
 

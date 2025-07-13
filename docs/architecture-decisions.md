@@ -899,7 +899,7 @@ Result:    All symbols use AAPL data with correct symbol names
 - `src/data/sources/configurable_websocket.py`: Added PDFS and ROG symbols
 - `src/data/sources/data_recycler_server.py`: Refactored for multi-symbol support with proxy fallback
 - `scripts/manage_symbols.py`: New utility for symbol configuration management
-- `scripts/test_multi_symbol_recycler.py`: Test script for verification
+- `scripts/run_tests.py`: Comprehensive test suite for verification
 
 ### Related Documentation
 
