@@ -534,19 +534,19 @@ if __name__ == "__main__":
     # Test the MLflow manager
     try:
         manager = MLflowManager()
-        print("✅ MLflow manager initialized successfully")
+        print("[OK] MLflow manager initialized successfully")
         
         # Test experiment creation
         experiment_id = manager.create_sector_experiment("technology")
-        print(f"✅ Created experiment: {experiment_id}")
+        print(f"[OK] Created experiment: {experiment_id}")
         
         # Test run creation
         with manager.start_run(run_name="test_run") as run:
             manager.log_parameters({"test_param": "test_value"})
             manager.log_metrics({"test_metric": 0.95})
-            print(f"✅ Test run completed: {run.info.run_id}")
+            print(f"[OK] Test run completed: {run.info.run_id}")
         
-        print("✅ All tests passed!")
+        print("[OK] All tests passed!")
         
     except Exception as e:
-        print(f"❌ Test failed: {e}") 
+        print(f"[FAIL] Test failed: {e}") 

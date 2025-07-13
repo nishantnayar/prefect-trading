@@ -117,9 +117,9 @@ def preprocess_data_with_variance_stability(
             computation_method='expanding_window',
             min_periods=min_periods
         )
-        print(f"✅ Features computed for {len(selected_symbols)} symbols: {len(features)} total records")
+        print(f"[OK] Features computed for {len(selected_symbols)} symbols: {len(features)} total records")
     except Exception as e:
-        print(f"❌ Error computing features: {e}")
+        print(f"[FAIL] Error computing features: {e}")
         raise
     
     # Step 3: Test variance stability
@@ -131,9 +131,9 @@ def preprocess_data_with_variance_stability(
             test_window=test_window,
             arch_lags=arch_lags
         )
-        print(f"✅ Variance stability tested: {len(stable_symbols)} stable out of {len(selected_symbols)} symbols")
+        print(f"[OK] Variance stability tested: {len(stable_symbols)} stable out of {len(selected_symbols)} symbols")
     except Exception as e:
-        print(f"❌ Error testing variance stability: {e}")
+        print(f"[FAIL] Error testing variance stability: {e}")
         raise
     
     # Step 4: Save features and test results to database
@@ -141,18 +141,18 @@ def preprocess_data_with_variance_stability(
     try:
         features_saved = utils.save_features_to_database(features)
         results_saved = utils.save_variance_stability_results(test_results)
-        print(f"✅ Saved {features_saved} feature records and {results_saved} test results to database")
+        print(f"[OK] Saved {features_saved} feature records and {results_saved} test results to database")
     except Exception as e:
-        print(f"⚠️  Warning: Could not save to database: {e}")
+        print(f"[WARN] Warning: Could not save to database: {e}")
         print("Continuing with in-memory data...")
     
     # Step 5: Filter features to only stable symbols
     print("\nStep 5: Filtering to stable symbols...")
     stable_features = features[features['symbol'].isin(stable_symbols)].copy()
-    print(f"✅ Filtered to {len(stable_symbols)} stable symbols: {len(stable_features)} records")
+    print(f"[OK] Filtered to {len(stable_symbols)} stable symbols: {len(stable_features)} records")
     
     # Print stability summary
-    print("\n📊 VARIANCE STABILITY SUMMARY:")
+    print("\n[STATS] VARIANCE STABILITY SUMMARY:")
     print("-" * 50)
     stable_count = len(stable_symbols)
     total_count = len(selected_symbols)
@@ -166,7 +166,7 @@ def preprocess_data_with_variance_stability(
     # Show some unstable symbols and reasons
     unstable_results = [r for r in test_results if not r['is_stable']]
     if unstable_results:
-        print(f"\n❌ UNSTABLE SYMBOLS (first 5):")
+        print(f"\n[FAIL] UNSTABLE SYMBOLS (first 5):")
         for result in unstable_results[:5]:
             arch_p = result.get('arch_test_pvalue')
             cv = result.get('rolling_std_cv')
@@ -176,7 +176,7 @@ def preprocess_data_with_variance_stability(
     # Show some stable symbols
     stable_results = [r for r in test_results if r['is_stable']]
     if stable_results:
-        print(f"\n✅ STABLE SYMBOLS (first 5):")
+        print(f"\n[OK] STABLE SYMBOLS (first 5):")
         for result in stable_results[:5]:
             arch_p = result.get('arch_test_pvalue')
             cv = result.get('rolling_std_cv')
@@ -414,7 +414,7 @@ def run_gru_training(sectors: list = None, use_preprocessing: bool = True):
 
     if use_preprocessing:
         # Use new preprocessing pipeline with variance stability testing
-        print("\n🔧 Using enhanced preprocessing pipeline with variance stability testing...")
+        print("\n[INFO] Using enhanced preprocessing pipeline with variance stability testing...")
         
         # Preprocess data with feature computation and variance stability testing
         stable_features, stable_symbols, test_results = preprocess_data_with_variance_stability(
@@ -442,7 +442,7 @@ def run_gru_training(sectors: list = None, use_preprocessing: bool = True):
         
     else:
         # Use original pipeline (for comparison/testing)
-        print("\n🔧 Using original preprocessing pipeline...")
+        print("\n[INFO] Using original preprocessing pipeline...")
         
         # Prepare pairs data using original method
         pairs_data_list = prepare_pairs_data(historical_df, symbols, top_pairs=20)
@@ -513,9 +513,9 @@ def run_gru_training(sectors: list = None, use_preprocessing: bool = True):
         )
 
         if save_success:
-            print(f"✅ Performance metrics saved to database for {pair_symbol}")
+            print(f"[OK] Performance metrics saved to database for {pair_symbol}")
         else:
-            print(f"⚠️  Failed to save performance metrics for {pair_symbol}")
+            print(f"[WARN] Failed to save performance metrics for {pair_symbol}")
 
         # Store performance data for summary
         performance_data = {
@@ -547,14 +547,14 @@ def run_gru_training(sectors: list = None, use_preprocessing: bool = True):
                 cursor.execute("SELECT update_model_rankings();")
                 cursor.execute("SELECT update_model_trends();")
                 conn.commit()
-        print("✅ Model rankings and trends updated in database.")
+        print("[OK] Model rankings and trends updated in database.")
     except Exception as e:
-        print(f"❌ Failed to update rankings/trends: {e}")
+        print(f"[FAIL] Failed to update rankings/trends: {e}")
 
     # Analyze and display performance summary
     if pair_performance:
         print("\n" + "=" * 60)
-        print("PERFORMANCE SUMMARY")
+        print("[STATS] PERFORMANCE SUMMARY")
         print("=" * 60)
 
         # Sort by best F1 score
@@ -563,23 +563,23 @@ def run_gru_training(sectors: list = None, use_preprocessing: bool = True):
         # Find the best performing pair
         best_pair = pair_performance[0]
 
-        print(f"🏆 BEST PERFORMING PAIR: {best_pair['pair']}")
+        print(f"[BEST] BEST PERFORMING PAIR: {best_pair['pair']}")
         print(f"   Best F1 Score: {best_pair['best_f1']:.4f}")
         print(f"   Final F1 Score: {best_pair['final_f1']:.4f}")
         print(f"   Correlation: {best_pair['correlation']:.4f}")
         print(f"   Data Points: {best_pair['data_points']}")
 
-        print(f"\n📊 ALL PAIRS RANKED BY PERFORMANCE:")
+        print(f"\n[STATS] ALL PAIRS RANKED BY PERFORMANCE:")
         print("-" * 80)
         for i, perf in enumerate(pair_performance, 1):
-            db_status = "✅" if perf['saved_to_db'] else "❌"
+            db_status = "[OK]" if perf['saved_to_db'] else "[FAIL]"
             print(
                 f"{i:2d}. {perf['pair']:<15} | F1: {perf['best_f1']:.4f} | Corr: {perf['correlation']:.4f} | DB: {db_status}")
 
         # Database save statistics
         saved_count = sum(1 for p in pair_performance if p['saved_to_db'])
         total_count = len(pair_performance)
-        print(f"\n💾 DATABASE SAVE STATISTICS:")
+        print(f"\n[SAVE] DATABASE SAVE STATISTICS:")
         print("-" * 40)
         print(f"Successfully saved: {saved_count}/{total_count} pairs")
         print(f"Save rate: {saved_count / total_count * 100:.1f}%")
@@ -590,7 +590,7 @@ def run_gru_training(sectors: list = None, use_preprocessing: bool = True):
         max_f1 = max(f1_scores)
         min_f1 = min(f1_scores)
 
-        print(f"\n📈 PERFORMANCE STATISTICS:")
+        print(f"\n[PERF] PERFORMANCE STATISTICS:")
         print("-" * 60)
         print(f"Average F1 Score: {avg_f1:.4f}")
         print(f"Highest F1 Score: {max_f1:.4f} ({best_pair['pair']})")
@@ -598,7 +598,7 @@ def run_gru_training(sectors: list = None, use_preprocessing: bool = True):
         print(f"Performance Range: {max_f1 - min_f1:.4f}")
 
         # Correlation vs Performance analysis
-        print(f"\n🔍 CORRELATION VS PERFORMANCE ANALYSIS:")
+        print(f"\n[ANALYZE] CORRELATION VS PERFORMANCE ANALYSIS:")
         print("-" * 60)
         high_corr_pairs = [p for p in pair_performance if p['correlation'] > 0.85]
         if high_corr_pairs:
@@ -621,8 +621,8 @@ def clear_mlflow_cache():
 
     # This would typically involve cleaning up artifacts
     # For now, we'll just log that we're ready to clear
-    print("✅ MLflow cache ready to be cleared")
-    print("💡 You can manually clear the mlruns directory if needed")
+    print("[OK] MLflow cache ready to be cleared")
+    print("[TIP] You can manually clear the mlruns directory if needed")
 
 
 if __name__ == "__main__":
