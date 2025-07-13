@@ -53,9 +53,9 @@ def load_historical_data_task():
         logger.info("Initializing historical data loader...")
         historical_loader = AlpacaDataLoader()
 
-        # Load hourly historical data (last 30 days)
-        logger.info("Loading hourly historical data...")
-        historical_loader.run_historical_load(timeframe=TimeFrame.Hour)
+        # Load hourly historical data (last 30 days) - COMMENTED OUT
+        # logger.info("Loading hourly historical data...")
+        # historical_loader.run_historical_load(timeframe=TimeFrame.Hour)
 
         # Load 1-minute historical data (last 7 days)
         logger.info("Loading 1-minute historical data...")
