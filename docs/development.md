@@ -550,13 +550,13 @@ For more details on MLflow integration, see [Architecture Decisions](architectur
 
 ### Start-of-Day Flow
 
-The start-of-day flow (`start_of_day_flow`) is the primary workflow that runs every morning at 6:00 AM EST (pre-market) to prepare the trading system for the day. This comprehensive flow includes:
+The start-of-day flow (`start_of_day_flow`) is the primary workflow that runs every morning at 6:00 AM EST (pre-market) to prepare the trading system for the day. This streamlined flow focuses on core ML pipeline components:
 
 #### Flow Components
 
 1. **Historical Data Loading**
-   - Loads hourly historical data (last 30 days)
-   - Loads 1-minute historical data (last 7 days)
+   - Loads 1-minute historical data (last 7 days) - optimized for speed
+   - Hourly historical data loading commented out to reduce API usage and execution time
    - Ensures all symbols have sufficient data for analysis
 
 2. **Data Preprocessing**
@@ -571,15 +571,15 @@ The start-of-day flow (`start_of_day_flow`) is the primary workflow that runs ev
    - Saves model performance metrics to database
    - Updates model rankings and trends
 
-4. **Symbol Maintenance**
-   - Checks for delisted symbols
-   - Updates symbol status in database
-   - Ensures data quality and completeness
+4. **Symbol Maintenance** (Commented Out)
+   - Checks for delisted symbols (can be run separately)
+   - Updates symbol status in database (can be run separately)
+   - Ensures data quality and completeness (can be run separately)
 
-5. **Additional Data Loading**
-   - Loads Yahoo Finance company information
-   - Fetches news articles and sentiment data
-   - Prepares comprehensive market data
+5. **Additional Data Loading** (Commented Out)
+   - Loads Yahoo Finance company information (can be run separately)
+   - Fetches news articles and sentiment data (can be run separately)
+   - Prepares comprehensive market data (can be run separately)
 
 #### Configuration
 
@@ -608,7 +608,7 @@ The flow is deployed via Prefect with the following configuration:
 - name: start-of-day-flow
   version: 1.0.0
   tags: ["start-of-day", "historical-data", "data-loading", "pre-market", "preprocessing", "training"]
-  description: "Start of day processes including historical data loading, data preprocessing, model training, symbol maintenance, and system initialization"
+  description: "Streamlined start of day processes focusing on core ML pipeline: 1-minute data loading, data preprocessing, and model training"
   schedule:
     cron: "0 6 * * 1-5"  # 6:00 AM EST Mon-Fri (pre-market)
     timezone: America/New_York
@@ -643,6 +643,23 @@ The flow includes robust error handling:
 - Individual task failures don't stop the entire flow
 - Detailed error messages for debugging
 - Graceful degradation when services are unavailable
+
+#### Configuration Management
+
+The system uses a robust configuration loader (`src/utils/config_loader.py`) that:
+- Searches multiple possible config file locations
+- Works in both local development and Prefect deployment environments
+- Provides fallback defaults if config file is not found
+- Supports environment variable substitution
+- Includes convenience functions for common config sections
+
+```python
+from src.utils.config_loader import get_variance_stability_config, get_sectors_config
+
+# Load specific config sections
+vs_config = get_variance_stability_config()
+sectors_config = get_sectors_config()
+```
 
 ### Other Flows
 

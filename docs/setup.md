@@ -143,6 +143,34 @@ export MLFLOW_TRACKING_URI=http://localhost:5000
 
 For more details on MLflow integration, see [Architecture Decisions](architecture-decisions.md).
 
+## Configuration Management
+
+The system uses a robust configuration loader that automatically finds the `config.yaml` file in multiple locations:
+
+### Config File Locations
+The system searches for `config.yaml` in the following order:
+1. `config/config.yaml` (relative to current working directory)
+2. `config.yaml` (relative to current working directory)
+3. Project root relative to source files
+4. Environment variable `CONFIG_PATH`
+5. Common deployment paths (`/app/config`, `/opt/app/config`)
+
+### Configuration Sections
+The `config.yaml` file contains several sections:
+- `variance_stability`: Settings for variance stability testing
+- `sectors`: Active and available sectors
+- `mlflow`: MLflow server configuration
+- `websocket`: WebSocket mode and settings
+- `database`: Database connection settings
+- `alpaca`: Alpaca API configuration
+
+### Fallback Behavior
+If the config file is not found, the system uses sensible defaults:
+- Variance stability: Relaxed criteria for development
+- Sectors: Technology sector only
+- MLflow: Local server at `http://localhost:5000`
+- WebSocket: Alpaca mode with default symbols
+
 ## Detailed Setup
 
 ### Environment Setup

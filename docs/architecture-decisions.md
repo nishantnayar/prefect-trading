@@ -201,6 +201,59 @@ This document records the key architectural decisions made during the developmen
 
 ---
 
+## 5. Start-of-Day Flow Optimization Decision
+
+### **Decision: Streamlined Start-of-Day Flow**
+
+### **Context:**
+- Original start-of-day flow included 5 comprehensive tasks
+- Performance issues and long execution times
+- Need to balance completeness with efficiency
+
+### **Problem:**
+- Hourly historical data loading was time-consuming and used significant API quota
+- Symbol maintenance and Yahoo Finance data collection were not critical for daily ML pipeline
+- Flow execution was taking too long for pre-market timing
+
+### **Options Considered:**
+
+#### **Option A: Keep Comprehensive Flow**
+**Pros:**
+- Complete data collection and maintenance
+- All systems updated daily
+- Comprehensive market data
+
+**Cons:**
+- Long execution time
+- High API usage
+- Potential timeout issues in Prefect
+- Not all components needed for ML pipeline
+
+#### **Option B: Streamlined Flow**
+**Pros:**
+- Faster execution
+- Reduced API usage
+- Focus on core ML pipeline
+- More reliable execution
+- Can run additional tasks separately
+
+**Cons:**
+- Some data collection tasks moved to separate flows
+- Manual intervention needed for full system updates
+
+### **Decision Rationale:**
+- **Primary Factor**: Performance and reliability
+- **Secondary Factor**: Focus on core ML pipeline
+- **Approach**: Streamline main flow, move non-critical tasks to separate flows
+
+### **Implementation:**
+- Commented out hourly historical data loading
+- Commented out symbol maintenance and Yahoo Finance data collection
+- Focus on 1-minute data loading, preprocessing, and model training
+- Additional tasks can be run via separate flows or manual execution
+
+---
+
 ## 5. MLflow Server vs Local Tracking Decision
 
 ### **Decision: Use MLflow Server with PostgreSQL Backend**

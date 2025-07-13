@@ -198,6 +198,31 @@ python scripts/run_tests.py simple
 
 # Get help with all options
 python scripts/run_tests.py --help
+
+### 2. Testing Streamlined Workflows
+
+#### Start-of-Day Flow Testing
+```bash
+# Test the streamlined start-of-day flow
+python -c "from main import start_of_day_flow; start_of_day_flow()"
+
+# Test individual components
+python -c "from src.flows.preprocessing_flows import daily_preprocessing_flow; daily_preprocessing_flow()"
+python -c "from src.flows.training_flows import complete_training_flow; complete_training_flow()"
+```
+
+#### Configuration Loading Testing
+```bash
+# Test the new config loader
+python -c "from src.utils.config_loader import get_variance_stability_config; print(get_variance_stability_config())"
+python -c "from src.utils.config_loader import get_sectors_config; print(get_sectors_config())"
+```
+
+#### Unicode Compatibility Testing
+```bash
+# Verify no Unicode characters in print statements
+grep -r "print.*[^\x00-\x7F]" src/ --include="*.py" | grep -v "config_loader.py"
+```
 ```
 
 ### 2. Individual Test Files

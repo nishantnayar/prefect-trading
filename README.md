@@ -254,12 +254,11 @@ python main.py
 The system includes several automated workflows that can be run individually or scheduled:
 
 ### Core Data Flows
-- **`start_of_day_flow()`** - Comprehensive start-of-day workflow including:
-  - Historical data loading (hourly and 1-minute data)
+- **`start_of_day_flow()`** - Streamlined start-of-day workflow including:
+  - Historical data loading (1-minute data only - hourly data loading commented out)
   - Data preprocessing with variance stability testing
   - Model training for all sectors with MLflow integration
-  - Symbol maintenance and delisting checks
-  - Yahoo Finance data collection
+  - Symbol maintenance and Yahoo Finance data collection (commented out for performance)
 - **`hourly_process_flow()`** - Hourly data collection and processing
 - **`eod_process_flow()`** - End-of-day symbol maintenance and data updates
 - **`market_data_websocket_flow()`** - Real-time market data streaming
@@ -408,18 +407,15 @@ This project is licensed under the terms specified in the LICENSE file.
 
 ## 🔄 Recent Updates
 
-### July 2025 - Enhanced Start-of-Day Flow Integration
-- **Prefect Integration**: Integrated data preprocessing and model training into the start-of-day flow
-- **Comprehensive Workflow**: Start-of-day flow now includes 5 major components:
-  - Historical data loading (hourly and 1-minute data)
-  - Data preprocessing with variance stability testing
-  - Model training for all sectors with MLflow integration
-  - Symbol maintenance and delisting checks
-  - Yahoo Finance data collection
-- **Configuration Management**: Variance stability criteria moved to config.yaml for easy adjustment
-- **Documentation Updates**: Enhanced development guide with detailed Prefect workflow documentation
-- **Scheduled Execution**: Flow runs automatically at 6:00 AM EST (pre-market) on weekdays
-- **Error Handling**: Robust error handling with comprehensive logging and monitoring
+### July 2025 - Streamlined Start-of-Day Flow Optimization
+- **Performance Optimization**: Simplified start-of-day flow for faster execution:
+  - Hourly historical data loading commented out (reduces API usage and execution time)
+  - Symbol maintenance and Yahoo Finance data collection commented out (can be run separately)
+  - Focus on core ML pipeline: 1-minute data loading, preprocessing, and model training
+- **Robust Config Loading**: Added comprehensive config loader utility for Prefect compatibility
+- **Unicode Cleanup**: Replaced all Unicode symbols in print statements with ASCII equivalents
+- **Error Resolution**: Fixed import issues and module loading problems in Prefect environment
+- **Documentation Updates**: Updated all documentation to reflect current system state
 
 ### July 2025 - PortfolioManager Architecture Improvements
 - **Architecture Decisions**: Added comprehensive documentation of PortfolioManager singleton pattern and caching system

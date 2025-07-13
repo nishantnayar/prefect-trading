@@ -24,6 +24,40 @@ The Data Recycler System allows you to recycle existing market data from your da
 
 **Note**: Your database contains market data starting from **2025-06-23**. All replay scenarios use dates from this period onwards.
 
+## Streamlined Data Loading
+
+### Current Optimization
+
+The system has been optimized for performance by streamlining the start-of-day data loading process:
+
+#### What's Loaded Daily
+- **1-minute historical data** (last 7 days) - Core ML pipeline requirement
+- **Data preprocessing** with variance stability testing
+- **Model training** for all sectors with MLflow integration
+
+#### What's Commented Out (Can Be Run Separately)
+- **Hourly historical data loading** - Reduces API usage and execution time
+- **Symbol maintenance** - Can be run via separate flow
+- **Yahoo Finance data collection** - Can be run via separate flow
+
+#### Benefits
+- **Faster execution** - Reduced from ~15 minutes to ~5 minutes
+- **Lower API usage** - Reduced Alpaca API calls
+- **More reliable** - Fewer potential failure points
+- **Focused on ML pipeline** - Prioritizes core trading algorithm needs
+
+#### Running Additional Tasks
+```bash
+# Run symbol maintenance separately
+python -c "from main import symbol_maintenance_flow; symbol_maintenance_flow()"
+
+# Run Yahoo Finance data collection separately
+python -c "from main import yahoo_data_loader_flow; yahoo_data_loader_flow()"
+
+# Run hourly data loading separately (if needed)
+python -c "from src.data.sources.alpaca_historical_loader import AlpacaDataLoader; AlpacaDataLoader().run_historical_load(timeframe=TimeFrame.Hour)"
+```
+
 ### Architecture
 
 ```
