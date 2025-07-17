@@ -67,9 +67,14 @@ A comprehensive trading system built with **Prefect** for automated market data 
   - Error handling and retry logic
 
 ### 🤖 Machine Learning & Model Management
+- **Enhanced Pair Analysis**
+  - **Correlation Analysis**: Pearson's ρ > 0.8 threshold for high correlation pairs
+  - **Cointegration Testing**: Engle-Granger test with p < 0.05 for stable long-term relationships
+  - **Spread Stationarity**: Augmented Dickey-Fuller test for spread validation
+  - **Comprehensive Shortlisting**: Multi-criteria pair selection for optimal training
 - **PyTorch GRU Models**
   - Pairs trading signal generation
-  - Comprehensive model training pipeline
+  - Comprehensive model training pipeline with pair analysis integration
   - Real-time model inference
   - Performance tracking and analysis
 - **MLflow Integration**
@@ -120,8 +125,9 @@ prefect-trading/
 │   │   ├── database_connectivity.py
 │   │   └── 📁 sql/
 │   ├── 📁 ml/                   # Machine learning components
+│   │   ├── pair_analysis.py     # Correlation and cointegration analysis
 │   │   ├── gru_model.py         # PyTorch GRU model implementation
-│   │   ├── train_gru_models.py  # Training pipeline with MLflow
+│   │   ├── train_gru_models.py  # Training pipeline with MLflow integration
 │   │   ├── model_performance_tracker.py  # Performance tracking and database integration
 │   │   └── config.py            # MLflow configuration
 │   ├── 📁 ui/                   # User interface components
@@ -138,6 +144,7 @@ prefect-trading/
 │   ├── 📁 data/                 # Data-related tests
 │   └── 📁 database/             # Database-related tests
 ├── 📁 scripts/                  # Development and testing utilities
+│   ├── run_pair_analysis.py     # Standalone pair analysis script
 │   ├── run_tests.py             # Test runner
 │   ├── setup_test_env.py        # Test environment setup
 │   ├── verify_migrations_simple.py # Database migration verification
@@ -157,10 +164,32 @@ This project uses **MLflow** for enterprise-level model management, experiment t
 
 - MLflow server runs with PostgreSQL backend for persistence
 - Model experiments and artifacts are tracked and versioned
+- **Enhanced Pair Analysis**: Correlation and cointegration testing before model training
 - **PyTorch GRU Implementation**: PyTorch-based GRU models with MLflow integration
 - **Automated Performance Tracking**: Model rankings and trends updated automatically after training
 - **Database Integration**: Performance metrics stored with MLflow run IDs for traceability
 - See [Architecture Decisions](docs/architecture-decisions.md) for rationale and future plans
+
+### 🔍 Pair Analysis Pipeline
+
+The system now includes a comprehensive pair analysis pipeline that runs before GRU training:
+
+1. **Correlation Analysis**: Identifies pairs with Pearson's ρ > 0.8
+2. **Cointegration Testing**: Applies Engle-Granger test (p < 0.05) for stable relationships
+3. **Spread Calculation**: Computes log-difference spreads with stationarity testing
+4. **Pair Shortlisting**: Multi-criteria filtering for optimal training pairs
+
+**Usage**:
+```bash
+# Standalone pair analysis
+python scripts/run_pair_analysis.py --sectors technology healthcare
+
+# GRU training with pair analysis (recommended)
+python -m src.ml.train_gru_models
+
+# GRU training without pair analysis
+python -m src.ml.train_gru_models --no-pair-analysis
+```
 
 ## 🛠️ Prerequisites
 

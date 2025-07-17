@@ -20,6 +20,7 @@ from src.database.database_connectivity import DatabaseConnectivity
 from src.data.sources.symbol_manager import SymbolManager
 from src.ml.gru_model import train_gru_model_with_mlflow, prepare_data_for_training
 from src.ml.model_performance_tracker import save_training_results
+from src.ml.pair_analysis import analyze_pairs_for_training, PairAnalysis
 from src.utils.data_preprocessing_utils import DataPreprocessingUtils
 
 
@@ -393,13 +394,14 @@ def prepare_pairs_data(historical_df, symbols, top_pairs=10):
     return pairs_data_list
 
 
-def run_gru_training(sectors: list = None, use_preprocessing: bool = True):
+def run_gru_training(sectors: list = None, use_preprocessing: bool = True, use_pair_analysis: bool = True):
     """
     Main function to run PyTorch GRU training with MLflow integration.
     
     Args:
         sectors: List of sectors to train on. If None, uses active sectors from config.
         use_preprocessing: Whether to use the new preprocessing pipeline with variance stability testing
+        use_pair_analysis: Whether to use correlation and cointegration analysis for pair shortlisting
     """
     print("=" * 60)
     print("PYTORCH GRU TRAINING WITH MLFLOW INTEGRATION")
@@ -412,7 +414,43 @@ def run_gru_training(sectors: list = None, use_preprocessing: bool = True):
     # Extract data with sector filtering
     historical_df, symbols = extract_data_from_database(sectors=sectors)
 
-    if use_preprocessing:
+    if use_pair_analysis:
+        # Use new pair analysis pipeline with correlation and cointegration testing
+        print("\n[INFO] Using enhanced pair analysis with correlation and cointegration testing...")
+        
+        # Configure pair analysis
+        pair_analysis_config = {
+            'correlation_threshold': 0.8,  # Pearson's ρ > 0.8
+            'cointegration_pvalue_threshold': 0.05,  # Engle-Granger p-value < 0.05
+            'min_data_points': 100,
+            'max_pairs': 20,
+            'verbose': True
+        }
+        
+        # Perform comprehensive pair analysis
+        shortlisted_pairs, pairs_data_list, correlation_matrix = analyze_pairs_for_training(
+            historical_df, symbols, pair_analysis_config
+        )
+        
+        # Add pair analysis metadata to MLflow
+        preprocessing_metadata = {
+            'preprocessing_method': 'pair_analysis_enhanced',
+            'pair_analysis_method': 'correlation_cointegration',
+            'correlation_threshold': pair_analysis_config['correlation_threshold'],
+            'cointegration_threshold': pair_analysis_config['cointegration_pvalue_threshold'],
+            'shortlisted_pairs_count': len(shortlisted_pairs),
+            'total_symbols_processed': len(symbols),
+            'correlation_matrix_shape': correlation_matrix.shape,
+            'feature_computation_method': 'pair_analysis_features',
+            'variance_test_window': 0,
+            'arch_test_lags': 0
+        }
+        
+        print(f"\n[PAIR ANALYSIS RESULTS]")
+        print(f"Shortlisted pairs: {len(shortlisted_pairs)}")
+        print(f"Training data pairs: {len(pairs_data_list)}")
+        
+    elif use_preprocessing:
         # Use new preprocessing pipeline with variance stability testing
         print("\n[INFO] Using enhanced preprocessing pipeline with variance stability testing...")
         
@@ -630,9 +668,11 @@ if __name__ == "__main__":
         # Allow command line argument to choose preprocessing method
         import argparse
         
-        parser = argparse.ArgumentParser(description='Train GRU models with optional preprocessing')
+        parser = argparse.ArgumentParser(description='Train GRU models with optional preprocessing and pair analysis')
         parser.add_argument('--no-preprocessing', action='store_true', 
                           help='Use original preprocessing pipeline (no variance stability testing)')
+        parser.add_argument('--no-pair-analysis', action='store_true',
+                          help='Skip correlation and cointegration analysis')
         parser.add_argument('--sectors', nargs='+', default=None,
                           help='Sectors to train on (default: all active sectors)')
         
@@ -640,15 +680,19 @@ if __name__ == "__main__":
         
         # Run training with chosen preprocessing method
         use_preprocessing = not args.no_preprocessing
+        use_pair_analysis = not args.no_pair_analysis
         
-        if use_preprocessing:
+        if use_pair_analysis:
+            print("🔧 Using enhanced pair analysis with correlation and cointegration testing")
+        elif use_preprocessing:
             print("🔧 Using enhanced preprocessing pipeline with variance stability testing")
         else:
             print("🔧 Using original preprocessing pipeline")
         
         model, history, trainer = run_gru_training(
             sectors=args.sectors,
-            use_preprocessing=use_preprocessing
+            use_preprocessing=use_preprocessing,
+            use_pair_analysis=use_pair_analysis
         )
 
         # Clear cache
@@ -658,7 +702,12 @@ if __name__ == "__main__":
         print("TRAINING COMPLETE")
         print("=" * 60)
         print("✅ PyTorch GRU models trained")
-        if use_preprocessing:
+        if use_pair_analysis:
+            print("✅ Enhanced pair analysis with correlation and cointegration testing")
+            print("✅ Pearson's ρ > 0.8 correlation threshold applied")
+            print("✅ Engle-Granger cointegration test (p < 0.05) applied")
+            print("✅ Spread stationarity testing implemented")
+        elif use_preprocessing:
             print("✅ Enhanced preprocessing with variance stability testing")
             print("✅ Features computed and stored in database")
             print("✅ Variance stability results saved")

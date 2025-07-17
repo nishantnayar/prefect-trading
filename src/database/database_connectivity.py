@@ -84,11 +84,37 @@ class DatabaseConnectivity:
         finally:
             self.release_connection(conn)
 
+    @contextmanager
+    def get_individual_session(self):
+        """
+        Context manager for individual transactions that automatically handles 
+        transaction abortion and retry logic.
+        """
+        conn = self.get_connection()
+        try:
+            # Reset any aborted transaction state
+            conn.rollback()
+            
+            with conn.cursor() as cursor:
+                yield cursor
+                conn.commit()
+        except Exception as e:
+            try:
+                conn.rollback()
+            except:
+                pass  # Ignore rollback errors
+            raise
+        finally:
+            self.release_connection(conn)
+
     def execute_query(self, query: str, params: Optional[tuple] = None):
         """Execute a query and return the results."""
         connection = None
         try:
             connection = self.get_connection()
+            # Reset any aborted transaction state
+            connection.rollback()
+            
             with connection.cursor() as cursor:
                 cursor.execute(query, params)
                 if cursor.description:  # If the query returns data
@@ -97,7 +123,10 @@ class DatabaseConnectivity:
                 return None
         except Exception as e:
             if connection:
-                connection.rollback()
+                try:
+                    connection.rollback()
+                except:
+                    pass  # Ignore rollback errors
             raise
         finally:
             if connection:

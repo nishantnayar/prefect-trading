@@ -128,24 +128,71 @@ python scripts/setup_test_env.py
 
 ## ML Training Scripts
 
+### Pair Analysis and GRU Training
+
+#### `run_pair_analysis.py`
+**Purpose**: Standalone correlation and cointegration analysis for pairs trading.
+
+**Features**:
+- **Correlation Analysis**: Pearson's ρ > 0.8 threshold
+- **Cointegration Testing**: Engle-Granger test with p < 0.05 threshold
+- **Spread Calculation**: Log difference and ratio methods
+- **Stationarity Testing**: Augmented Dickey-Fuller test for spreads
+- **Pair Shortlisting**: Comprehensive filtering and ranking
+- **Training Data Preparation**: Ready-to-use data for GRU models
+
+**Usage**:
+```bash
+# Analyze all sectors with default thresholds
+python scripts/run_pair_analysis.py
+
+# Analyze specific sectors
+python scripts/run_pair_analysis.py --sectors technology healthcare
+
+# Custom thresholds
+python scripts/run_pair_analysis.py --correlation-threshold 0.85 --cointegration-threshold 0.01
+
+# More pairs, more data points
+python scripts/run_pair_analysis.py --max-pairs 100 --min-data-points 200
+
+# Save results to custom directory
+python scripts/run_pair_analysis.py --output-dir my_analysis_results
+```
+
+**Output**:
+- Shortlisted pairs with correlation and cointegration metrics
+- Correlation matrix for all symbols
+- Training data summary
+- CSV files with detailed results
+
 ### PyTorch GRU Implementation
 
 The ML training scripts are located in `src/ml/`:
 
 #### `train_gru_models.py`
-**Purpose**: Trains PyTorch GRU models for all pairs with MLflow integration.
+**Purpose**: Trains PyTorch GRU models with optional pair analysis integration.
 
 **Features**:
-- Trains models for all pairs that meet correlation threshold (>0.8)
-- Comprehensive performance analysis and ranking
-- MLflow experiment tracking with descriptive run names
-- Model registry integration
-- Performance statistics and correlation analysis
+- **Enhanced Pair Analysis**: Correlation and cointegration testing before training
+- **Multiple Pipelines**: Choose between pair analysis, variance stability, or original
+- **Comprehensive Filtering**: Pearson's ρ > 0.8 + Engle-Granger p < 0.05
+- **Spread Stationarity**: ADF test for spread validation
+- **MLflow Integration**: Experiment tracking with detailed metadata
+- **Performance Analysis**: Comprehensive ranking and statistics
 
 **Usage**:
 ```bash
-# Train all pairs
+# Use enhanced pair analysis (recommended)
 python -m src.ml.train_gru_models
+
+# Skip pair analysis, use variance stability preprocessing
+python -m src.ml.train_gru_models --no-pair-analysis
+
+# Use original preprocessing pipeline
+python -m src.ml.train_gru_models --no-pair-analysis --no-preprocessing
+
+# Train on specific sectors
+python -m src.ml.train_gru_models --sectors technology healthcare
 
 # View results in MLflow UI
 # Open http://localhost:5000

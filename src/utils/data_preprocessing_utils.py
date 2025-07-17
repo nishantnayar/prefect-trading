@@ -351,60 +351,87 @@ class DataPreprocessingUtils:
     ) -> int:
         """
         Save computed features to the database.
-        Now inserts one-by-one and logs any row that fails.
+        Uses individual transactions for each insert to prevent transaction abortion.
         """
-        logger.info("Saving features to database (row-by-row for debugging)...")
+        logger.info("Saving features to database (individual transactions)...")
         try:
-            records_to_insert = []
-            for _, row in feature_data.iterrows():
-                ts = row.get('timestamp', None)
-                if ts is None or isinstance(ts, (int, float)):
-                    ts = row.name if hasattr(row, 'name') and not isinstance(row.name, (int, float)) else datetime.now()
-                if not isinstance(ts, (datetime, pd.Timestamp)):
-                    try:
-                        ts = pd.to_datetime(ts)
-                    except Exception:
-                        ts = datetime.now()
-                record = {
-                    'symbol': row['symbol'],
-                    'timestamp': ts,
-                    'log_close': float(row['log_close']) if pd.notna(row['log_close']) else None,
-                    'log_return': float(row['log_return']) if pd.notna(row['log_return']) else None,
-                    'z_score': float(row['z_score']) if pd.notna(row['z_score']) else None,
-                    'rolling_std': float(row['rolling_std']) if pd.notna(row['rolling_std']) else None,
-                    'rolling_mean': float(row['rolling_mean']) if pd.notna(row['rolling_mean']) else None,
-                    'volatility_annualized': float(row['volatility_annualized']) if pd.notna(row['volatility_annualized']) else None,
-                    'feature_date': row.get('feature_date', date.today()),
-                    'computation_method': computation_method,
-                    'data_source': data_source
-                }
-                records_to_insert.append(record)
-            columns = list(records_to_insert[0].keys())
-            placeholders = ', '.join(['%s'] * len(columns))
-            column_names = ', '.join([f'"{col}"' if col == 'timestamp' else col for col in columns])
-            query = f"""
-            INSERT INTO market_data_features ({column_names})
-            VALUES ({placeholders})
-            ON CONFLICT (symbol, "timestamp") DO UPDATE SET
-                log_close = EXCLUDED.log_close,
-                log_return = EXCLUDED.log_return,
-                z_score = EXCLUDED.z_score,
-                rolling_std = EXCLUDED.rolling_std,
-                rolling_mean = EXCLUDED.rolling_mean,
-                volatility_annualized = EXCLUDED.volatility_annualized,
-                updated_at = CURRENT_TIMESTAMP
-            """
             total_inserted = 0
-            with self.db.get_session() as cursor:
-                for record in records_to_insert:
-                    try:
+            failed_records = 0
+            
+            for _, row in feature_data.iterrows():
+                try:
+                    # Process timestamp
+                    ts = row.get('timestamp', None)
+                    if ts is None or isinstance(ts, (int, float)):
+                        ts = row.name if hasattr(row, 'name') and not isinstance(row.name, (int, float)) else datetime.now()
+                    if not isinstance(ts, (datetime, pd.Timestamp)):
+                        try:
+                            ts = pd.to_datetime(ts)
+                        except Exception:
+                            ts = datetime.now()
+                    
+                    # Validate and prepare record
+                    record = {
+                        'symbol': str(row['symbol']),
+                        'timestamp': ts,
+                        'log_close': float(row['log_close']) if pd.notna(row['log_close']) else None,
+                        'log_return': float(row['log_return']) if pd.notna(row['log_return']) else None,
+                        'z_score': float(row['z_score']) if pd.notna(row['z_score']) else None,
+                        'rolling_std': float(row['rolling_std']) if pd.notna(row['rolling_std']) else None,
+                        'rolling_mean': float(row['rolling_mean']) if pd.notna(row['rolling_mean']) else None,
+                        'volatility_annualized': float(row['volatility_annualized']) if pd.notna(row['volatility_annualized']) else None,
+                        'feature_date': row.get('feature_date', date.today()),
+                        'computation_method': computation_method,
+                        'data_source': data_source
+                    }
+                    
+                    # Validate data constraints
+                    if record['z_score'] is not None and (record['z_score'] < -10 or record['z_score'] > 10):
+                        logger.warning(f"Z-score out of range for {record['symbol']}: {record['z_score']}")
+                        record['z_score'] = None
+                    
+                    if record['rolling_std'] is not None and record['rolling_std'] < 0:
+                        logger.warning(f"Rolling std negative for {record['symbol']}: {record['rolling_std']}")
+                        record['rolling_std'] = None
+                    
+                    if record['volatility_annualized'] is not None and record['volatility_annualized'] < 0:
+                        logger.warning(f"Volatility negative for {record['symbol']}: {record['volatility_annualized']}")
+                        record['volatility_annualized'] = None
+                    
+                    # Insert with individual transaction
+                    columns = list(record.keys())
+                    placeholders = ', '.join(['%s'] * len(columns))
+                    column_names = ', '.join([f'"{col}"' if col == 'timestamp' else col for col in columns])
+                    query = f"""
+                    INSERT INTO market_data_features ({column_names})
+                    VALUES ({placeholders})
+                    ON CONFLICT (symbol, "timestamp") DO UPDATE SET
+                        log_close = EXCLUDED.log_close,
+                        log_return = EXCLUDED.log_return,
+                        z_score = EXCLUDED.z_score,
+                        rolling_std = EXCLUDED.rolling_std,
+                        rolling_mean = EXCLUDED.rolling_mean,
+                        volatility_annualized = EXCLUDED.volatility_annualized,
+                        updated_at = CURRENT_TIMESTAMP
+                    """
+                    
+                    # Use individual transaction for each insert
+                    with self.db.get_individual_session() as cursor:
                         cursor.execute(query, [record[col] for col in columns])
-                        total_inserted += 1
-                    except Exception as e:
-                        logger.error(f"Failed to insert row: {record}\nError: {e}")
-                        print(f"Failed to insert row: {record}\nError: {e}")
-            logger.info(f"Saved {total_inserted} feature records to database (row-by-row mode)")
+                    
+                    total_inserted += 1
+                    
+                except Exception as e:
+                    failed_records += 1
+                    logger.error(f"Failed to insert row for {row.get('symbol', 'unknown')}: {e}")
+                    # Continue with next record instead of failing entire batch
+            
+            logger.info(f"Saved {total_inserted} feature records to database, {failed_records} failed")
+            if failed_records > 0:
+                logger.warning(f"{failed_records} records failed to insert - check logs for details")
+            
             return total_inserted
+            
         except Exception as e:
             logger.error(f"Error saving features to database: {e}")
             raise
@@ -415,52 +442,81 @@ class DataPreprocessingUtils:
     ) -> int:
         """
         Save variance stability test results to the database.
-        Now inserts one-by-one and logs any row that fails.
+        Uses individual transactions for each insert to prevent transaction abortion.
         """
-        logger.info("Saving variance stability results to database (row-by-row for debugging)...")
+        logger.info("Saving variance stability results to database (individual transactions)...")
         try:
-            records_to_insert = []
-            for result in test_results:
-                record = {
-                    'symbol': str(result['symbol']),
-                    'test_date': result['test_date'],
-                    'record_count': int(result['record_count']) if result['record_count'] is not None else None,
-                    'arch_test_pvalue': float(result['arch_test_pvalue']) if result['arch_test_pvalue'] is not None else None,
-                    'rolling_std_cv': float(result['rolling_std_cv']) if result['rolling_std_cv'] is not None else None,
-                    'ljung_box_pvalue': float(result['ljung_box_pvalue']) if result['ljung_box_pvalue'] is not None else None,
-                    'is_stable': bool(result['is_stable']),
-                    'filter_reason': str(result['filter_reason']) if result['filter_reason'] is not None else None,
-                    'test_window': int(result.get('test_window', 30)),
-                    'arch_lags': int(result.get('arch_lags', 5))
-                }
-                records_to_insert.append(record)
-            columns = list(records_to_insert[0].keys())
-            placeholders = ', '.join(['%s'] * len(columns))
-            column_names = ', '.join(columns)
-            query = f"""
-            INSERT INTO variance_stability_tracking ({column_names})
-            VALUES ({placeholders})
-            ON CONFLICT (symbol, test_date) DO UPDATE SET
-                record_count = EXCLUDED.record_count,
-                arch_test_pvalue = EXCLUDED.arch_test_pvalue,
-                rolling_std_cv = EXCLUDED.rolling_std_cv,
-                ljung_box_pvalue = EXCLUDED.ljung_box_pvalue,
-                is_stable = EXCLUDED.is_stable,
-                filter_reason = EXCLUDED.filter_reason,
-                test_window = EXCLUDED.test_window,
-                arch_lags = EXCLUDED.arch_lags
-            """
             total_inserted = 0
-            with self.db.get_session() as cursor:
-                for record in records_to_insert:
-                    try:
+            failed_records = 0
+            
+            for result in test_results:
+                try:
+                    # Validate and prepare record
+                    record = {
+                        'symbol': str(result['symbol']),
+                        'test_date': result['test_date'],
+                        'record_count': int(result['record_count']) if result['record_count'] is not None else None,
+                        'arch_test_pvalue': float(result['arch_test_pvalue']) if result['arch_test_pvalue'] is not None else None,
+                        'rolling_std_cv': float(result['rolling_std_cv']) if result['rolling_std_cv'] is not None else None,
+                        'ljung_box_pvalue': float(result['ljung_box_pvalue']) if result['ljung_box_pvalue'] is not None else None,
+                        'is_stable': bool(result['is_stable']),
+                        'filter_reason': str(result['filter_reason']) if result['filter_reason'] is not None else None,
+                        'test_window': int(result.get('test_window', 30)),
+                        'arch_lags': int(result.get('arch_lags', 5))
+                    }
+                    
+                    # Validate data constraints
+                    if record['arch_test_pvalue'] is not None and (record['arch_test_pvalue'] < 0 or record['arch_test_pvalue'] > 1):
+                        logger.warning(f"Arch test p-value out of range for {record['symbol']}: {record['arch_test_pvalue']}")
+                        record['arch_test_pvalue'] = None
+                    
+                    if record['rolling_std_cv'] is not None and record['rolling_std_cv'] < 0:
+                        logger.warning(f"Rolling std CV negative for {record['symbol']}: {record['rolling_std_cv']}")
+                        record['rolling_std_cv'] = None
+                    
+                    if record['ljung_box_pvalue'] is not None and (record['ljung_box_pvalue'] < 0 or record['ljung_box_pvalue'] > 1):
+                        logger.warning(f"Ljung-Box p-value out of range for {record['symbol']}: {record['ljung_box_pvalue']}")
+                        record['ljung_box_pvalue'] = None
+                    
+                    if record['record_count'] is not None and record['record_count'] < 0:
+                        logger.warning(f"Record count negative for {record['symbol']}: {record['record_count']}")
+                        record['record_count'] = None
+                    
+                    # Insert with individual transaction
+                    columns = list(record.keys())
+                    placeholders = ', '.join(['%s'] * len(columns))
+                    column_names = ', '.join(columns)
+                    query = f"""
+                    INSERT INTO variance_stability_tracking ({column_names})
+                    VALUES ({placeholders})
+                    ON CONFLICT (symbol, test_date) DO UPDATE SET
+                        record_count = EXCLUDED.record_count,
+                        arch_test_pvalue = EXCLUDED.arch_test_pvalue,
+                        rolling_std_cv = EXCLUDED.rolling_std_cv,
+                        ljung_box_pvalue = EXCLUDED.ljung_box_pvalue,
+                        is_stable = EXCLUDED.is_stable,
+                        filter_reason = EXCLUDED.filter_reason,
+                        test_window = EXCLUDED.test_window,
+                        arch_lags = EXCLUDED.arch_lags
+                    """
+                    
+                    # Use individual transaction for each insert
+                    with self.db.get_individual_session() as cursor:
                         cursor.execute(query, [record[col] for col in columns])
-                        total_inserted += 1
-                    except Exception as e:
-                        logger.error(f"Failed to insert variance result: {record}\nError: {e}")
-                        print(f"Failed to insert variance result: {record}\nError: {e}")
-            logger.info(f"Saved {total_inserted} variance stability results to database (row-by-row mode)")
+                    
+                    total_inserted += 1
+                    
+                except Exception as e:
+                    failed_records += 1
+                    logger.error(f"Failed to insert variance result for {result.get('symbol', 'unknown')}: {e}")
+                    # Continue with next record instead of failing entire batch
+            
+            logger.info(f"Saved {total_inserted} variance stability results to database, {failed_records} failed")
+            if failed_records > 0:
+                logger.warning(f"{failed_records} variance results failed to insert - check logs for details")
+            
             return total_inserted
+            
         except Exception as e:
             logger.error(f"Error saving variance stability results to database: {e}")
             raise
@@ -508,7 +564,7 @@ class DataPreprocessingUtils:
             query += " ORDER BY f.symbol, f.\"timestamp\" LIMIT %s"
             params.append(limit)
             
-            with self.db.get_session() as cursor:
+            with self.db.get_individual_session() as cursor:
                 cursor.execute(query, params)
                 results = cursor.fetchall()
                 
@@ -559,7 +615,7 @@ class DataPreprocessingUtils:
             ORDER BY is_stable DESC, symbol
             """
             
-            with self.db.get_session() as cursor:
+            with self.db.get_individual_session() as cursor:
                 cursor.execute(query, [target_date])
                 results = cursor.fetchall()
                 
