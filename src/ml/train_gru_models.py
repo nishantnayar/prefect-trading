@@ -425,6 +425,7 @@ def run_gru_training(sectors: list = None, use_preprocessing: bool = True, use_p
             'min_data_points': 100,
             'max_pairs': 20,
             'spread_method': 'log_difference',  # 'log_difference' or 'ratio'
+            'save_results': True,  # Whether to save results to database
             'verbose': True
         }
         

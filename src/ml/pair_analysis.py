@@ -331,7 +331,10 @@ class PairAnalysis:
                 }
             
             # Perform Augmented Dickey-Fuller test
-            adf_stat, pvalue, critical_values, _, _ = adfuller(spread_series)
+            adf_result = adfuller(spread_series)
+            adf_stat = adf_result[0]
+            pvalue = adf_result[1]
+            critical_values = adf_result[4]
             
             # Determine if stationary
             is_stationary = pvalue < significance_level
