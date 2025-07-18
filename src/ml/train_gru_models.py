@@ -424,6 +424,7 @@ def run_gru_training(sectors: list = None, use_preprocessing: bool = True, use_p
             'cointegration_pvalue_threshold': 0.05,  # Engle-Granger p-value < 0.05
             'min_data_points': 100,
             'max_pairs': 20,
+            'spread_method': 'log_difference',  # 'log_difference' or 'ratio'
             'verbose': True
         }
         
