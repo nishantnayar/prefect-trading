@@ -167,3 +167,4 @@ src/archive/Redis.py
 src/scripts/pairs_identification_GRU.ipynb
 /mlruns
 /archive
+scripts/test_websocket_fix.py

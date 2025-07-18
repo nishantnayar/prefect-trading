@@ -59,7 +59,7 @@ alpaca:
   base_url: https://paper-api.alpaca.markets
   data_url: https://data.alpaca.markets
 websocket:
-  mode: recycler
+  mode: alpaca
   symbols:
   - AAPL
   - PDFS

@@ -191,17 +191,17 @@ def market_data_websocket_flow(end_time: str = "16:00"):
     """
     Prefect flow to manage WebSocket connection during market hours with hourly persistence
     """
-    end = datetime.strptime(end_time, "%H:%M").time()
-    while datetime.now().time() < end:
-        logger = get_run_logger()
-        try:
-            logger.info("Starting Market Data WebSocket Flow with Hourly Persistence")
-            websocket_flow()  # This now includes hourly persistence
-            logger.info("Market Data WebSocket Flow completed")
-        except Exception as e:
-            logger.error(f"Market Data WebSocket Flow error: {e}")
-            raise
-    pass
+    logger = get_run_logger()
+    logger.info("Starting Market Data WebSocket Flow with Hourly Persistence")
+    
+    try:
+        # Import and call the actual WebSocket flow
+        from src.data.sources.configurable_websocket import market_data_websocket_flow as websocket_flow
+        websocket_flow()
+        logger.info("Market Data WebSocket Flow completed")
+    except Exception as e:
+        logger.error(f"Market Data WebSocket Flow error: {e}")
+        raise
 
 
 if __name__ == '__main__':
