@@ -46,9 +46,10 @@ A comprehensive trading system built with **Prefect** for automated market data 
   - Market news feed with article previews
   - Interactive symbol selector
   - Responsive design for all devices
-  - **5 Main Pages**: Home, Portfolio, Analysis, Testing, Settings
+  - **5 Main Pages**: Dashboard, Analysis, Portfolio, Models, Testing
   - **Testing Integration**: Built-in testing results and coverage visualization
   - **Portfolio Management**: Comprehensive portfolio tracking and analysis
+  - **🧪 Testing Results Page**: Run tests directly from the UI with detailed results and statistics
 
 ### 🗄️ Database & Storage
 - **PostgreSQL Integration**
@@ -145,7 +146,7 @@ prefect-trading/
 │   └── 📁 database/             # Database-related tests
 ├── 📁 scripts/                  # Development and testing utilities
 │   ├── run_pair_analysis.py     # Standalone pair analysis script
-│   ├── run_tests.py             # Test runner
+│   ├── run_tests.py             # Unified test runner (UI and command-line)
 │   ├── setup_test_env.py        # Test environment setup
 │   ├── verify_migrations_simple.py # Database migration verification
 │   ├── check_db_direct.py       # Database health check
@@ -191,6 +192,43 @@ python -m src.ml.train_gru_models
 python -m src.ml.train_gru_models --no-pair-analysis
 ```
 
+## 🧪 Testing Features
+
+The system includes comprehensive testing capabilities with both UI and command-line interfaces:
+
+### 🎨 UI Testing Interface
+- **Testing Results Page**: Access via the main navigation menu
+- **Test Categories**: Run specific test suites (Database, Data, Basic Functionality, etc.)
+- **Real-time Results**: View test execution progress and results
+- **Detailed Statistics**: Success rates, pass/fail counts, and performance metrics
+- **Raw Output**: Access to full test output for debugging
+- **Test History**: Track test runs with timestamps and categories
+
+### 🖥️ Command-line Testing
+```bash
+# List all available test files
+python scripts/run_tests.py --list-tests
+
+# Run all tests (JSON output for UI + coverage)
+python scripts/run_tests.py
+
+# Run specific test file
+python scripts/run_tests.py --test-path test/database/test_database_connectivity.py
+
+# Run with verbose output
+python scripts/run_tests.py --verbose
+
+# Run tests with pytest directly
+pytest test/ -v
+```
+
+### 📊 Test Coverage
+- **Database Tests**: Connectivity, migrations, and data integrity
+- **Data Tests**: Portfolio management, symbol analysis, and data processing
+- **Basic Functionality**: Core system components and utilities
+- **MLflow Integration**: Model management and performance tracking
+- **WebSocket Tests**: Real-time data streaming functionality
+
 ## 🛠️ Prerequisites
 
 - **Python 3.9** or higher
@@ -198,6 +236,7 @@ python -m src.ml.train_gru_models --no-pair-analysis
 - **Prefect 3.4.0** or higher
 - **Alpaca API** credentials
 - **Yahoo Finance API** access
+- **pytest** (for testing features)
 - **NewsAPI** credentials (optional but recommended)
 
 ## ⚡ Quick Start

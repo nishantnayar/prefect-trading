@@ -55,12 +55,20 @@ def show_current_config():
     try:
         with db.get_session() as cursor:
             for symbol in symbols:
+                # Check market_data first
                 cursor.execute("SELECT COUNT(*) FROM market_data WHERE symbol = %s", (symbol,))
                 count = cursor.fetchone()[0]
-                if count > 0:
-                    print(f"✅ {symbol}: {count} records available")
+                
+                # If no data in market_data, check market_data_historical
+                if count == 0:
+                    cursor.execute("SELECT COUNT(*) FROM market_data_historical WHERE symbol = %s", (symbol,))
+                    historical_count = cursor.fetchone()[0]
+                    if historical_count > 0:
+                        print(f"✅ {symbol}: {historical_count} historical records available")
+                    else:
+                        print(f"❌ {symbol}: No data (will use AAPL as proxy)")
                 else:
-                    print(f"❌ {symbol}: No data (will use AAPL as proxy)")
+                    print(f"✅ {symbol}: {count} real-time records available")
     finally:
         db.close()
 

@@ -858,6 +858,75 @@ def display_market_news():
 }
 ```
 
+## Refresh System
+
+### 1. Simple Refresh Controls
+
+The application uses a simple and effective refresh system based on Streamlit's built-in session state and rerun functionality.
+
+#### **Main Refresh Button**
+```python
+# Sidebar refresh control
+if st.button("🔄 Refresh All Data", help="Force refresh all data"):
+    # Clear session state
+    for key in list(st.session_state.keys()):
+        if key != 'cache_manager':
+            del st.session_state[key]
+    st.rerun()
+```
+
+#### **Page-Specific Refresh**
+```python
+# Symbol analysis refresh
+if st.button("🔄 Refresh", help="Refresh symbol data"):
+    st.session_state.selected_symbol = None
+    st.rerun()
+
+# Model performance refresh
+if st.button("🔄 Refresh Data", help="Manually refresh all data"):
+    st.rerun()
+```
+
+### 2. Refresh Strategy
+
+#### **Session State Clearing**
+- Clears all session state variables
+- Forces fresh data loading on next render
+- Simple and reliable approach
+
+#### **Rerun Mechanism**
+- Uses `st.rerun()` to restart the app
+- Ensures all data is reloaded from source
+- No complex caching logic required
+
+### 3. Refresh Controls
+
+#### **Sidebar Controls**
+- **🔄 Refresh All Data**: Main refresh button for entire app
+- **💡 Help Text**: Clear instructions for users
+
+#### **Page-Specific Controls**
+- **Symbol Analysis**: Inline refresh button
+- **Model Performance**: Data refresh button
+- **Testing Results**: JSON refresh button
+
+### 4. Benefits of Simple Approach
+
+#### **Reliability**
+- No complex cache management
+- Uses Streamlit's built-in mechanisms
+- Fewer points of failure
+
+#### **Maintainability**
+- Simple code structure
+- Easy to understand and debug
+- No external dependencies
+
+#### **Performance**
+- Direct data reloading
+- No cache invalidation complexity
+- Predictable behavior
+
 ## Data Integration
 
 ### 1. PortfolioManager Architecture

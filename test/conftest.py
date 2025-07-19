@@ -18,40 +18,47 @@ os.environ["JUPYTER_PLATFORM_DIRS"] = "1"
 import pytest
 from unittest.mock import Mock
 
-@pytest.fixture
-def mock_streamlit():
-    """Mock Streamlit functions for UI testing."""
-    mock_st = {
-        'title': Mock(),
-        'subheader': Mock(),
-        'metric': Mock(),
-        'dataframe': Mock(),
-        'info': Mock(),
-        'warning': Mock(),
-        'success': Mock(),
-        'error': Mock(),
-        'caption': Mock(),
-        'divider': Mock(),
-        'button': Mock(return_value=False),
-        'write': Mock(),
-        'plotly_chart': Mock(),
-        'columns': Mock(),
-        'rerun': Mock(),
-    }
-    
-    # Configure columns mock to return context managers
-    def create_context_mock():
-        mock = Mock()
-        mock.__enter__ = Mock(return_value=mock)
-        mock.__exit__ = Mock(return_value=None)
-        return mock
-    
-    def columns_side_effect(num_cols):
-        if isinstance(num_cols, list):
-            return [create_context_mock() for _ in range(len(num_cols))]
-        else:
-            return [create_context_mock() for _ in range(num_cols)]
-    
-    mock_st['columns'].side_effect = columns_side_effect
-    
-    return mock_st 
+# Import shared fixtures
+from test.fixtures.database_fixtures import (
+    mock_database_connection,
+    mock_connection_pool,
+    sample_symbol_data,
+    sample_market_data,
+    sample_portfolio_data,
+    mock_database_session,
+    database_error_scenarios
+)
+
+from test.fixtures.mock_fixtures import (
+    mock_streamlit,
+    mock_alpaca_api,
+    mock_yahoo_api,
+    mock_mlflow,
+    mock_requests,
+    mock_pandas,
+    mock_numpy,
+    mock_torch,
+    mock_environment_variables,
+    mock_config
+)
+
+# Re-export fixtures for easy access
+__all__ = [
+    'mock_database_connection',
+    'mock_connection_pool', 
+    'sample_symbol_data',
+    'sample_market_data',
+    'sample_portfolio_data',
+    'mock_database_session',
+    'database_error_scenarios',
+    'mock_streamlit',
+    'mock_alpaca_api',
+    'mock_yahoo_api',
+    'mock_mlflow',
+    'mock_requests',
+    'mock_pandas',
+    'mock_numpy',
+    'mock_torch',
+    'mock_environment_variables',
+    'mock_config'
+] 

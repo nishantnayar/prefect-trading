@@ -5,6 +5,7 @@ Prefect Trading System - Unified Test Runner
 ==========================================
 
 Runs all tests and outputs results in JSON format for Streamlit UI.
+Also supports command-line usage with various options.
 """
 
 import os
@@ -235,29 +236,138 @@ def run_all_tests():
         return False
 
 
+def run_specific_tests(test_path=None, verbose=False):
+    """Run specific tests and return results."""
+    print(f"Running tests: {test_path or 'all tests'}")
+    project_root = Path(__file__).parent.parent
+    python_path = sys.executable
+    
+    # Build command
+    cmd = [python_path, "-m", "pytest"]
+    
+    if test_path:
+        cmd.append(str(test_path))
+    else:
+        cmd.append("test/")
+    
+    if verbose:
+        cmd.extend(["-v", "--tb=long"])
+    else:
+        cmd.extend(["-v", "--tb=short"])
+    
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd=project_root,
+            timeout=600  # 10 minute timeout
+        )
+        
+        return result
+        
+    except subprocess.TimeoutExpired:
+        print("❌ Test execution timed out after 10 minutes")
+        return None
+    except Exception as e:
+        print(f"❌ Error running tests: {str(e)}")
+        return None
+
+
+def display_results(result):
+    """Display test results in a formatted way for command-line usage."""
+    if not result:
+        return
+    
+    print(f"Return Code: {result.returncode}")
+    print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("-" * 80)
+    
+    if result.stdout:
+        print("📋 Test Output:")
+        print(result.stdout)
+    
+    if result.stderr:
+        print("❌ Error Output:")
+        print(result.stderr)
+    
+    # Summary
+    if result.returncode == 0:
+        print("✅ All tests passed!")
+    else:
+        print("❌ Some tests failed!")
+
+
+def list_test_files():
+    """List all available test files."""
+    test_dir = Path("test")
+    if test_dir.exists():
+        test_files = list(test_dir.rglob("test_*.py"))
+        print("Available test files:")
+        for test_file in sorted(test_files):
+            print(f"  • {test_file}")
+    else:
+        print("❌ Test directory not found")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Prefect Trading System Unified Test Runner",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python scripts/run_tests.py          # Run all tests and output JSON results
+  python scripts/run_tests.py                    # Run all tests and output JSON results
+  python scripts/run_tests.py --list-tests       # List all available test files
+  python scripts/run_tests.py --test-path test/database/test_database_connectivity.py  # Run specific test
+  python scripts/run_tests.py --verbose          # Run with verbose output
+  python scripts/run_tests.py --ui-mode          # Run tests for UI consumption
         """
     )
+    
+    parser.add_argument(
+        "--test-path", 
+        help="Path to specific test file or directory"
+    )
+    parser.add_argument(
+        "--verbose", 
+        action="store_true", 
+        help="Show verbose output"
+    )
+    parser.add_argument(
+        "--list-tests", 
+        action="store_true", 
+        help="List available test files"
+    )
+    parser.add_argument(
+        "--ui-mode", 
+        action="store_true", 
+        help="Run tests optimized for UI consumption (JSON output)"
+    )
+    
     args = parser.parse_args()
 
-    print_banner()
-    setup_environment()
-    if not check_pytest():
-        sys.exit(1)
-    print()
-    success = run_all_tests()
-    print()
-    if success:
-        print("[SUCCESS] Test execution completed successfully!")
+    if args.list_tests:
+        list_test_files()
+        return
+    
+    if args.ui_mode or (not args.test_path and not args.verbose):
+        # UI mode or default mode - run all tests with JSON output
+        print_banner()
+        setup_environment()
+        if not check_pytest():
+            sys.exit(1)
+        print()
+        success = run_all_tests()
+        print()
+        if success:
+            print("[SUCCESS] Test execution completed successfully!")
+        else:
+            print("[FAILED] Test execution completed with failures.")
+            sys.exit(1)
     else:
-        print("[FAILED] Test execution completed with failures.")
-        sys.exit(1)
+        # Command-line mode - run specific tests with formatted output
+        result = run_specific_tests(args.test_path, args.verbose)
+        display_results(result)
 
 
 if __name__ == "__main__":

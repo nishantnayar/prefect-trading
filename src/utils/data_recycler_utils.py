@@ -17,11 +17,24 @@ def get_available_date_ranges(symbol: str) -> Dict[str, any]:
     try:
         db = DatabaseConnectivity()
         with db.get_session() as cursor:
+            # Try market_data first
             cursor.execute("""
                 SELECT MIN(timestamp), MAX(timestamp), COUNT(*)
                 FROM market_data WHERE symbol = %s
             """, (symbol,))
             result = cursor.fetchone()
+            
+            # If no data in market_data, try market_data_historical
+            if not result or not result[0]:
+                cursor.execute("""
+                    SELECT MIN(timestamp), MAX(timestamp), COUNT(*)
+                    FROM market_data_historical WHERE symbol = %s
+                """, (symbol,))
+                result = cursor.fetchone()
+                data_source = 'historical'
+            else:
+                data_source = 'real-time'
+            
             if result and result[0]:
                 earliest_date = result[0]
                 latest_date = result[1]
@@ -33,7 +46,8 @@ def get_available_date_ranges(symbol: str) -> Dict[str, any]:
                     'latest_date': latest_date.isoformat(),
                     'total_records': total_records,
                     'date_range_days': date_range,
-                    'has_data': True
+                    'has_data': True,
+                    'data_source': data_source
                 }
             else:
                 return {'symbol': symbol, 'has_data': False, 'message': f'No data found for symbol {symbol}'}
@@ -49,10 +63,20 @@ def get_all_symbols_with_data() -> List[str]:
     try:
         db = DatabaseConnectivity()
         with db.get_session() as cursor:
+            # Get symbols from market_data
             cursor.execute("SELECT DISTINCT symbol FROM market_data ORDER BY symbol")
-            symbols = [row[0] for row in cursor.fetchall()]
-            logger.info(f"Found {len(symbols)} symbols with data: {symbols}")
-            return symbols
+            real_time_symbols = [row[0] for row in cursor.fetchall()]
+            
+            # Get symbols from market_data_historical
+            cursor.execute("SELECT DISTINCT symbol FROM market_data_historical ORDER BY symbol")
+            historical_symbols = [row[0] for row in cursor.fetchall()]
+            
+            # Combine and deduplicate
+            all_symbols = list(set(real_time_symbols + historical_symbols))
+            all_symbols.sort()
+            
+            logger.info(f"Found {len(all_symbols)} total symbols: {len(real_time_symbols)} real-time, {len(historical_symbols)} historical")
+            return all_symbols
     except Exception as e:
         logger.error(f"Error getting symbols: {e}")
         return []
@@ -65,6 +89,7 @@ def get_sample_data(symbol: str, limit: int = 5) -> List[Dict]:
     try:
         db = DatabaseConnectivity()
         with db.get_session() as cursor:
+            # Try market_data first
             cursor.execute("""
                 SELECT symbol, timestamp, open, high, low, close, volume
                 FROM market_data WHERE symbol = %s ORDER BY timestamp LIMIT %s
@@ -76,6 +101,20 @@ def get_sample_data(symbol: str, limit: int = 5) -> List[Dict]:
                 if record['timestamp']:
                     record['timestamp'] = record['timestamp'].isoformat()
                 records.append(record)
+            
+            # If no data in market_data, try market_data_historical
+            if not records:
+                cursor.execute("""
+                    SELECT symbol, timestamp, open, high, low, close, volume
+                    FROM market_data_historical WHERE symbol = %s ORDER BY timestamp LIMIT %s
+                """, (symbol, limit))
+                columns = [desc[0] for desc in cursor.description]
+                for row in cursor.fetchall():
+                    record = dict(zip(columns, row))
+                    if record['timestamp']:
+                        record['timestamp'] = record['timestamp'].isoformat()
+                    records.append(record)
+            
             return records
     except Exception as e:
         logger.error(f"Error getting sample data for {symbol}: {e}")
@@ -104,7 +143,7 @@ def get_latest_price(symbol: str):
                 return float(result[0]), 'market_data'
             # Fallback to historical
             cursor.execute(
-                "SELECT close FROM market_data_historical WHERE symbol = %s ORDER BY date DESC LIMIT 1",
+                "SELECT close FROM market_data_historical WHERE symbol = %s ORDER BY timestamp DESC LIMIT 1",
                 (symbol,)
             )
             result = cursor.fetchone()
