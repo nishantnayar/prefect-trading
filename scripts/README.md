@@ -1,327 +1,125 @@
 # Scripts Directory
 
-This directory contains utility scripts for the Prefect Trading project.
+This directory contains various utility scripts for development, testing, and system management.
 
-## Database Scripts
+## 🚀 Service Starter Scripts
 
-### Migration Verification
+### Overview
+The service starter scripts allow you to start Prefect server, Prefect workers, Streamlit UI, and MLflow server concurrently with a single command.
 
-#### `verify_migrations_simple.py`
-**Purpose**: Simplified verification of database schema against consolidated migration scripts.
+### Available Scripts
 
+#### 1. Python Script (Cross-Platform)
+**File**: `start_services.py`
+**Usage**: `python scripts/start_services.py`
 **Features**:
-- Connects to database using existing configuration
-- Extracts current schema (tables, columns, indexes)
-- Compares with expected schema from consolidated migrations
-- Generates detailed JSON report with discrepancies
-- Provides clear pass/fail status
-- Avoids complex SQL queries that can cause issues
-- Distinguishes between application tables and system tables
+- Cross-platform compatibility (Windows, macOS, Linux)
+- Process monitoring and logging
+- Graceful shutdown with Ctrl+C
+- Automatic error detection and cleanup
+- Real-time output from both services
 
-**Usage**:
+#### 2. Windows Batch Script
+**File**: `start_services.bat`
+**Usage**: `scripts\start_services.bat`
+**Features**:
+- Windows-specific optimizations
+- Opens services in separate command windows
+- Easy to stop (just close the windows)
+- Environment validation
+
+#### 3. Unix/Linux/macOS Shell Script
+**File**: `start_services.sh`
+**Usage**: `./scripts/start_services.sh`
+**Features**:
+- Unix/Linux/macOS specific
+- Signal handling for graceful shutdown
+- Background process management
+- Environment validation
+
+### Makefile Integration
+
+The scripts are integrated into the Makefile for easy access:
+
 ```bash
-# Run verification
-python scripts/verify_migrations_simple.py
+# Start all services (Python script)
+make run-services
 
-# Or use Makefile
-make db-verify
+# Start all services (Windows)
+make run-services-windows
+
+# Start all services (Unix/Linux/macOS)
+make run-services-unix
 ```
 
-**Understanding Results**:
-- **✅ PASSED**: All application tables from migrations are present
-- **⚠️ EXTRA TABLES**: These are typically system tables (Prefect, MLflow, etc.) and are expected
-- **❌ MISSING TABLES**: These indicate actual schema mismatches that need attention
+### Service URLs
 
-**Output**:
-- Console report showing table comparisons
-- JSON report saved to `scripts/schema_verification_report_YYYYMMDD_HHMMSS.json`
+When services are running, you can access:
+- **Streamlit UI**: http://localhost:8501
+- **Prefect UI**: http://localhost:4200
+- **MLflow UI**: http://localhost:5000
+- **Prefect Workers**: daily, realtime, endofday, and hourly pools, default queue
 
-#### `check_db_direct.py`
-**Purpose**: Quick database schema inspection and connectivity test.
+### Troubleshooting
 
-**Features**:
-- Sets database credentials directly (no .env file needed)
-- Simple database connection test
-- Lists all tables with row counts
-- Shows detailed column information
-- Displays indexes, constraints, and triggers
-- Useful for understanding current database state
+#### Common Issues
 
-**Usage**:
-```bash
-# Quick schema check
-python scripts/check_db_direct.py
+1. **Port Already in Use**
+   ```bash
+   # Check what's using the ports
+   netstat -ano | findstr :8501  # Windows (Streamlit)
+   netstat -ano | findstr :4200  # Windows (Prefect)
+   netstat -ano | findstr :5000  # Windows (MLflow)
+   lsof -i :8501                 # Unix/Linux/macOS (Streamlit)
+   lsof -i :4200                 # Unix/Linux/macOS (Prefect)
+   lsof -i :5000                 # Unix/Linux/macOS (MLflow)
+   ```
 
-# Or use Makefile
-make db-check
-```
+2. **Python Path Issues**
+   - Ensure you're running from the project root directory
+   - Verify Python is in your PATH
+   - Check that required packages are installed
+
+3. **Permission Issues (Unix/Linux/macOS)**
+   ```bash
+   # Make shell script executable
+   chmod +x scripts/start_services.sh
+   ```
+
+4. **Environment Variables**
+   - Ensure `.env` file is properly configured
+   - Check that database is running and accessible
+
+#### Stopping Services
+
+- **Python Script**: Press `Ctrl+C` in the terminal
+- **Windows Batch**: Close the command windows
+- **Unix Shell**: Press `Ctrl+C` in the terminal
+
+## Other Scripts
 
 ### Database Management
-
-#### `create_mlflow_db.sql`
-**Purpose**: Creates the MLflow database for model tracking.
-
-**Usage**:
-```bash
-psql -U postgres -f scripts/create_mlflow_db.sql
-```
-
-#### `check_env_file.py`
-**Purpose**: Validates environment file configuration.
-
-**Usage**:
-```bash
-python scripts/check_env_file.py
-```
-
-#### `load_historical_data.py`
-**Purpose**: Loads historical market data into the database.
-
-**Usage**:
-```bash
-python scripts/load_historical_data.py
-```
-
-#### `manage_symbols.py`
-**Purpose**: Manages stock symbols in the database.
-
-**Usage**:
-```bash
-python scripts/manage_symbols.py
-```
-
-#### `manual_save.py`
-**Purpose**: Manual data persistence utilities.
-
-**Usage**:
-```bash
-python scripts/manual_save.py
-```
-
-### MLflow Scripts
-
-#### `create_mlflow_db.sql`
-**Purpose**: Creates the MLflow database for model tracking and experiment management.
-
-**Usage**:
-```bash
-psql -U postgres -f scripts/create_mlflow_db.sql
-```
-
-### Testing Scripts
-
-#### `run_tests.py`
-**Purpose**: Runs the complete test suite.
-
-**Usage**:
-```bash
-python scripts/run_tests.py
-```
-
-#### `setup_test_env.py`
-**Purpose**: Sets up test environment and database.
-
-**Usage**:
-```bash
-python scripts/setup_test_env.py
-```
-
-## ML Training Scripts
-
-### Pair Analysis and GRU Training
-
-#### `run_pair_analysis.py`
-**Purpose**: Standalone correlation and cointegration analysis for pairs trading.
-
-**Features**:
-- **Correlation Analysis**: Pearson's ρ > 0.8 threshold
-- **Cointegration Testing**: Engle-Granger test with p < 0.05 threshold
-- **Spread Calculation**: Log difference and ratio methods
-- **Stationarity Testing**: Augmented Dickey-Fuller test for spreads
-- **Pair Shortlisting**: Comprehensive filtering and ranking
-- **Training Data Preparation**: Ready-to-use data for GRU models
-
-**Usage**:
-```bash
-# Analyze all sectors with default thresholds
-python scripts/run_pair_analysis.py
-
-# Analyze specific sectors
-python scripts/run_pair_analysis.py --sectors technology healthcare
-
-# Custom thresholds
-python scripts/run_pair_analysis.py --correlation-threshold 0.85 --cointegration-threshold 0.01
-
-# More pairs, more data points
-python scripts/run_pair_analysis.py --max-pairs 100 --min-data-points 200
-
-# Save results to custom directory
-python scripts/run_pair_analysis.py --output-dir my_analysis_results
-```
-
-**Output**:
-- Shortlisted pairs with correlation and cointegration metrics
-- Correlation matrix for all symbols
-- Training data summary
-- CSV files with detailed results
-
-### PyTorch GRU Implementation
-
-The ML training scripts are located in `src/ml/`:
-
-#### `train_gru_models.py`
-**Purpose**: Trains PyTorch GRU models with optional pair analysis integration.
-
-**Features**:
-- **Enhanced Pair Analysis**: Correlation and cointegration testing before training
-- **Multiple Pipelines**: Choose between pair analysis, variance stability, or original
-- **Comprehensive Filtering**: Pearson's ρ > 0.8 + Engle-Granger p < 0.05
-- **Spread Stationarity**: ADF test for spread validation
-- **MLflow Integration**: Experiment tracking with detailed metadata
-- **Performance Analysis**: Comprehensive ranking and statistics
-
-**Usage**:
-```bash
-# Use enhanced pair analysis (recommended)
-python -m src.ml.train_gru_models
-
-# Skip pair analysis, use variance stability preprocessing
-python -m src.ml.train_gru_models --no-pair-analysis
-
-# Use original preprocessing pipeline
-python -m src.ml.train_gru_models --no-pair-analysis --no-preprocessing
-
-# Train on specific sectors
-python -m src.ml.train_gru_models --sectors technology healthcare
-
-# View results in MLflow UI
-# Open http://localhost:5000
-```
-
-#### `gru_model.py`
-**Purpose**: PyTorch GRU model implementation and training utilities.
-
-**Features**:
-- PyTorch GRU model architecture
-- Dataset and training utilities
-- MLflow integration for model logging
-- Performance tracking and early stopping
-
-### ML Training and Analysis
-
-#### `train_gru_models.py` (in src/ml/)
-**Purpose**: Train PyTorch GRU models for all pairs with MLflow integration.
-
-**Features**:
-- Trains models for all pairs that meet correlation threshold (>0.8)
-- Comprehensive performance analysis and ranking
-- MLflow experiment tracking with descriptive run names
-- Model registry integration
-- Performance statistics and correlation analysis
-
-**Usage**:
-```bash
-# Train all pairs
-python -m src.ml.train_gru_models
-
-# View results in MLflow UI
-# Open http://localhost:5000
-```
-
-**Output**:
-- Trained GRU models for all valid pairs
-- MLflow run IDs for each model
-- Performance statistics and analysis summary
-- Database rankings and trends updates
-
-## Makefile Integration
-
-The following database-related commands are available in the main Makefile:
-
-```bash
-# Run original migrations (legacy)
-make db-migrate
-
-# Run consolidated migrations (recommended)
-make db-migrate-consolidated
-
-# Verify schema against consolidated migrations
-make db-verify
-
-# Quick schema check
-make db-check
-
-# Reset database with consolidated migrations
-make db-reset
-```
-
-## Migration Files
-
-### Consolidated Migrations (Recommended)
-- `001_initial_schema_consolidated.sql` - Complete initial schema
-- `002_data_source_enhancement_consolidated.sql` - Data source tracking
-- `003_historical_data_consolidated.sql` - Historical data storage
-
-### Original Migrations (Legacy)
-- `001_initial_schema/` - Multiple small migration files
-- `008_add_data_source.sql` - Data source enhancement
-- `010_create_market_data_historical.sql` - Historical data table
-
-## Usage Examples
-
-### 1. Verify Current Database Against Migrations
-```bash
-# Check if current database matches consolidated migrations
-make db-verify
-```
-
-### 2. Quick Database Health Check
-```bash
-# See current database structure and row counts
-make db-check
-```
-
-### 3. Reset Database with Consolidated Migrations
-```bash
-# Drop and recreate database with consolidated migrations
-make db-reset
-```
-
-### 4. Manual Migration Verification
-```bash
-# Run verification script directly
-python scripts/verify_migrations_simple.py
-
-# Check specific database schema
-python scripts/check_db_direct.py
-```
-
-## Troubleshooting
-
-### Database Connection Issues
-1. Ensure PostgreSQL is running
-2. Check database credentials are correct
-3. Verify database exists and is accessible
-4. Check network connectivity
-
-### Migration Verification Failures
-1. Run `make db-check` to see current schema
-2. Compare with expected schema in consolidated migrations
-3. Check if any manual schema changes were made
-4. Consider running `make db-reset` to start fresh
-
-### Permission Issues
-1. Ensure database user has appropriate permissions
-2. Check PostgreSQL authentication configuration
-3. Verify connection string format
-
-## Output Files
-
-### Verification Reports
-- `schema_verification_report_YYYYMMDD_HHMMSS.json` - Detailed verification results
-- Console output with summary and recommendations
-
-### Logs
-- Database connection logs
-- Migration execution logs
-- Error details for troubleshooting 
+- `check_db_direct.py` - Database health check
+- `verify_migrations_simple.py` - Migration verification
+- `create_mlflow_db.sql` - MLflow database setup
+
+### Data Management
+- `load_historical_data.py` - Historical data loading
+- `manage_symbols.py` - Symbol management
+- `manage_sectors.py` - Sector configuration
+
+### Testing
+- `run_tests.py` - Unified test runner
+- `setup_test_env.py` - Test environment setup
+- `check_env_file.py` - Environment file validation
+
+### Analysis
+- `run_pair_analysis.py` - Pair analysis execution
+- `check_delisted_symbols.py` - Symbol maintenance
+
+### Manual Operations
+- `manual_save.py` - Manual data saving
+- `check_postgres_data.py` - PostgreSQL data inspection
+
+### MLflow Testing
+- `test_mlflow_connection.py` - Test MLflow connection and experiment creation 

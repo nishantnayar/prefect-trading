@@ -12,7 +12,11 @@ mlflow:
   experiment_name: pairs_trading
   artifact_root: ${MLFLOW_ARTIFACT_ROOT:-file:./mlruns}
 model_registry:
-  naming_pattern: pairs_trading_gru_garch_{sector}_{version}_{date}
+  # For long-running experiments, use version-based naming without dates
+  naming_pattern: pairs_trading_gru_garch_{sector}_{version}
+  # Alternative patterns for different use cases:
+  # naming_pattern: pairs_trading_gru_garch_{sector}_{version}_{date}  # For date-specific experiments
+  # naming_pattern: pairs_trading_gru_garch_{sector}_{version}_{run_id}  # For unique run identification
   stages:
   - staging
   - production

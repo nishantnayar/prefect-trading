@@ -148,9 +148,22 @@ This document records the key architectural decisions made during the developmen
 
 ### **Implementation:**
 - MLflow experiment naming: `pairs_trading/technology`
-- Model naming: `pairs_trading_gru_garch_technology_v1`
+- Model naming: `pairs_trading_gru_garch_technology_v1` (version-based, no timestamps for long-running experiments)
+- Run naming: `GRU_Training_AAPL-AMD_v1` (stable names for continuous tracking)
 - Configuration supports multiple sectors but only technology is active
 - Easy to add new sectors by creating new experiments
+
+### **Experiment Naming Strategy:**
+- **Long-running experiments**: Use version-based naming without timestamps
+  - Model names: `pairs_trading_gru_garch_technology_v1`
+  - Run names: `GRU_Training_AAPL-AMD_v1`
+  - Timestamps are captured automatically in MLflow metadata
+- **Date-specific experiments**: Use date suffix when needed
+  - Model names: `pairs_trading_gru_garch_technology_v1_20250119`
+  - Run names: `GRU_Training_AAPL-AMD_20250119_v1`
+- **Unique run identification**: Use run_id when needed
+  - Model names: `pairs_trading_gru_garch_technology_v1_run_123`
+  - Run names: `GRU_Training_AAPL-AMD_run_123_v1`
 
 ---
 

@@ -20,6 +20,7 @@ import yaml
 from pathlib import Path
 
 from src.database.database_connectivity import DatabaseConnectivity
+from src.utils.config_loader import get_variance_stability_config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

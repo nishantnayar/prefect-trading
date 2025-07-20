@@ -119,15 +119,10 @@ class MLflowManager:
                         time.sleep(backoff)
                         backoff *= 2
                     else:
-                        logger.warning(f"All {max_retries} attempts failed. Falling back to timestamped experiment name.")
-                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        fallback_name = f"{experiment_name}_{timestamp}"
-                        try:
-                            self.set_experiment(fallback_name, retrying=True)
-                            logger.info(f"Using fallback experiment: {fallback_name}")
-                        except Exception as fallback_error:
-                            logger.error(f"Failed to create fallback experiment: {fallback_error}")
-                        break
+                        logger.error(f"All {max_retries} attempts failed to create experiment '{experiment_name}'. Check MLflow server status and permissions.")
+                        logger.error(f"Last error: {exp_error}")
+                        # Don't create fallback experiment - let the user fix the issue
+                        raise Exception(f"Failed to create MLflow experiment '{experiment_name}' after {max_retries} attempts. Please check MLflow server status.")
             logger.info(f"MLflow setup complete. Tracking URI: {tracking_uri}")
         except Exception as e:
             logger.error(f"Error setting up MLflow: {e}")
@@ -146,24 +141,33 @@ class MLflowManager:
             else:
                 experiment_id = experiment.experiment_id
                 if hasattr(experiment, 'lifecycle_stage') and experiment.lifecycle_stage == "deleted":
-                    logger.warning(f"Experiment {experiment_name} was deleted. Creating new experiment.")
+                    logger.warning(f"Experiment {experiment_name} was deleted. Attempting to restore it.")
                     try:
+                        # Try to restore the deleted experiment instead of recreating
                         if self.client:
-                            self.client.delete_experiment(experiment_id)
-                    except Exception as del_error:
-                        logger.warning(f"Could not delete old experiment: {del_error}")
-                    try:
-                        experiment_id = mlflow.create_experiment(experiment_name)
-                        logger.info(f"Created new experiment after deletion: {experiment_name}")
-                    except Exception as create_error:
-                        if not retrying:
-                            # Only retry if not already in a retry loop
-                            raise create_error
-                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        new_name = f"{experiment_name}_{timestamp}"
-                        experiment_id = mlflow.create_experiment(new_name)
-                        experiment_name = new_name
-                        logger.info(f"Created timestamped experiment: {new_name}")
+                            self.client.restore_experiment(experiment_id)
+                            logger.info(f"Restored deleted experiment: {experiment_name}")
+                        else:
+                            # If client is not available, try to create with a different name
+                            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                            new_name = f"{experiment_name}_restored_{timestamp}"
+                            experiment_id = mlflow.create_experiment(new_name)
+                            experiment_name = new_name
+                            logger.info(f"Created restored experiment with new name: {new_name}")
+                    except Exception as restore_error:
+                        logger.warning(f"Could not restore experiment: {restore_error}")
+                        # Try to create with a different name as fallback
+                        try:
+                            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                            new_name = f"{experiment_name}_restored_{timestamp}"
+                            experiment_id = mlflow.create_experiment(new_name)
+                            experiment_name = new_name
+                            logger.info(f"Created experiment with new name: {new_name}")
+                        except Exception as create_error:
+                            if not retrying:
+                                raise create_error
+                            logger.error(f"Failed to create experiment '{experiment_name}' after restoration attempt: {create_error}")
+                            raise Exception(f"Cannot create experiment '{experiment_name}'. Please check MLflow server status and permissions.")
                 else:
                     logger.info(f"Using existing experiment: {experiment_name}")
             mlflow.set_experiment(experiment_name)
@@ -173,17 +177,36 @@ class MLflowManager:
             if not retrying:
                 # Only retry if not already in a retry loop
                 raise
-            # Try to create a new experiment with a timestamp suffix as a last resort
-            try:
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                new_experiment_name = f"{experiment_name}_{timestamp}"
-                experiment_id = mlflow.create_experiment(new_experiment_name)
-                mlflow.set_experiment(new_experiment_name)
-                logger.info(f"Created fallback experiment: {new_experiment_name}")
-                return experiment_id
-            except Exception as fallback_error:
-                logger.error(f"Failed to create fallback experiment: {fallback_error}")
-                return "0"
+            # Don't create fallback experiment - let the user fix the issue
+            logger.error(f"Failed to set experiment '{experiment_name}'. Please check MLflow server status and permissions.")
+            raise Exception(f"Cannot set experiment '{experiment_name}'. Please check MLflow server status and permissions.")
+    
+    def handle_deleted_experiment_issue(self, experiment_name: str) -> str:
+        """
+        Handle the specific case of deleted experiments by creating a new one with a timestamp.
+        This is a fallback method for when restoration fails.
+        
+        Args:
+            experiment_name: The original experiment name that was deleted
+            
+        Returns:
+            New experiment ID
+        """
+        try:
+            # Create a new experiment with timestamp to avoid conflicts
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            new_experiment_name = f"{experiment_name}_restored_{timestamp}"
+            
+            logger.info(f"Creating new experiment '{new_experiment_name}' to replace deleted '{experiment_name}'")
+            experiment_id = mlflow.create_experiment(new_experiment_name)
+            mlflow.set_experiment(new_experiment_name)
+            
+            logger.info(f"Successfully created replacement experiment: {new_experiment_name}")
+            return experiment_id
+            
+        except Exception as e:
+            logger.error(f"Failed to create replacement experiment: {e}")
+            raise Exception(f"Cannot create replacement experiment for '{experiment_name}'. Error: {e}")
     
     def create_sector_experiment(self, sector: str) -> str:
         """

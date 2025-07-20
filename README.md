@@ -327,16 +327,43 @@ mlflow server --backend-store-uri postgresql://postgres:nishant@localhost/mlflow
 ```
 
 ### 5. Start the Application
+
+**Option 1: Start all services together (Recommended)**
+```bash
+# Using Python script (cross-platform)
+make run-services
+
+# Or using platform-specific scripts
+make run-services-windows    # Windows
+make run-services-unix       # Unix/Linux/macOS
+```
+
+**Option 2: Start services separately**
 ```bash
 # Start Prefect server (in one terminal)
-prefect server start
+make run-prefect
+
+# Start Prefect workers (in separate terminals)
+prefect worker start --pool daily --work-queue default
+prefect worker start --pool realtime --work-queue default
+prefect worker start --pool endofday --work-queue default
+prefect worker start --pool hourly --work-queue default
+
+# Start MLflow server (in another terminal)
+mlflow server --backend-store-uri postgresql://postgres:nishant@localhost/mlflow_db --default-artifact-root file:./mlruns --host 0.0.0.0 --port 5000
 
 # Run the Streamlit UI (in another terminal)
-streamlit run src/ui/streamlit_app.py
+make run-ui
 
 # Run Prefect flows (in another terminal)
 python main.py
 ```
+
+**Service URLs**:
+- 🌐 **Streamlit UI**: http://localhost:8501
+- 🔧 **Prefect UI**: http://localhost:4200
+- 🤖 **MLflow UI**: http://localhost:5000
+- ⚙️ **Prefect Workers**: daily, realtime, endofday, and hourly pools, default queue
 
 ## 🔄 Available Prefect Flows
 

@@ -306,17 +306,22 @@ def train_gru_model_with_mlflow(data, config):
     """
     Train GRU model with MLflow integration.
     """
-    # Ensure MLflow is properly configured
-    if not mlflow.get_tracking_uri():
-        mlflow.set_tracking_uri("http://localhost:5000")
+    # Import MLflow manager
+    from src.mlflow_manager import get_mlflow_manager
     
-    # Set up MLflow experiment
-    mlflow.set_experiment("pairs_trading/technology_sector/gru_training")
+    # Get MLflow manager
+    mlflow_manager = get_mlflow_manager()
     
-    # Create descriptive run name with timestamp
+    # Create sector-specific experiment using the manager
+    sector = config.get('sector', 'technology')
+    experiment_name = f"pairs_trading/{sector}"
+    mlflow_manager.set_experiment(experiment_name)
+    
+    # Create descriptive run name for long-running experiments
     pair_name = f"{config.get('pair_symbol1', 'unknown')}-{config.get('pair_symbol2', 'unknown')}"
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_name = f"GRU_Training_{pair_name}_{timestamp}_v1"
+    # For long-running experiments, use a stable run name with version
+    # The timestamp is captured in MLflow's run metadata automatically
+    run_name = f"GRU_Training_{pair_name}_v{config.get('version', '1')}"
     
     # Add descriptive tags
     tags = {
@@ -325,9 +330,9 @@ def train_gru_model_with_mlflow(data, config):
         "implementation": "new_pytorch",
         "sector": "technology",
         "pair_symbols": pair_name,
-        "version": "v1",
-        "timestamp": timestamp,
-        "run_type": "training"
+        "version": f"v{config.get('version', '1')}",
+        "run_type": "training",
+        "experiment_type": "long_running"
     }
     
     with mlflow.start_run(run_name=run_name, tags=tags) as run:
@@ -395,12 +400,28 @@ def train_gru_model_with_mlflow(data, config):
             sample_input = torch.randn(1, config['sequence_length'], len(feature_names))
             sample_input_np = sample_input.detach().numpy()
             
+            # Get naming pattern from config
+            from src.utils.config_loader import load_config
+            config_data = load_config()
+            naming_pattern = config_data.get('model_registry', {}).get('naming_pattern', 'pairs_trading_gru_garch_{sector}_{version}')
+            
+            # Create model name using the pattern
+            sector = config.get('sector', 'technology')
+            version = config.get('version', 'v1')
+            
+            # For long-running experiments, use version-based naming
+            # The timestamp is captured in the run metadata, not the model name
+            model_name = naming_pattern.format(
+                sector=sector,
+                version=version
+            )
+            
             # Log model with signature
             mlflow.pytorch.log_model(
                 model, 
                 "model",
                 input_example=sample_input_np,
-                registered_model_name=f"pairs_trading_gru_{config.get('pair_symbol1', 'unknown')}_{config.get('pair_symbol2', 'unknown')}"
+                registered_model_name=model_name
             )
         except Exception as e:
             # Fallback to simple model logging if signature creation fails

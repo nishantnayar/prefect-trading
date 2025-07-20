@@ -20,12 +20,18 @@ help:
 	@echo "  docs           - Build documentation"
 	@echo "  run-ui         - Start the Streamlit UI"
 	@echo "  run-prefect    - Start Prefect server"
+	@echo "  run-services   - Start Prefect server, workers, Streamlit UI, and MLflow server (Python script)"
+	@echo "  run-services-windows - Start all services (Windows batch script)"
+	@echo "  run-services-unix - Start all services (Unix/Linux/macOS shell script)"
+	@echo "  run-all-services - Start all services (alias for run-services)"
+	@echo "  run-services-delayed - Start all services with worker delays (reduces DB contention)"
 	@echo "  deploy         - Deploy Prefect workflows"
 	@echo "  db-migrate     - Run original database migrations"
 	@echo "  db-migrate-consolidated - Run consolidated database migrations"
 	@echo "  db-verify      - Verify schema against consolidated migrations"
 	@echo "  db-check       - Check current database schema"
 	@echo "  db-reset       - Reset database with consolidated migrations"
+	@echo "  db-optimize    - Optimize PostgreSQL for Prefect workers"
 	@echo "  test-pairs     - Test daily pair identification flow"
 	@echo "  run-pairs      - Run daily pair identification flow"
 	@echo "  run-start-day  - Run start of day flow (includes pair identification)"
@@ -115,10 +121,25 @@ docs:
 
 # Development
 run-ui:
-	streamlit run src/ui/streamlit_app.py
+	streamlit run src/ui/main.py
 
 run-prefect:
 	prefect server start
+
+run-services:
+	python scripts/start_services.py
+
+run-services-windows:
+	scripts\start_services.bat
+
+run-services-unix:
+	chmod +x scripts/start_services.sh && ./scripts/start_services.sh
+
+run-all-services:
+	python scripts/start_services.py
+
+run-services-delayed:
+	python scripts/start_services_with_delay.py
 
 deploy:
 	prefect deploy
@@ -153,6 +174,10 @@ db-reset:
 	dropdb trading_db || true
 	createdb trading_db
 	$(MAKE) db-migrate-consolidated
+
+db-optimize:
+	@echo "Optimizing PostgreSQL for Prefect workers..."
+	psql -d trading_db -f scripts/optimize_postgres_for_prefect.sql
 
 # ML Training and Analysis
 train-gru-models:
