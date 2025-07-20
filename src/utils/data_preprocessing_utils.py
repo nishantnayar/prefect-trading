@@ -255,15 +255,35 @@ class DataPreprocessingUtils:
                 'ljung_box_pvalue': None
             }
         try:
-            arch_test = het_arch(z_scores, nlags=arch_lags)
+            # Ensure z_scores is a 1D array and not empty
+            if len(z_scores) == 0:
+                raise ValueError("No valid z-scores data")
+            
+            # Convert to numpy array if needed and ensure it's 1D
+            z_scores_array = np.asarray(z_scores).flatten()
+            if len(z_scores_array) < arch_lags + 1:
+                raise ValueError(f"Insufficient data for ARCH test (need at least {arch_lags + 1} points)")
+            
+            arch_test = het_arch(z_scores_array, nlags=arch_lags)
             arch_stat = arch_test[0] if isinstance(arch_test, (tuple, list)) and len(arch_test) > 0 else None
             arch_pvalue = arch_test[1] if isinstance(arch_test, (tuple, list)) and len(arch_test) > 1 else None
+            
+            # Handle numpy array results - take the first value if it's an array
+            if isinstance(arch_pvalue, np.ndarray):
+                arch_pvalue = arch_pvalue[0] if len(arch_pvalue) > 0 else None
+            if isinstance(arch_stat, np.ndarray):
+                arch_stat = arch_stat[0] if len(arch_stat) > 0 else None
+                
             if arch_pvalue is None:
                 arch_pvalue = float('nan')
-            rolling_std = z_scores.rolling(test_window, min_periods=test_window//2).std()
+            rolling_std = pd.Series(z_scores_array).rolling(test_window, min_periods=test_window//2).std()
             rolling_std_cv = rolling_std.std() / rolling_std.mean() if rolling_std.mean() != 0 else float('inf')
-            lb_test = acorr_ljungbox(z_scores, lags=ljung_box_lags, return_df=True)
+            lb_test = acorr_ljungbox(z_scores_array, lags=ljung_box_lags, return_df=True)
             lb_pvalue_avg = lb_test['lb_pvalue'].mean() if 'lb_pvalue' in lb_test else 0
+            
+            # Ensure lb_pvalue_avg is a scalar
+            if isinstance(lb_pvalue_avg, np.ndarray):
+                lb_pvalue_avg = lb_pvalue_avg[0] if len(lb_pvalue_avg) > 0 else 0
             # Use config thresholds
             is_stable = (
                 arch_pvalue > arch_threshold and 

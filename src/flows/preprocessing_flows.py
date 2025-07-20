@@ -281,9 +281,14 @@ def create_preprocessing_report_task(
     for result in unstable_results[:10]:  # Show first 10
         symbol = result['symbol']
         reason = result.get('filter_reason', 'unknown')
-        arch_p = result.get('arch_test_pvalue', 'N/A')
-        cv = result.get('rolling_std_cv', 'N/A')
-        report += f"- **{symbol}:** {reason} (ARCH p={arch_p:.2e}, CV={cv:.4f})\n"
+        arch_p = result.get('arch_test_pvalue')
+        cv = result.get('rolling_std_cv')
+        
+        # Handle None values safely
+        arch_p_str = f"{arch_p:.2e}" if arch_p is not None else "N/A"
+        cv_str = f"{cv:.4f}" if cv is not None else "N/A"
+        
+        report += f"- **{symbol}:** {reason} (ARCH p={arch_p_str}, CV={cv_str})\n"
     
     if len(unstable_results) > 10:
         report += f"- ... and {len(unstable_results) - 10} more\n"
