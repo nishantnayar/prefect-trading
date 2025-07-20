@@ -83,41 +83,126 @@ def run_tests_and_get_results() -> Dict:
 
 ## Test Structure
 
-### 1. Test Organization
+### 1. Optimized Test Organization
+
+The test folder is organized to mirror the source code structure while maintaining clear separation between test types:
+
 ```
 test/
-├── conftest.py                          # Pytest configuration and fixtures
-├── conftest_streamlit.py                # Streamlit-specific fixtures
-├── unit/                                # Unit tests
-│   ├── test_basic_functionality.py     # Basic functionality tests
-│   ├── database/                       # Database tests
+├── unit/                          # Unit tests (fast, isolated)
+│   ├── data/                      # Mirror src/data structure
+│   │   ├── sources/
+│   │   │   ├── test_alpaca_daily_loader.py
+│   │   │   ├── test_alpaca_historical_loader.py
+│   │   │   ├── test_symbol_manager.py
+│   │   │   └── test_portfolio_manager.py
+│   │   └── __init__.py
+│   ├── database/                  # Mirror src/database structure
 │   │   ├── test_database_connectivity.py
-│   │   └── test_database_connectivity_comprehensive.py
-│   ├── data/                           # Data source tests
-│   │   ├── test_portfolio_manager.py
-│   │   ├── test_portfolio_optimization.py
-│   │   ├── test_symbol_analysis.py
-│   │   └── test_symbol_manager_comprehensive.py
-│   └── ui/                             # UI tests
-│       ├── test_simple_streamlit.py
-│       ├── test_home_comprehensive.py
-│       ├── test_date_display_comprehensive.py
-│       ├── test_market_status_comprehensive.py
-│       ├── test_portfolio_comprehensive.py
-│       ├── test_portfolio_direct.py
-│       ├── test_portfolio_simple.py
-│       ├── test_symbol_selector_comprehensive.py
-│       ├── test_testing_results.py
-│       └── test_debug_ui.py
-├── integration/                         # Integration tests
-│   ├── test_streamlit_integration.py
-│   └── test_multi_symbol_recycler.py
-├── e2e/                                # End-to-end tests
-│   └── test_streamlit_e2e.py
-└── fixtures/                           # Test fixtures
+│   │   └── __init__.py
+│   ├── ml/                        # Mirror src/ml structure
+│   │   ├── test_gru_model.py
+│   │   ├── test_pair_analysis.py
+│   │   └── __init__.py
+│   ├── ui/                        # Mirror src/ui structure
+│   │   ├── components/
+│   │   │   ├── test_company_info.py
+│   │   │   ├── test_market_data.py
+│   │   │   └── test_symbol_selector.py
+│   │   └── __init__.py
+│   ├── utils/                     # Mirror src/utils structure
+│   │   ├── test_config_loader.py
+│   │   ├── test_env_loader.py
+│   │   └── __init__.py
+│   ├── flows/                     # Mirror src/flows structure
+│   │   ├── test_preprocessing_flows.py
+│   │   └── __init__.py
+│   └── test_mlflow_manager.py     # Root level module
+├── integration/                   # Integration tests (external dependencies)
+│   ├── test_database_integration.py
+│   ├── test_api_integration.py
+│   └── test_mlflow_integration.py
+├── e2e/                          # End-to-end tests (full system)
+│   ├── test_trading_workflow.py
+│   └── test_ui_workflow.py
+├── fixtures/                     # Shared test fixtures
+│   ├── database_fixtures.py
+│   ├── data_fixtures.py
+│   └── mock_fixtures.py
+├── conftest.py                   # Pytest configuration
+├── analyze_coverage.py           # Coverage analysis tool
+└── __init__.py
 ```
 
-### 2. Streamlit Testing Fixtures
+### 2. Organization Principles
+
+#### **Mirror Source Structure**
+- Test folders mirror the source code structure
+- Makes it easy to find tests for specific modules
+- Maintains consistency as the codebase grows
+
+#### **Test Type Separation**
+- **Unit tests**: Fast, isolated, no external dependencies
+- **Integration tests**: Test interactions between components
+- **E2E tests**: Test complete workflows
+
+#### **Shared Fixtures**
+- Common test data and mocks in `fixtures/`
+- Reduces duplication across test files
+- Centralized test data management
+
+#### **Naming Conventions**
+- Test files: `test_<module_name>.py`
+- Test classes: `Test<ClassName>`
+- Test methods: `test_<method_name>_<scenario>`
+
+### 3. Optimization Benefits
+
+#### **Easier Navigation**
+- Find tests quickly by following source structure
+- Clear mapping between source modules and test files
+- Consistent organization across the entire codebase
+
+#### **Better Coverage Visibility**
+- Clear view of what's tested vs. what's missing
+- Easy identification of untested modules
+- Automated coverage analysis with `analyze_coverage.py`
+
+#### **Reduced Duplication**
+- Shared fixtures eliminate repeated code
+- Common test data centralized in `fixtures/`
+- Consistent mock objects across all tests
+
+#### **Scalability**
+- Structure supports growth without reorganization
+- Easy to add new modules and corresponding tests
+- Maintains organization as project complexity increases
+
+#### **Team Onboarding**
+- New developers can easily understand test organization
+- Clear patterns for adding new tests
+- Consistent testing practices across the team
+
+### 4. Testing Tools
+
+#### **Coverage Analysis Tool**
+```bash
+# Analyze test coverage and identify missing tests
+python test/analyze_coverage.py
+```
+
+The coverage analysis tool provides:
+- **Coverage Summary**: Overall test coverage statistics
+- **Missing Tests**: List of modules without tests
+- **Extra Test Files**: Orphaned test files
+- **Recommendations**: Suggestions for improving coverage
+
+#### **Shared Fixtures**
+- **`database_fixtures.py`**: Database-related test utilities
+- **`mock_fixtures.py`**: Common mock objects and API responses
+- **`data_fixtures.py`**: Sample data for testing
+
+### 5. Streamlit Testing Fixtures
 
 The `conftest_streamlit.py` file provides specialized fixtures for Streamlit UI testing:
 

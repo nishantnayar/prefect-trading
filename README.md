@@ -137,13 +137,19 @@ prefect-trading/
 │   │   ├── home.py              # Main dashboard page
 │   │   └── streamlit_app.py     # Streamlit application
 │   └── 📁 utils/                # Utility functions
-├── 📁 test/                     # Test suite
+├── 📁 test/                     # Optimized test suite
+│   ├── 📁 unit/                 # Unit tests (mirror src structure)
+│   │   ├── 📁 data/             # Data source tests
+│   │   ├── 📁 database/         # Database tests
+│   │   ├── 📁 ml/               # ML model tests
+│   │   ├── 📁 ui/               # UI component tests
+│   │   ├── 📁 utils/            # Utility tests
+│   │   └── 📁 flows/            # Flow tests
+│   ├── 📁 integration/          # Integration tests
+│   ├── 📁 e2e/                  # End-to-end tests
+│   ├── 📁 fixtures/             # Shared test fixtures
 │   ├── conftest.py              # Test configuration
-│   ├── test_basic_functionality.py
-│   ├── test_mlflow_manager.py
-│   ├── test_websocket_symbols.py
-│   ├── 📁 data/                 # Data-related tests
-│   └── 📁 database/             # Database-related tests
+│   └── analyze_coverage.py      # Coverage analysis tool
 ├── 📁 scripts/                  # Development and testing utilities
 │   ├── run_pair_analysis.py     # Standalone pair analysis script
 │   ├── run_tests.py             # Unified test runner (UI and command-line)
@@ -195,6 +201,21 @@ python -m src.ml.train_gru_models --no-pair-analysis
 ## 🧪 Testing Features
 
 The system includes comprehensive testing capabilities with both UI and command-line interfaces:
+
+### 📁 Optimized Test Organization
+The test folder is organized to mirror the source code structure for better navigation and maintainability:
+
+- **Mirror Source Structure**: Test folders match source code organization
+- **Clear Test Type Separation**: Unit, integration, and e2e tests properly organized
+- **Shared Fixtures**: Common test data and mocks centralized in `test/fixtures/`
+- **Coverage Analysis**: Automated tool to identify missing tests and coverage gaps
+- **Scalable Architecture**: Structure supports growth without reorganization
+
+**Benefits:**
+- ✅ **Easier Navigation**: Find tests quickly by following source structure
+- ✅ **Better Coverage**: Clear visibility of what's tested vs. missing
+- ✅ **Reduced Duplication**: Shared fixtures eliminate repeated code
+- ✅ **Team Onboarding**: New developers can easily understand test organization
 
 ### 🎨 UI Testing Interface
 - **Testing Results Page**: Access via the main navigation menu

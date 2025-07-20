@@ -858,6 +858,7 @@ Result:    All symbols use AAPL data with correct symbol names
 13. **MLflow Model Retention**: Indefinite storage for historical analysis and rollback capability
 14. **Model Comparison Metrics**: Composite score with weighted performance evaluation
 15. **Scaling Strategy**: Single industry (technology) first, then parallel expansion
+16. **Test Folder Optimization**: Mirror source structure with clear separation and shared fixtures
 
 ## Future Enhancements
 
@@ -1279,6 +1280,129 @@ Result:    All symbols use AAPL data with correct symbol names
 - **Phase 2**: Evaluate performance and bottlenecks
 - **Phase 3**: Add parallel processing for multiple sectors
 - **Phase 4**: Optimize based on actual usage patterns
+
+---
+
+## 16. Test Folder Organization Optimization
+
+### **Decision: Mirror Source Structure with Clear Separation and Shared Fixtures**
+
+### **Context:**
+- Original test folder structure was inconsistent and didn't mirror source code organization
+- Multiple test files were scattered across different directories without clear organization
+- Empty test directories existed (`test/database/`, `test/data/`, `test/ui/`)
+- Code duplication was common across test files with repeated mock setups
+- Missing test coverage for entire modules (flows, scripts, mlflow_manager)
+
+### **Problem:**
+- **Inconsistent Structure Mapping**: Test folders didn't mirror source code structure
+- **Poor Separation of Concerns**: All tests mixed in `test/unit/` without proper organization
+- **Empty Directories**: Several test directories were empty but should contain tests
+- **Code Duplication**: Repeated mock setups across multiple test files
+- **Missing Coverage**: Entire modules lacked tests
+
+### **Options Considered:**
+
+#### **Option A: Keep Current Structure**
+**Pros:**
+- No changes required
+- Existing tests continue to work
+- No migration effort needed
+
+**Cons:**
+- Poor organization and navigation
+- Difficult to find tests for specific modules
+- Code duplication continues
+- Hard to identify missing test coverage
+- Not scalable as project grows
+
+#### **Option B: Optimize Structure (Chosen)**
+**Pros:**
+- Clear organization that mirrors source code
+- Easy navigation and test discovery
+- Reduced code duplication through shared fixtures
+- Better coverage visibility
+- Scalable and maintainable
+- Improved team onboarding
+
+**Cons:**
+- Requires reorganization effort
+- Need to update import statements
+- Migration complexity
+
+### **Decision Rationale:**
+- **Primary Factor**: Improved maintainability and scalability
+- **Secondary Factor**: Better developer experience and team onboarding
+- **Tertiary Factor**: Reduced code duplication and improved coverage visibility
+
+### **Implementation:**
+
+#### **1. Optimized Structure**
+```
+test/
+├── unit/                          # Unit tests (fast, isolated)
+│   ├── data/                      # Mirror src/data structure
+│   │   ├── sources/
+│   │   │   ├── test_alpaca_daily_loader.py
+│   │   │   ├── test_alpaca_historical_loader.py
+│   │   │   ├── test_symbol_manager.py
+│   │   │   └── test_portfolio_manager.py
+│   │   └── __init__.py
+│   ├── database/                  # Mirror src/database structure
+│   │   ├── test_database_connectivity.py
+│   │   └── __init__.py
+│   ├── ml/                        # Mirror src/ml structure
+│   │   ├── test_gru_model.py
+│   │   ├── test_pair_analysis.py
+│   │   └── __init__.py
+│   ├── ui/                        # Mirror src/ui structure
+│   │   ├── components/
+│   │   │   ├── test_company_info.py
+│   │   │   ├── test_market_data.py
+│   │   │   └── test_symbol_selector.py
+│   │   └── __init__.py
+│   ├── utils/                     # Mirror src/utils structure
+│   │   ├── test_config_loader.py
+│   │   ├── test_env_loader.py
+│   │   └── __init__.py
+│   ├── flows/                     # Mirror src/flows structure
+│   │   ├── test_preprocessing_flows.py
+│   │   └── __init__.py
+│   └── test_mlflow_manager.py     # Root level module
+├── integration/                   # Integration tests (external dependencies)
+├── e2e/                          # End-to-end tests (full system)
+├── fixtures/                     # Shared test fixtures
+│   ├── database_fixtures.py
+│   ├── data_fixtures.py
+│   └── mock_fixtures.py
+├── conftest.py                   # Pytest configuration
+├── analyze_coverage.py           # Coverage analysis tool
+└── __init__.py
+```
+
+#### **2. Organization Principles**
+- **Mirror Source Structure**: Test folders mirror the source code structure
+- **Test Type Separation**: Clear separation between unit, integration, and e2e tests
+- **Shared Fixtures**: Common test data and mocks centralized in `fixtures/`
+- **Naming Conventions**: Consistent naming patterns for test files and methods
+
+#### **3. Tools and Utilities**
+- **Coverage Analysis Tool**: `analyze_coverage.py` for identifying missing tests
+- **Shared Fixtures**: Database, mock, and data fixtures for reuse
+- **Migration Scripts**: Tools to help reorganize existing tests
+
+### **Benefits:**
+- **Easier Navigation**: Find tests quickly by following source structure
+- **Better Coverage Visibility**: Clear view of what's tested vs. missing
+- **Reduced Duplication**: Shared fixtures eliminate repeated code
+- **Scalability**: Structure supports growth without reorganization
+- **Team Onboarding**: New developers can easily understand test organization
+
+### **Success Metrics:**
+- **Coverage Improvement**: Better visibility into test coverage gaps
+- **Maintenance Reduction**: Less time spent finding and organizing tests
+- **Developer Experience**: Faster test discovery and execution
+- **Code Quality**: Reduced duplication and improved consistency
 
 ---
 

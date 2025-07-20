@@ -190,13 +190,102 @@ make pre-commit-run
 ## Testing
 
 ### Test Structure
+The test folder is organized to mirror the source code structure while maintaining clear separation between test types:
+
 ```
 test/
-├── unit/           # Unit tests
-├── integration/    # Integration tests
-├── e2e/           # End-to-end tests
-├── fixtures/      # Test fixtures
-└── conftest.py    # Pytest configuration
+├── unit/                          # Unit tests (fast, isolated)
+│   ├── data/                      # Mirror src/data structure
+│   │   ├── sources/
+│   │   │   ├── test_alpaca_daily_loader.py
+│   │   │   ├── test_alpaca_historical_loader.py
+│   │   │   ├── test_symbol_manager.py
+│   │   │   └── test_portfolio_manager.py
+│   │   └── __init__.py
+│   ├── database/                  # Mirror src/database structure
+│   │   ├── test_database_connectivity.py
+│   │   └── __init__.py
+│   ├── ml/                        # Mirror src/ml structure
+│   │   ├── test_gru_model.py
+│   │   ├── test_pair_analysis.py
+│   │   └── __init__.py
+│   ├── ui/                        # Mirror src/ui structure
+│   │   ├── components/
+│   │   │   ├── test_company_info.py
+│   │   │   ├── test_market_data.py
+│   │   │   └── test_symbol_selector.py
+│   │   └── __init__.py
+│   ├── utils/                     # Mirror src/utils structure
+│   │   ├── test_config_loader.py
+│   │   ├── test_env_loader.py
+│   │   └── __init__.py
+│   ├── flows/                     # Mirror src/flows structure
+│   │   ├── test_preprocessing_flows.py
+│   │   └── __init__.py
+│   └── test_mlflow_manager.py     # Root level module
+├── integration/                   # Integration tests (external dependencies)
+├── e2e/                          # End-to-end tests (full system)
+├── fixtures/                     # Shared test fixtures
+│   ├── database_fixtures.py
+│   ├── data_fixtures.py
+│   └── mock_fixtures.py
+├── conftest.py                   # Pytest configuration
+├── analyze_coverage.py           # Coverage analysis tool
+└── __init__.py
+```
+
+### Test Organization Principles
+- **Mirror Source Structure**: Test folders mirror the source code structure
+- **Test Type Separation**: Clear separation between unit, integration, and e2e tests
+- **Shared Fixtures**: Common test data and mocks centralized in `fixtures/`
+- **Naming Conventions**: Consistent naming patterns for test files and methods
+
+### Testing Tools and Best Practices
+
+#### **Coverage Analysis**
+```bash
+# Analyze test coverage and identify missing tests
+python test/analyze_coverage.py
+```
+
+The coverage analysis tool provides:
+- **Coverage Summary**: Overall test coverage statistics
+- **Missing Tests**: List of modules without tests
+- **Extra Test Files**: Orphaned test files
+- **Recommendations**: Suggestions for improving coverage
+
+#### **Shared Fixtures**
+Use the shared fixtures in `test/fixtures/` to reduce code duplication:
+- **`database_fixtures.py`**: Database-related test utilities
+- **`mock_fixtures.py`**: Common mock objects and API responses
+- **`data_fixtures.py`**: Sample data for testing
+
+#### **Test Naming Conventions**
+- Test files: `test_<module_name>.py`
+- Test classes: `Test<ClassName>`
+- Test methods: `test_<method_name>_<scenario>`
+
+#### **Example Test Structure**
+```python
+import pytest
+from unittest.mock import Mock, patch
+from test.fixtures.database_fixtures import mock_database_connection
+from test.fixtures.mock_fixtures import mock_streamlit
+
+class TestYourModule:
+    """Test class for your module."""
+    
+    def test_specific_functionality(self, mock_database_connection):
+        """Test specific functionality with mocked dependencies."""
+        # Arrange
+        mock_conn, mock_cursor = mock_database_connection
+        
+        # Act
+        result = your_function()
+        
+        # Assert
+        assert result is not None
+        mock_cursor.execute.assert_called_once()
 ```
 
 ### Writing Tests

@@ -1,5 +1,9 @@
 # Test Organization Guide
 
+## Overview
+
+The test folder is organized to mirror the source code structure while maintaining clear separation between test types. This optimization provides better navigation, reduced duplication, and improved scalability.
+
 ## Optimization Summary
 
 ### Issues Identified in Original Structure
@@ -63,8 +67,7 @@ test/
 │   ├── data_fixtures.py
 │   └── mock_fixtures.py
 ├── conftest.py                   # Pytest configuration
-├── migrate_tests.py              # Migration script
-├── analyze_coverage.py           # Coverage analysis
+├── analyze_coverage.py           # Coverage analysis tool
 └── __init__.py
 ```
 
@@ -90,17 +93,92 @@ test/
 - Test classes: `Test<ClassName>`
 - Test methods: `test_<method_name>_<scenario>`
 
-## Migration Plan
+## Testing Tools
 
-1. **Phase 1**: Create new directory structure
-2. **Phase 2**: Move existing tests to appropriate locations
-3. **Phase 3**: Create missing test files for uncovered modules
-4. **Phase 4**: Add shared fixtures and reduce duplication
+### Coverage Analysis
+```bash
+# Analyze test coverage and identify missing tests
+python test/analyze_coverage.py
+```
+
+The coverage analysis tool provides:
+- **Coverage Summary**: Overall test coverage statistics
+- **Missing Tests**: List of modules without tests
+- **Extra Test Files**: Orphaned test files
+- **Recommendations**: Suggestions for improving coverage
+
+### Shared Fixtures
+- **`database_fixtures.py`**: Database-related test utilities
+- **`mock_fixtures.py`**: Common mock objects and API responses
+- **`data_fixtures.py`**: Sample data for testing
+
+### Running Tests
+```bash
+# Run all tests with coverage
+python scripts/run_tests.py
+
+# Run specific test categories
+python -m pytest test/unit/                    # Unit tests only
+python -m pytest test/integration/             # Integration tests only
+python -m pytest test/e2e/                     # End-to-end tests only
+
+# Run tests for specific module
+python -m pytest test/unit/database/           # Database tests only
+python -m pytest test/unit/data/sources/       # Data source tests only
+```
 
 ## Benefits
 
 - **Easier Navigation**: Find tests quickly by following source structure
 - **Better Coverage**: Clear visibility of what's tested vs. what's missing
-- **Reduced Duplication**: Shared fixtures and common test utilities
+- **Reduced Duplication**: Shared fixtures eliminate repeated code
 - **Scalability**: Structure supports growth without reorganization
-- **Team Onboarding**: New developers can easily understand test organization 
+- **Team Onboarding**: New developers can easily understand test organization
+
+## Migration Status
+
+### ✅ Completed
+- [x] Created optimized directory structure
+- [x] Added shared fixtures (`database_fixtures.py`, `mock_fixtures.py`)
+- [x] Updated `conftest.py` to use shared fixtures
+- [x] Created coverage analysis tool (`analyze_coverage.py`)
+- [x] Added comprehensive documentation
+
+### 🔄 In Progress
+- [ ] Move existing tests to proper locations
+- [ ] Create missing test files for uncovered modules
+- [ ] Update import statements in moved tests
+- [ ] Verify all tests pass in new structure
+
+### 📋 Next Steps
+1. **Phase 1**: Move existing tests to appropriate locations
+2. **Phase 2**: Create missing test files for uncovered modules
+3. **Phase 3**: Add integration and e2e tests
+4. **Phase 4**: Optimize test execution and coverage reporting
+
+## Best Practices
+
+### Writing New Tests
+1. **Follow the Structure**: Place tests in the appropriate directory that mirrors the source
+2. **Use Shared Fixtures**: Leverage fixtures in `test/fixtures/` to reduce duplication
+3. **Follow Naming Conventions**: Use consistent naming for files, classes, and methods
+4. **Write Comprehensive Tests**: Cover happy path, edge cases, and error scenarios
+
+### Maintaining Tests
+1. **Keep Tests Updated**: Update tests when source code changes
+2. **Run Coverage Analysis**: Regularly check for missing test coverage
+3. **Use Shared Fixtures**: Avoid duplicating common test setup code
+4. **Document Complex Tests**: Add comments for complex test scenarios
+
+### Performance Considerations
+1. **Fast Unit Tests**: Keep unit tests fast and isolated
+2. **Mock External Dependencies**: Use mocks for API calls and database operations
+3. **Parallel Execution**: Design tests to run in parallel when possible
+4. **Resource Cleanup**: Ensure proper cleanup in integration and e2e tests
+
+## Related Documentation
+
+- **[Testing Guide](../docs/testing.md)**: Comprehensive testing documentation
+- **[Development Guide](../docs/development.md)**: Development practices and workflows
+- **[Architecture Decisions](../docs/architecture-decisions.md)**: Test optimization decision details
+- **[Setup Guide](../docs/setup.md)**: Test setup and verification instructions 

@@ -126,6 +126,29 @@ streamlit run src/ui/streamlit_app.py
 2. **Check Streamlit UI**: Open [http://localhost:8501](http://localhost:8501)
 3. **Run Tests**: `make test` or `python scripts/run_tests.py`
 
+### Step 8: Test Setup Verification
+
+The test folder is organized to mirror the source code structure for easy navigation and maintenance:
+
+```bash
+# Analyze test coverage and identify missing tests
+python test/analyze_coverage.py
+
+# Run specific test categories
+python -m pytest test/unit/                    # Unit tests only
+python -m pytest test/integration/             # Integration tests only
+python -m pytest test/e2e/                     # End-to-end tests only
+
+# Run tests with coverage
+python scripts/run_tests.py --ui-mode          # Full test suite with coverage
+```
+
+**Test Organization Benefits:**
+- **Easy Navigation**: Find tests quickly by following source structure
+- **Better Coverage**: Clear visibility of what's tested vs. missing
+- **Reduced Duplication**: Shared fixtures in `test/fixtures/`
+- **Scalable**: Structure supports growth without reorganization
+
 ## MLflow Setup (Optional but Recommended)
 
 For enterprise-level model management and periodic rebaselining:
