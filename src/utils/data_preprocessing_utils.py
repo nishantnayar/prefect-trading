@@ -236,10 +236,23 @@ class DataPreprocessingUtils:
         arch_lags = arch_lags or vs_config.get("arch_lags", 5)
         ljung_box_lags = ljung_box_lags or vs_config.get("ljung_box_lags", 10)
         
-        # Get thresholds from config
-        arch_threshold = vs_config.get("arch_test_pvalue_threshold", 1e-100)
+        # Get thresholds from config and ensure they are numeric
+        arch_threshold = vs_config.get("arch_test_pvalue_threshold", 0.0)
         cv_threshold = vs_config.get("rolling_std_cv_threshold", 2.0)
         lb_threshold = vs_config.get("ljung_box_pvalue_threshold", 0.001)
+        
+        # Convert string values to float if needed (YAML sometimes loads numbers as strings)
+        try:
+            arch_threshold = float(arch_threshold) if arch_threshold is not None else 0.0
+            cv_threshold = float(cv_threshold) if cv_threshold is not None else 2.0
+            lb_threshold = float(lb_threshold) if lb_threshold is not None else 0.001
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Error converting thresholds to float, using defaults: {e}")
+            arch_threshold = 0.0
+            cv_threshold = 2.0
+            lb_threshold = 0.001
+        
+        logger.debug(f"Thresholds for {symbol}: arch={arch_threshold} (type: {type(arch_threshold)}), cv={cv_threshold}, lb={lb_threshold}")
         
         symbol_data = feature_data[feature_data['symbol'] == symbol]
         z_scores = symbol_data['z_score'].dropna()
@@ -284,17 +297,31 @@ class DataPreprocessingUtils:
             # Ensure lb_pvalue_avg is a scalar
             if isinstance(lb_pvalue_avg, np.ndarray):
                 lb_pvalue_avg = lb_pvalue_avg[0] if len(lb_pvalue_avg) > 0 else 0
-            # Use config thresholds
-            is_stable = (
-                arch_pvalue > arch_threshold and 
-                rolling_std_cv < cv_threshold and 
-                lb_pvalue_avg > lb_threshold
-            )
+            # Debug logging for comparison values
+            logger.debug(f"Comparison values for {symbol}: arch_pvalue={arch_pvalue} (type: {type(arch_pvalue)}), arch_threshold={arch_threshold} (type: {type(arch_threshold)})")
+            logger.debug(f"CV comparison: rolling_std_cv={rolling_std_cv}, cv_threshold={cv_threshold}")
+            logger.debug(f"LB comparison: lb_pvalue_avg={lb_pvalue_avg}, lb_threshold={lb_threshold}")
+            
+            # Ensure all values are numeric for comparison
+            try:
+                arch_pvalue_comp = float(arch_pvalue) if arch_pvalue is not None and not np.isnan(arch_pvalue) else 0.0
+                rolling_std_cv_comp = float(rolling_std_cv) if rolling_std_cv is not None and not np.isnan(rolling_std_cv) else float('inf')
+                lb_pvalue_avg_comp = float(lb_pvalue_avg) if lb_pvalue_avg is not None and not np.isnan(lb_pvalue_avg) else 0.0
+                
+                # Use config thresholds
+                is_stable = (
+                    arch_pvalue_comp > arch_threshold and 
+                    rolling_std_cv_comp < cv_threshold and 
+                    lb_pvalue_avg_comp > lb_threshold
+                )
+            except (ValueError, TypeError) as e:
+                logger.error(f"Error in stability comparison for {symbol}: {e}")
+                is_stable = False
             filter_reason = None
             if not is_stable:
-                if arch_pvalue <= arch_threshold:
+                if arch_pvalue_comp <= arch_threshold:
                     filter_reason = 'arch_test_failed'
-                elif rolling_std_cv >= cv_threshold:
+                elif rolling_std_cv_comp >= cv_threshold:
                     filter_reason = 'high_volatility'
                 else:
                     filter_reason = 'autocorrelation_detected'

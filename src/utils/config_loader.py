@@ -108,7 +108,7 @@ def get_config_section(section_name: str, config_name: str = "config.yaml", defa
 def get_variance_stability_config() -> Dict[str, Any]:
     """Get variance stability configuration section."""
     return get_config_section("variance_stability", default={
-        "arch_test_pvalue_threshold": 1e-100,
+        "arch_test_pvalue_threshold": 0.0,
         "rolling_std_cv_threshold": 2.0,
         "ljung_box_pvalue_threshold": 0.001,
         "test_window": 30,

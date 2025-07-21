@@ -49,7 +49,7 @@ variance_stability:
   # ljung_box_pvalue_threshold: 0.05
   
   # Current relaxed criteria (for testing/development)
-  arch_test_pvalue_threshold: 1e-100  # Essentially ignore ARCH test
+  arch_test_pvalue_threshold: 0.0  # Essentially ignore ARCH test
   rolling_std_cv_threshold: 2.0       # Allow higher volatility
   ljung_box_pvalue_threshold: 0.001   # More lenient autocorrelation test
   
